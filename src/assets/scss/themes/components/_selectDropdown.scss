@@ -1,0 +1,104 @@
+.select-dropdown {
+    // width: 200px;
+    min-width: 150px;
+    position: relative;
+
+    .select-box {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 17px;
+        border: 1px solid rgb(229, 231, 235);
+        border-radius: 4px;
+        cursor: pointer;
+        background-color: $white;
+
+        .selected-label {
+            display: flex;
+            align-items: center;
+            color: #283c50;
+            font-size: 13px;
+            gap: 16px;
+            font-weight: 500;
+
+            .status-dot {
+                width: 7px;
+                height: 7px;
+                border-radius: 50%;
+            }
+        }
+
+    }
+
+    .dropdown-list {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background-color: $white;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        // border-top-left-radius: 0px;
+        // border-top-right-radius: 0px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+
+        ul {
+            overflow-y: auto;
+            max-height: 300px;
+        }
+
+        .search-input-outer {
+            padding: 6px 12px;
+
+            .search-input {
+                width: 100%;
+                border: 1px solid rgb(229, 231, 235);
+                outline: none;
+                // max-height: 33px;
+                padding: 6px 12px;
+            }
+        }
+
+
+        ul {
+            // list-style: none;
+            padding: 0;
+            margin: 0;
+            // max-height: 150px;
+            // overflow-y: auto;
+
+            li {
+                padding: 10px 25px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+
+                &:hover,
+                &.active {
+                    color: $primary;
+                    background-color: rgba(84, 133, 228, .075);
+                }
+
+                .status-dot {
+                    width: 7px;
+                    height: 7px;
+                    border-radius: 50%;
+                    margin-right: 8px;
+                }
+            }
+
+            .no-result {
+                padding: 10px;
+                text-align: center;
+                color: #999;
+            }
+        }
+    }
+
+    &.open-upwards .dropdown-list {
+        top: auto;
+        bottom: 100%; // Position the menu above the select box
+        transform-origin: bottom center; // Animate from the bottom
+    }
+}

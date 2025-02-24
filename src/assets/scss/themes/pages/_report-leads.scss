@@ -1,0 +1,86 @@
+/*
+<--!----------------------------------------------------------------!-->
+<--! Leads Report !-->
+<--!----------------------------------------------------------------!-->
+*/
+
+.lead-card-1,
+.lead-card-2,
+.lead-card-3 {
+
+	.icon-1 {
+		color: $primary;
+		background-color: $bg-soft-primary;
+	}
+
+	.icon-2 {
+		color: $success;
+		background-color: $bg-soft-success;
+	}
+
+	.icon-3 {
+		color: $warning;
+		background-color: $bg-soft-warning;
+	}
+
+	.label-1 {
+		color: $white;
+		background-color: $primary;
+	}
+
+	.label-2 {
+		color: $white;
+		background-color: $success;
+	}
+
+	.label-3 {
+		color: $white;
+		background-color: $warning;
+	}
+
+
+
+
+	.CircularProgressbar {
+		width: 100px;
+		height: 100px;
+
+		&-trail {
+			stroke: #e3e7f9;
+			stroke-width: 3px;
+		}
+
+		&-text {
+			fill: $brand-dark;
+			font-size: $font-13;
+			font-weight: $font-700;
+		}
+	}
+
+	.lead-progress-1 {
+		.CircularProgressbar-path {
+			stroke: $primary;
+		}
+	}
+
+	.lead-progress-2 {
+		.CircularProgressbar-path {
+			stroke: $success;
+		}
+
+		.CircularProgressbar-trail {
+			stroke: #caf9df;
+		}
+	}
+
+	.lead-progress-3 {
+		.CircularProgressbar-path {
+			stroke: $warning;
+		}
+
+		.CircularProgressbar-trail {
+			stroke: #ffebd0;
+		}
+	}
+
+}

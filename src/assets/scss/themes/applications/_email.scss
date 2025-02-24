@@ -1,0 +1,256 @@
+/*
+<--!----------------------------------------------------------------!-->
+<--! Email !-->
+<--!----------------------------------------------------------------!-->
+*/
+.nxl-container {
+	&.apps-email {
+		.nxl-content {
+			.main-content {
+				.content-area {
+					.content-area-header {
+						.page-header-left {
+							.action-list-items {
+								display: none;
+								transition: all 0.3s ease;
+							}
+
+							&.show-action {
+								.action-list-items {
+									gap: 10px;
+									display: flex;
+									transition: all 0.3s ease;
+								}
+							}
+						}
+					}
+
+					.content-area-body {
+						.single-items {
+							cursor: pointer;
+							padding: 10px 5px;
+							display: flex;
+							align-items: center;
+							background-color: $white;
+							border-bottom: 1px solid $border-color;
+
+							.item-meta {
+								padding: 12px 25px;
+							}
+
+							.item-info {
+								cursor: pointer;
+								padding: 12px 30px;
+							}
+
+							.item-data {
+								padding: 12px 25px 15px 0;
+							}
+						}
+					}
+
+					.items-details {
+						left: 0;
+						top: 1px;
+						bottom: 0;
+						right: -100%;
+						opacity: 0;
+						z-index: 1025;
+						position: absolute;
+						visibility: hidden;
+						background-color: #f3f4f6;
+						transition: all 0.3s ease;
+						transform: translateX(100%);
+
+						.items-details-header {
+							height: 74px;
+							padding: 13px 25px;
+							display: flex;
+							align-items: center;
+							justify-content: space-between;
+							background-color: $white;
+							border-bottom: 1px solid $border-color;
+						}
+
+						.items-details-body {
+							margin: 25px 25px;
+
+							.accordion {
+								.accordion-item {
+									.accordion-header {
+										.accordion-button {
+											background-color: transparent !important;
+										}
+									}
+								}
+							}
+						}
+
+						.items-details-footer {
+							background-color: $white;
+						}
+					}
+
+					&.items-details-active {
+						.items-details {
+							left: 0;
+							top: 1px;
+							right: 0;
+							bottom: 0;
+							opacity: 1;
+							visibility: visible;
+							transition: all 0.3s ease;
+							transform: translateX(0);
+						}
+
+						.content-area-body {
+							display: none;
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+
+.email-modal {
+	.avatar-text {
+		width: auto !important;
+		height: auto !important;
+		max-width: 100% !important;
+		max-height: 100% !important;
+		min-width: auto !important;
+		min-height: auto !important;
+		overflow: hidden;
+	}
+}
+
+.mail-cc-bcc-fields {
+	opacity: 0;
+	visibility: hidden;
+	max-height: 0;
+	overflow: hidden;
+	transition: all 0.7s ease-in-out;
+}
+
+.mail-cc-bcc-fields.cc-bcc-show {
+	opacity: 1;
+	visibility: visible;
+	max-height: 200px;
+}
+
+.ql-container.ql-snow {
+	border: 0;
+	color: $black;
+}
+
+.ql-toolbar.ql-snow {
+	padding: 10px 15px;
+	box-sizing: border-box;
+	background-color: #f3f5fa;
+	border: 1px solid #e5e7eb;
+	font-family: helvetica neue, helvetica, arial, sans-serif;
+}
+
+
+.email-tag-container {
+	width: 100%;
+
+	.tag-field {
+		display: flex;
+		flex-wrap: wrap;
+		padding: 5px;
+		position: relative;
+		align-items: center;
+
+		.tags {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 5px;
+
+			.tag {
+				background-color: #f3f5fa;
+				border-radius: 3px;
+				padding: 2px 7px;
+				display: flex;
+				align-items: center;
+				gap: 10px;
+
+				img {
+					width: 16px;
+					height: 16px;
+					background-color: $white;
+					border-radius: 100%;
+				}
+
+				.user-avatar-text {
+					width: 16px;
+					height: 16px;
+					border-radius: 100%;
+					text-align: center;
+					font-size: 10px;
+				}
+
+				button {
+					background: none;
+					border: none;
+					cursor: pointer;
+				}
+			}
+		}
+
+		.tag-input {
+			border: none;
+			outline: none;
+			flex: 1;
+			min-width: 150px;
+			padding: 14px 22px;
+		}
+
+	}
+
+
+	.user-list {
+		border: 1px solid var(--bs-border-color);
+		overflow-y: auto;
+		position: absolute;
+		z-index: 99;
+		left: 50%;
+		width: calc(100% - 16px);
+		background-color: white;
+		transform: translateX(-50%);
+		max-height: 300px;
+
+		.user {
+			cursor: pointer;
+			padding: 12px 15px;
+			border-bottom: 1px solid var(--bs-border-color);
+			transition: all 0.5s;
+
+			&:last-child {
+				border-bottom: none;
+			}
+
+			&:hover {
+				background-color: #f0f0f0;
+				transition: all 0.5s;
+
+				.avatar {
+					transition: all 0.5s;
+					transform: scale(1.1);
+				}
+			}
+		}
+	}
+}
+
+.email-editor {
+	.ql-container.ql-snow {
+		height: 300px;
+	}
+}
+
+.ql-picker-label {
+	background-color: $white;
+}

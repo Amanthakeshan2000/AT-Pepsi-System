@@ -1,0 +1,67 @@
+export const productsData = [
+    {
+        name: 'iPhone 14 Pro Max',
+        category: 'Electronics',
+        location: 'Brasil',
+        date: '05/28/2020',
+        company: 'Intertico',
+        price: "$600",
+        totalPrice: '$3560',
+        sold: "5",
+        status: 'Approved',
+        color: "primary",
+        image: '/images/gallery/4.png'
+    },
+    {
+        name: 'Canon DSLR 1230',
+        category: 'Electronics',
+        location: 'Belarus',
+        date: '04/18/2021',
+        company: 'Agoda',
+        price: "$320",
+        totalPrice: '$4850',
+        sold: "4",
+        status: 'In Progress',
+        color: "warning",
+        image: '/images/gallery/5.png'
+    },
+    {
+        name: 'Hear Bud 202',
+        category: 'Electronics',
+        location: 'Phillipines',
+        date: '07/23/2019',
+        company: 'RoadGee',
+        price: "$350",
+        totalPrice: '$8376',
+        sold: "6",
+        status: 'Success',
+        color: "success",
+        image: '/images/gallery/3.png'
+    },
+    {
+        name: 'Smart watch',
+        category: 'Electronics',
+        location: 'Argentina',
+        date: '12/21/2021',
+        company: 'The Hill',
+        price: "$550",
+        totalPrice: '$9486',
+        sold: "7",
+        status: 'Rejected',
+        color: "danger",
+        image: '/images/gallery/2.png'
+    },
+    {
+        name: 'Headphones JBL',
+        category: 'Electronics',
+        location: 'Agoda',
+        date: '05/28/2020',
+        company: 'Phillipines',
+        price: "$205",
+        totalPrice: '$8476',
+        sold: "5",
+        status: 'Approved',
+        color: "primary",
+        image: '/images/gallery/1.png'
+    },
+];

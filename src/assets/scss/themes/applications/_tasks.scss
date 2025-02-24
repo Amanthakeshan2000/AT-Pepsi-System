@@ -1,0 +1,37 @@
+/*
+<--!----------------------------------------------------------------!-->
+<--! Tasks !-->
+<--!----------------------------------------------------------------!-->
+*/
+.nxl-container {
+	&.apps-tasks {
+		.nxl-content {
+			.main-content {
+				.single-task-list {
+					&.task-completed {
+						color: $success !important;
+						background-color: $bg-soft-success;
+						text-decoration: line-through !important;
+					}
+				}
+			}
+		}
+
+
+
+	}
+}
+
+
+
+.task-editor  {
+	.ql-container.ql-snow {
+		border: 1px solid #e5e7eb;
+	}
+}
+.task-add{
+	.ql-container.ql-snow {
+		border: 1px solid #e5e7eb;
+		height: 150px;
+	}
+}

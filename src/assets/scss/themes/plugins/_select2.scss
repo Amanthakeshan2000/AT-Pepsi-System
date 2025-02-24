@@ -1,0 +1,92 @@
+/*
+<--!----------------------------------------------------------------!-->
+<--! React Select !-->
+<--!----------------------------------------------------------------!-->
+*/
+
+.basic-multi-select {
+	.select__control {
+		// padding: 6px 12px;
+		border: 1px solid rgb(229, 231, 235) !important;
+		box-shadow: none !important;
+
+		.select__value-container {
+			padding: 0;
+			gap: 5px;
+
+			.select__multi-value {
+				background-color: transparent;
+				border: 1px solid rgb(229, 231, 235);
+				// margin: 0 3px;
+				padding-right: 6px;
+				color: #283c50;
+				font-weight: 600;
+				border-radius: 4px;
+				margin: 0;
+
+				&__label {
+					font-size: 13px;
+					padding: 0;
+					padding: 8.5px 6px 8.5px 12px;
+
+					.user-option {
+						line-height: 1.5;
+					}
+				}
+
+				&__remove {
+					&:hover {
+						background-color: transparent;
+					}
+				}
+			}
+		}
+
+		.select__indicators {
+			display: none;
+		}
+
+	}
+
+	.select__menu {
+		.select__option {
+			color: #283c50;
+			font-weight: 500;
+			font-size: 13px;
+			cursor: pointer;
+		}
+
+		.select__option--is-selected {
+			background-color: rgba(84, 133, 228, .075);
+			color: #3454d1;
+		}
+
+		.select__option--is-focused {
+			background-color: rgba(84, 133, 228, .075);
+			color: #3454d1;
+		}
+	}
+}
+
+
+.select-wd-sm {
+	width: 100px
+}
+
+.select-wd-md {
+	width: 200px
+}
+
+.select-wd-lg {
+	width: 300px
+}
+
+.select-wd-xl {
+	width: 400px
+}
+
+.select-wd-xxl {
+	.select2-container {
+		width: 500px !important;
+	}
+}

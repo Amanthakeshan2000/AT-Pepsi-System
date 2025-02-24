@@ -1,0 +1,25 @@
+/*
+<--!----------------------------------------------------------------!-->
+<--! Pic Uploader !-->
+<--!----------------------------------------------------------------!-->
+*/
+.upload-button {
+	opacity: 0;
+	transition: all 0.3s ease;
+	&:hover {
+		opacity: 1;
+		visibility: visible;
+		transition: all 0.3s ease;
+		background-color: darken($gray-100, 1);
+	}
+}
+.discount-input {
+	background-color: #f8f9fa; // Light gray background
+	border: 1px solid #ced4da; // Default border color
+	border-radius: 0.25rem; // Rounded corners
+    
+	&:focus {
+	  border-color: #86b7fe; // Focus border color
+	  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25); // Focus shadow
+	}
+}
