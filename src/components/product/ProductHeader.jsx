@@ -9,7 +9,7 @@ const ProductHeader = () => {
     return (
         <>
             <div className="d-flex align-items-center gap-2 page-header-right-items-wrapper">
-                <a href="#" className="btn btn-icon btn-light-brand" data-bs-toggle="collapse" data-bs-target="#collapseOne">
+                {/* <a href="#" className="btn btn-icon btn-light-brand" data-bs-toggle="collapse" data-bs-target="#collapseOne">
                     <FiBarChart size={16} />
                 </a>
                 <Dropdown
@@ -30,7 +30,7 @@ const ProductHeader = () => {
                 <Link to="/payment/create" className="btn btn-primary">
                     <FiPlus size={16} className='me-2' />
                     <span>Create Category</span>
-                </Link>
+                </Link> */}
             </div>
             <div id="collapseOne" className="accordion-collapse collapse page-header-collapse payment-header-accordion">
                 <div className="accordion-body pb-2">

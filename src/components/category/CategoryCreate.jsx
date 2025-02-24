@@ -1,42 +1,32 @@
 import React, { useState, useEffect } from "react";
+import { db } from "../../utilities/firebaseConfig";
+import { collection, addDoc, getDocs, serverTimestamp } from "firebase/firestore";
 
 const CategoryCreate = () => {
-  const [name, setName] = useState(""); // State for the category name
+  const [name, setName] = useState(""); // State for category name
   const [loading, setLoading] = useState(false); // Loading state for form submission
   const [message, setMessage] = useState(""); // Message for success or error
   const [categories, setCategories] = useState([]); // State for all categories
   const [search, setSearch] = useState(""); // State for search input
   const [loadingCategories, setLoadingCategories] = useState(true); // Loading state for categories
 
-  const organizationId = "1e7071f0-dacb-4a98-f264-08dcb066d923"; // Fixed organization ID
+  const categoriesCollectionRef = collection(db, "categories"); // Firestore collection reference
 
-  // Fetch all categories
+  // Fetch all categories from Firestore
   const fetchCategories = async () => {
+    setLoadingCategories(true);
     try {
-      const token = localStorage.getItem("accessToken");
-
-      if (!token) {
-        throw new Error("Access token is missing. Please log in.");
-      }
-
-      const response = await fetch(
-        `https://localhost:7053/api/Product/get-category?Organization=${organizationId}`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to fetch categories. HTTP Status: ${response.status}. Response: ${errorText}`);
-      }
-
-      const data = await response.json();
-      setCategories(data); // Store fetched categories
+      const querySnapshot = await getDocs(categoriesCollectionRef);
+      const categoryList = querySnapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          name: data.name,
+          status: data.status === 1 ? "Inactive" : "Active", // 0 = Active, 1 = Inactive
+          createdDate: data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleDateString() : "N/A",
+        };
+      });
+      setCategories(categoryList);
     } catch (error) {
       console.error("Error fetching categories:", error.message);
       setMessage(`Error: ${error.message}`);
@@ -49,43 +39,29 @@ const CategoryCreate = () => {
     fetchCategories();
   }, []);
 
-  // Handle form submission
+  // Handle form submission to create a new category
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setMessage("");
 
     try {
-      const token = localStorage.getItem("accessToken");
+      if (!name.trim()) throw new Error("Category name cannot be empty.");
 
-      if (!token) {
-        throw new Error("Access token is missing. Please log in.");
-      }
-
-      const response = await fetch("https://localhost:7053/api/Product/create-category", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name,
-          organization: organizationId,
-        }),
+      // Add category to Firestore with created date and status (0 = Active by default)
+      await addDoc(categoriesCollectionRef, {
+        name,
+        status: 0, // Default status is Active (0)
+        createdAt: serverTimestamp(), // Firebase Timestamp
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to create category. HTTP Status: ${response.status}. Response: ${errorText}`);
-      }
-
       setMessage("Category created successfully!");
-      setName(""); // Clear the name field after successful submission
+      setName(""); // Clear input field after successful submission
 
-      // Refresh the category list after successful creation
-      await fetchCategories();
+      // Refresh the category list
+      fetchCategories();
     } catch (error) {
-      console.error("Error:", error.message);
+      console.error("Error creating category:", error.message);
       setMessage(`Error: ${error.message}`);
     } finally {
       setLoading(false);
@@ -154,19 +130,24 @@ const CategoryCreate = () => {
               <p>Loading categories...</p>
             ) : (
               <div style={{ maxHeight: "500px", overflowY: "auto" }}>
-                    <ul className="list-group">
-                        {filteredCategories.length > 0 ? (
-                        filteredCategories.map((category) => (
-                            <li key={category.id} className="list-group-item">
-                            {category.name}
-                            </li>
-                        ))
-                        ) : (
-                        <p>No categories found.</p>
-                        )}
-                    </ul>
-                    </div>
-
+                <ul className="list-group">
+                  {filteredCategories.length > 0 ? (
+                    filteredCategories.map((category) => (
+                      <li key={category.id} className="list-group-item">
+                        <strong>{category.name}</strong>
+                        <br />
+                        <small>Created: {category.createdDate}</small>
+                        <br />
+                        <span className={`badge ${category.status === "Active" ? "badge-success" : "badge-danger"}`}>
+                          {category.status}
+                        </span>
+                      </li>
+                    ))
+                  ) : (
+                    <p>No categories found.</p>
+                  )}
+                </ul>
+              </div>
             )}
           </div>
         </div>

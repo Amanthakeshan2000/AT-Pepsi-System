@@ -30,7 +30,7 @@ const NavigationManu = () => {
                             // visibility: 'hidden', // Hide by default
                         }}
                         >
-                            AT-SYSTEM
+                            AT SYSTEM
                         </Link>
 
 

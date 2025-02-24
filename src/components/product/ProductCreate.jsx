@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Select from "react-select";
+import { db } from "../../utilities/firebaseConfig"; // Firebase Firestore
+import { collection, addDoc, getDocs, serverTimestamp } from "firebase/firestore";
 
 const ProductCreate = () => {
   const [name, setName] = useState("");
@@ -10,56 +12,26 @@ const ProductCreate = () => {
   const [productOptions, setProductOptions] = useState([]);
   const [optionName, setOptionName] = useState("");
   const [optionPrice, setOptionPrice] = useState("");
-  const [image, setImage] = useState(null);
+  const [optionQty, setOptionQty] = useState("");
+  const [imageBase64, setImageBase64] = useState(""); // Store image as Base64
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState([]);
+  const [searchQuery, setSearchQuery] = useState(""); // Search filter
   const [loadingProducts, setLoadingProducts] = useState(false);
 
-  const organizationId = "1e7071f0-dacb-4a98-f264-08dcb066d923";
+  const categoriesCollectionRef = collection(db, "categories"); // Firestore Categories
+  const productsCollectionRef = collection(db, "Product"); // Firestore Products
 
-  // Utility function to safely parse JSON responses
-  const safeJsonParse = async (response) => {
-    const text = await response.text();
-    try {
-      return text ? JSON.parse(text) : [];
-    } catch (error) {
-      console.error("Failed to parse JSON. Raw response:", text);
-      throw new Error("Invalid JSON response received.");
-    }
-  };
-
-  // Fetch categories from the API
+  // Fetch categories from Firestore
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const token = localStorage.getItem("accessToken");
-
-        if (!token) {
-          throw new Error("Access token is missing. Please log in.");
-        }
-
-        const response = await fetch(
-          `https://localhost:7053/api/Product/get-category?Organization=${organizationId}`,
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch categories. HTTP Status: ${response.status}`);
-        }
-
-        const data = await safeJsonParse(response);
-        const categoryOptions = data.map((category) => ({
-          value: category.id,
-          label: category.name,
+        const querySnapshot = await getDocs(categoriesCollectionRef);
+        const categoryOptions = querySnapshot.docs.map((doc) => ({
+          value: doc.id,
+          label: doc.data().name,
         }));
-
         setCategories(categoryOptions);
       } catch (error) {
         console.error("Error fetching categories:", error.message);
@@ -70,35 +42,17 @@ const ProductCreate = () => {
     fetchCategories();
   }, []);
 
-  // Fetch all products from the API
+  // Fetch all products from Firestore
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const token = localStorage.getItem("accessToken");
-
-        if (!token) {
-          throw new Error("Access token is missing. Please log in.");
-        }
-
         setLoadingProducts(true);
-        const response = await fetch(
-          `https://localhost:7053/api/Product/get-productlist?Organization=${organizationId}`,
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch products. HTTP Status: ${response.status}`);
-        }
-
-        const data = await safeJsonParse(response);
-        console.log("Fetched Products:", data); // Debugging products
-        setProducts(data);
+        const querySnapshot = await getDocs(productsCollectionRef);
+        const productList = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setProducts(productList);
       } catch (error) {
         console.error("Error fetching products:", error.message);
         setMessage(`Error: ${error.message}`);
@@ -110,26 +64,25 @@ const ProductCreate = () => {
     fetchProducts();
   }, []);
 
-  // Map CategoryId to Category Name
-  const getCategoryName = (categoryId) => {
-    const category = categories.find((cat) => cat.value === categoryId);
-    return category ? category.label : "Unknown Category";
-  };
-
-  // Handle image upload
+  // Convert image to Base64
   const handleImageUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
-      setImage(file);
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onloadend = () => {
+        setImageBase64(reader.result); // Save Base64 string
+      };
     }
   };
 
   // Add a new product option
   const addProductOption = () => {
-    if (optionName && optionPrice) {
-      setProductOptions([...productOptions, { name: optionName, price: parseFloat(optionPrice) }]);
+    if (optionName && optionPrice && optionQty) {
+      setProductOptions([...productOptions, { name: optionName, price: parseFloat(optionPrice), qty: parseFloat(optionQty) }]);
       setOptionName("");
       setOptionPrice("");
+      setOptionQty("");
     }
   };
 
@@ -140,62 +93,45 @@ const ProductCreate = () => {
 
   // Handle form submission
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-  setMessage("");
+    e.preventDefault();
+    setLoading(true);
+    setMessage("");
 
-  try {
-    const token = localStorage.getItem("accessToken");
+    try {
+      if (!name || !description || !price || !categoryId) {
+        throw new Error("All fields are required.");
+      }
 
-    if (!token) {
-      throw new Error("Access token is missing. Please log in.");
+      // Add product to Firestore
+      await addDoc(productsCollectionRef, {
+        name,
+        description,
+        price: parseFloat(price),
+        categoryId,
+        createdAt: serverTimestamp(),
+        productOptions,
+        imageBase64, // Save image as Base64 string
+      });
+
+      setMessage("Product created successfully!");
+      setName("");
+      setDescription("");
+      setPrice("");
+      setCategoryId(null);
+      setImageBase64("");
+      setProductOptions([]);
+    } catch (error) {
+      console.error("Error creating product:", error.message);
+      setMessage(`Error: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    const formData = new FormData();
-    formData.append("name", name);
-    formData.append("description", description.trim());
-    formData.append("price", parseFloat(price)); // Ensure price is sent as a number
-    formData.append("categoryId", categoryId);
-    formData.append("organizationId", organizationId);
-
-    // Append each product option individually as expected by the backend
-    productOptions.forEach((option, index) => {
-      formData.append(`productOptions[${index}][name]`, option.name);
-      formData.append(`productOptions[${index}][price]`, option.price);
-    });
-
-    if (image) {
-      formData.append("image", image);
-    }
-
-    const response = await fetch("https://localhost:7053/api/Product/create-product", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to create product. HTTP Status: ${response.status}. Response: ${errorText}`);
-    }
-
-    setMessage("Product created successfully!");
-    setName("");
-    setDescription("");
-    setPrice("");
-    setCategoryId(null);
-    setImage(null);
-    setProductOptions([]);
-  } catch (error) {
-    console.error("Error creating product:", error.message);
-    setMessage(`Error: ${error.message}`);
-  } finally {
-    setLoading(false);
-  }
-};
-
+  // Filter products based on search query
+  const filteredProducts = products.filter((product) =>
+    product.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="row">
@@ -203,168 +139,83 @@ const ProductCreate = () => {
       <div className="col-xl-8">
         <div className="card">
           <div className="card-header">
-            <h5>Product Create</h5>
+            <h5>Create Product</h5>
           </div>
           <div className="card-body">
+            {message && (
+              <div className={`alert ${message.startsWith("Error") ? "alert-danger" : "alert-success"}`} role="alert">
+                {message}
+              </div>
+            )}
             <form onSubmit={handleSubmit}>
-              {/* Product Name */}
               <div className="mb-3">
-                <label htmlFor="productName" className="form-label">
-                  Product Name
-                </label>
-                <input
-                  type="text"
-                  className="form-control"
-                  id="productName"
-                  placeholder="Enter product name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                />
+                <label className="form-label">Product Name</label>
+                <input type="text" className="form-control" placeholder="Enter product name" value={name} onChange={(e) => setName(e.target.value)} required />
               </div>
 
-              {/* Product Description */}
               <div className="mb-3">
-                <label htmlFor="productDescription" className="form-label">
-                  Product Description
-                </label>
-                <textarea
-                  className="form-control"
-                  id="productDescription"
-                  placeholder="Enter product description"
-                  rows={3}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  required
-                />
+                <label className="form-label">Product Description</label>
+                <textarea className="form-control" placeholder="Enter product description" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} required />
               </div>
 
-              {/* Product Price */}
               <div className="mb-3">
-                <label htmlFor="productPrice" className="form-label">
-                  Product Price
-                </label>
-                <input
-                  type="number"
-                  className="form-control"
-                  id="productPrice"
-                  placeholder="Enter product price"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                  required
-                />
+                <label className="form-label">Product Price</label>
+                <input type="number" className="form-control" placeholder="Enter product price" value={price} onChange={(e) => setPrice(e.target.value)} required />
               </div>
 
-              {/* Product Category */}
               <div className="mb-3">
-                <label htmlFor="productCategory" className="form-label">
-                  Product Category
-                </label>
-                <Select
-                  id="productCategory"
-                  options={categories}
-                  placeholder="Select a category"
-                  value={categories.find((category) => category.value === categoryId)}
-                  onChange={(selected) => setCategoryId(selected ? selected.value : null)}
-                  isSearchable
-                  required
-                />
+                <label className="form-label">Product Category</label>
+                <Select options={categories} placeholder="Select a category" value={categories.find((category) => category.value === categoryId)} onChange={(selected) => setCategoryId(selected ? selected.value : null)} isSearchable required />
               </div>
 
-              {/* Product Image */}
               <div className="mb-3">
-                <label htmlFor="productImage" className="form-label">
-                  Product Image
-                </label>
-                <input
-                  type="file"
-                  className="form-control"
-                  id="productImage"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                />
-                {image && (
-                  <div className="mt-2">
-                    <p>Selected File: {image.name}</p>
-                  </div>
-                )}
+                <label className="form-label">Product Image</label>
+                <input type="file" className="form-control" accept="image/*" onChange={handleImageUpload} />
+                {imageBase64 && <img src={imageBase64} alt="Preview" style={{ maxWidth: "100px", maxHeight: "100px" }} />}
               </div>
 
               {/* Product Options */}
               <div className="mb-3">
                 <label className="form-label">Product Options</label>
                 <div className="d-flex gap-2 mb-2">
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Option Name"
-                    value={optionName}
-                    onChange={(e) => setOptionName(e.target.value)}
-                  />
-                  <input
-                    type="number"
-                    className="form-control"
-                    placeholder="Option Price"
-                    value={optionPrice}
-                    onChange={(e) => setOptionPrice(e.target.value)}
-                  />
-                  <button type="button" className="btn btn-primary" onClick={addProductOption}>
-                    Add
-                  </button>
+                  <input type="text" className="form-control" placeholder="Option Name" value={optionName} onChange={(e) => setOptionName(e.target.value)} />
+                  <input type="number" className="form-control" placeholder="Option Price" value={optionPrice} onChange={(e) => setOptionPrice(e.target.value)} />
+                  <input type="number" className="form-control" placeholder="Option Qty" value={optionQty} onChange={(e) => setOptionQty(e.target.value)} />
+                  <button type="button" className="btn btn-primary" onClick={addProductOption}>Add</button>
                 </div>
                 <ul className="list-group">
                   {productOptions.map((option, index) => (
                     <li key={index} className="list-group-item d-flex justify-content-between align-items-center">
-                      {option.name} - ${option.price.toFixed(2)}
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-danger"
-                        onClick={() => removeProductOption(index)}
-                      >
-                        Remove
-                      </button>
+                      {option.name} - Rs.{option.price.toFixed(2)} - Qty: {option.qty}
+                      <button type="button" className="btn btn-sm btn-danger" onClick={() => removeProductOption(index)}>Remove</button>
                     </li>
                   ))}
                 </ul>
               </div>
 
-              {/* Submit Button */}
-              <button type="submit" className="btn btn-primary" disabled={loading}>
-                {loading ? "Creating..." : "Create Product"}
-              </button>
+              <button type="submit" className="btn btn-primary" disabled={loading}>{loading ? "Creating..." : "Create Product"}</button>
             </form>
-
-            {/* Success/Error Message */}
-            {message && (
-              <div className={`alert mt-3 ${message.startsWith("Error") ? "alert-danger" : "alert-success"}`}>
-                {message}
-              </div>
-            )}
           </div>
         </div>
       </div>
-
-      {/* Right Side: Product List */}
+      {/* Right Side: Product List with Search */}
       <div className="col-xl-4">
         <div className="card">
-          <div className="card-header">
+          <div className="card-header d-flex justify-content-between align-items-center">
             <h5>All Products</h5>
+            <input type="text" className="form-control w-50" placeholder="Search Products..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
           </div>
           <div className="card-body">
             {loadingProducts ? (
               <p>Loading products...</p>
-            ) : products.length > 0 ? (
-              <div style={{ maxHeight: "400px", overflowY: "auto" }}>
-                <ul className="list-group">
-                  {products.map((product) => (
-                    <li key={product.id} className="list-group-item">
-                      {product.name} - <small>{getCategoryName(product.categoryId)}</small>
-                    </li>
-                  ))}
-                </ul>
-              </div>
             ) : (
-              <p>No products found.</p>
+              <ul className="list-group">
+                {filteredProducts.map((product) => (
+                  <li key={product.id} className="list-group-item">
+                    <strong>{product.name}</strong> - {product.description}
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
         </div>

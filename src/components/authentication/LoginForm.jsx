@@ -1,57 +1,55 @@
-import React, { useState } from 'react';
-import { FiFacebook, FiGithub, FiTwitter } from 'react-icons/fi';
-import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../../utilities/firebaseConfig";
 
 const LoginForm = ({ registerPath, resetPath }) => {
-    const [email, setEmail] = useState('serendib@gmail.com');
-    const [password, setPassword] = useState('Anubaba@123');
-    const [error, setError] = useState('');
+    const [email, setEmail] = useState("at@gmail.com");
+    const [password, setPassword] = useState("At1234");
+    const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
 
-    const navigate = useNavigate(); // Hook to navigate programmatically
+    const navigate = useNavigate();
 
     const handleLogin = async (e) => {
         e.preventDefault();
-        setError('');
+        setError("");
         setLoading(true);
-        const baseUrl = import.meta.env.VITE_BASEURL;
+
         try {
-            const response = await axios.post('https://localhost:7053/api/User/login', {
-                userName: email,
-                password,
-            });
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
 
-            // Save tokens to local storage
-            const { accessToken, refreshToken } = response.data;
-            localStorage.setItem('accessToken', accessToken);
-            localStorage.setItem('refreshToken', refreshToken);
+            // Get Firebase authentication token
+            const idToken = await user.getIdToken();
 
-            alert('Login successful!');
+            // Save user details to localStorage
+            localStorage.setItem("accessToken", idToken);
+            localStorage.setItem("userEmail", user.email);
 
-            // Navigate to the home page or another route
-            navigate('/');
+            alert("Login successful!");
+            navigate("/");
         } catch (err) {
-            setError('Failed to login. Please check your credentials.');
-            console.error(err.response?.data || err.message);
+            setError("Failed to login. Please check your credentials.");
+            console.error("Login Error:", err.message);
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <>
+        <div className="login-container">
             <h2 className="fs-20 fw-bolder mb-4">Login</h2>
             <h4 className="fs-13 fw-bold mb-2">Login to your account</h4>
             <p className="fs-12 fw-medium text-muted">
-                Thank you for getting back to <strong>Nelel</strong> web applications. Let's access our best recommendation for you.
+                Thank you for getting back to <strong>Nelel</strong> web applications. Let's access our best recommendations for you.
             </p>
             <form onSubmit={handleLogin} className="w-100 mt-4 pt-2">
                 <div className="mb-4">
                     <input
                         type="email"
                         className="form-control"
-                        placeholder="Email or Username"
+                        placeholder="Email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
@@ -68,30 +66,28 @@ const LoginForm = ({ registerPath, resetPath }) => {
                     />
                 </div>
                 <div className="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div className="custom-control custom-checkbox">
-                            <input type="checkbox" className="custom-control-input" id="rememberMe" />
-                            <label className="custom-control-label c-pointer" htmlFor="rememberMe">
-                                Remember Me
-                            </label>
-                        </div>
+                    <div className="custom-control custom-checkbox">
+                        <input type="checkbox" className="custom-control-input" id="rememberMe" />
+                        <label className="custom-control-label c-pointer" htmlFor="rememberMe">
+                            Remember Me
+                        </label>
                     </div>
                 </div>
-                <div className="mt-5">
+                <div className="mt-4">
                     <button type="submit" className="btn btn-lg btn-primary w-100" disabled={loading}>
-                        {loading ? 'Logging in...' : 'Login'}
+                        {loading ? "Logging in..." : "Login"}
                     </button>
                 </div>
                 {error && <p className="mt-3 text-danger">{error}</p>}
+                {/* <div className="text-center mt-3">
+                    <Link to={resetPath} className="text-decoration-none">Forgot Password?</Link>
+                </div>
+                <div className="text-center mt-2">
+                    <span>Don't have an account? </span>
+                    <Link to={registerPath} className="text-decoration-none">Register</Link>
+                </div> */}
             </form>
-            <div className="mt-5 text-muted">
-                <span> Don't have an account?</span>
-                <Link to={registerPath} className="fw-bold">
-                    {' '}
-                    Create an Account
-                </Link>
-            </div>
-        </>
+        </div>
     );
 };
 
