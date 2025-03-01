@@ -107,14 +107,14 @@ const StockTable = () => {
             text-align: left;
           }
           .total-column {
-            background-color:rgb(110, 255, 144) !important;
+            background-color:rgb(244, 255, 181) !important;
             color: black !important;
             font-weight: bold;
             text-align: left;
           }
           .final-total {
-            background-color:rgb(0, 187, 0) !important;
-            color: white !important;
+            background-color:rgb(98, 255, 98) !important;
+            color: black !important;
             font-weight: bold;
             text-align: left;
             padding: 12px;

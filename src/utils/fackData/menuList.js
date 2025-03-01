@@ -179,25 +179,25 @@ export const menuList = [
 
     {
         id: 5,
-        name: "customers",
+        name: "Stock",
         path: "#",
-        icon: 'feather-users',
+        icon: 'feather-file-text',
         dropdownMenu: [
             {
                 id: 1,
-                name: "Customers",
+                name: "Stocks",
                 path: "/customers/list",
                 subdropdownMenu: false
             },
             {
                 id: 2,
-                name: "Customers View",
+                name: "Stock View",
                 path: "/customers/view",
                 subdropdownMenu: false
             },
             {
                 id: 3,
-                name: "Customers Create",
+                name: "Stock Create",
                 path: "/customers/create",
                 subdropdownMenu: false
             }
@@ -230,7 +230,7 @@ export const menuList = [
         id: 7,
         name: "Sales & Payments",
         path: "#",
-        icon: 'feather-file-text',
+        icon: 'feather-users',
         dropdownMenu: [
             {
                 id: 1,
