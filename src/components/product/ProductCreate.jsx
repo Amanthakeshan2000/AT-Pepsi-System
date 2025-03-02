@@ -179,7 +179,7 @@ const ProductCreate = () => {
                 <label className="form-label">Product Options</label>
                 <div className="d-flex gap-2 mb-2">
                   <input type="text" className="form-control" placeholder="Option Name" value={optionName} onChange={(e) => setOptionName(e.target.value)} />
-                  <input type="number" className="form-control" placeholder="Option Price" value={optionPrice} onChange={(e) => setOptionPrice(e.target.value)} />
+                  <input type="number" className="form-control" placeholder="Price" value={optionPrice} onChange={(e) => setOptionPrice(e.target.value)} />
                   <input type="number" className="form-control" placeholder="Option Qty" value={optionQty} onChange={(e) => setOptionQty(e.target.value)} />
                   <button type="button" className="btn btn-primary" onClick={addProductOption}>Add</button>
                 </div>

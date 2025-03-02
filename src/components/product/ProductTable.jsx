@@ -354,7 +354,7 @@ const ProductTable = () => {
             type="number"
             value={option.price}
             onChange={(e) => handleOptionChange(index, "price", e.target.value)}
-            placeholder="Option Price"
+            placeholder="Price"
             style={{
               width: "100px",
               padding: "8px",
@@ -366,7 +366,7 @@ const ProductTable = () => {
             type="number"
             value={option.qty}
             onChange={(e) => handleOptionChange(index, "qty", e.target.value)}
-            placeholder="Option qty"
+            placeholder="qty"
             style={{
               width: "100px",
               padding: "8px",

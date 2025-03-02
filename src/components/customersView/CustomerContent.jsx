@@ -4,15 +4,18 @@ import { db } from "../../utilities/firebaseConfig";
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, serverTimestamp } from "firebase/firestore";
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
-
 const BillAdd = () => {
   const [billNo, setBillNo] = useState("");
-  const [refId, setRefId] = useState("");
-  const [route, setRoute] = useState("");
-  const [outlet, setOutlet] = useState("");
+  const [outletName, setOutletName] = useState(null); // Changed to null for react-select
+  const [address, setAddress] = useState("");
+  const [contact, setContact] = useState("");
+  const [salesRef, setSalesRef] = useState("");
+  const [refContact, setRefContact] = useState("");
+  const [createDate, setCreateDate] = useState(new Date().toISOString().split("T")[0]); // Default to current date
   const [productOptions, setProductOptions] = useState([]);
   const [products, setProducts] = useState([]);
   const [bills, setBills] = useState([]);
+  const [customers, setCustomers] = useState([]); // Added to fetch customer data
   const [loading, setLoading] = useState(false);
   const [editBill, setEditBill] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -21,6 +24,7 @@ const BillAdd = () => {
 
   const billsCollectionRef = collection(db, "Bill");
   const productsCollectionRef = collection(db, "Product");
+  const customersCollectionRef = collection(db, "Customers"); // Added for customer data
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -47,15 +51,36 @@ const BillAdd = () => {
       }
     };
 
+    const fetchCustomers = async () => {
+        try {
+          const querySnapshot = await getDocs(customersCollectionRef);
+          const customerList = querySnapshot.docs
+            .map((doc) => ({
+              id: doc.id,
+              outletName: doc.data().outletName,
+              address: doc.data().address,
+              contactNumber: doc.data().contactNumber,
+              salesRefName: doc.data().salesRefName,
+              refContactNumber: doc.data().refContactNumber,
+              status: doc.data().status, // Include status field
+            }))
+            .filter(customer => customer.status === 1); // Filter for status === 1 (Active)
+          setCustomers(customerList);
+        } catch (error) {
+          console.error("Error fetching customers:", error.message);
+        }
+      };
+
     fetchProducts();
     fetchBills();
+    fetchCustomers();
     generateBillNo(); // Ensure the Bill No is generated when the component mounts
   }, []);
 
   const generateBillNo = async () => {
     const querySnapshot = await getDocs(billsCollectionRef);
     const count = querySnapshot.size + 1; // Bill No increments by 1
-    setBillNo(`INV${count.toString().padStart(4, "0")}`);
+    setBillNo(`INV${count.toString().padStart(6, "0")}`); // Fixed template literal syntax
   };
 
   const handleDeleteBill = async (id) => {
@@ -72,9 +97,13 @@ const BillAdd = () => {
   const handleEditBill = (bill) => {
     setEditBill(bill);
     setBillNo(bill.billNo);
-    setRefId(bill.refId);
-    setRoute(bill.route);
-    setOutlet(bill.outlet);
+    const selectedCustomer = customers.find(c => c.outletName === bill.outletName);
+    setOutletName(selectedCustomer ? { value: selectedCustomer.id, label: selectedCustomer.outletName } : null);
+    setAddress(bill.address);
+    setContact(bill.contact);
+    setSalesRef(bill.salesRef);
+    setRefContact(bill.refContact);
+    setCreateDate(bill.createDate || new Date().toISOString().split("T")[0]);
     setProductOptions(bill.productOptions.map(option => ({
       ...option,
       productId: option.productId || "",
@@ -83,6 +112,24 @@ const BillAdd = () => {
       qty: option.qty || "",
       currentQty: option.currentQty || "",
     })));
+  };
+
+  const handleOutletChange = (selectedOption) => {
+    setOutletName(selectedOption);
+    if (selectedOption) {
+      const selectedCustomer = customers.find(c => c.id === selectedOption.value);
+      if (selectedCustomer) {
+        setAddress(selectedCustomer.address);
+        setContact(selectedCustomer.contactNumber);
+        setSalesRef(selectedCustomer.salesRefName);
+        setRefContact(selectedCustomer.refContactNumber);
+      }
+    } else {
+      setAddress("");
+      setContact("");
+      setSalesRef("");
+      setRefContact("");
+    }
   };
 
   const addProductOption = () => {
@@ -133,9 +180,12 @@ const BillAdd = () => {
         // Update the existing bill
         await updateDoc(doc(db, "Bill", editBill.id), {
           billNo,
-          refId,
-          route,
-          outlet,
+          outletName: outletName ? outletName.label : "",
+          address,
+          contact,
+          salesRef,
+          refContact,
+          createDate,
           productOptions,
         });
         alert("Bill updated successfully!");
@@ -144,9 +194,12 @@ const BillAdd = () => {
         // Add a new bill
         await addDoc(billsCollectionRef, {
           billNo,
-          refId,
-          route,
-          outlet,
+          outletName: outletName ? outletName.label : "",
+          address,
+          contact,
+          salesRef,
+          refContact,
+          createDate,
           productOptions,
           createdAt: serverTimestamp(),
         });
@@ -158,15 +211,16 @@ const BillAdd = () => {
       const billList = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
       setBills(billList);
 
-      // After saving, refresh the Bill No
-      generateBillNo(); 
+      // After saving, refresh the Bill No and reset form
+      generateBillNo();
       setEditBill(null);
-      setRefId("");
-      setRoute("");
-      setOutlet("");
+      setOutletName(null);
+      setAddress("");
+      setContact("");
+      setSalesRef("");
+      setRefContact("");
+      setCreateDate(new Date().toISOString().split("T")[0]);
       setProductOptions([]);
-
-
     } catch (error) {
       console.error("Error saving bill:", error.message);
     } finally {
@@ -177,18 +231,23 @@ const BillAdd = () => {
   // Reset form to create a new bill
   const handleCreateNewBill = () => {
     setEditBill(null);
-    setRefId("");
-    setRoute("");
-    setOutlet("");
+    setOutletName(null);
+    setAddress("");
+    setContact("");
+    setSalesRef("");
+    setRefContact("");
+    setCreateDate(new Date().toISOString().split("T")[0]);
     setProductOptions([]);
     generateBillNo(); // Refresh Bill No when creating a new bill
   };
 
   const filteredBills = bills.filter(bill => 
     bill.billNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    bill.refId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    bill.route.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    bill.outlet.toLowerCase().includes(searchTerm.toLowerCase())
+    bill.outletName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    bill.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    bill.contact.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    bill.salesRef.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    bill.refContact.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Pagination
@@ -214,18 +273,41 @@ const BillAdd = () => {
             <input type="text" className="form-control" value={billNo} disabled />
           </div>
           <div className="col-md-6">
-            <label>Ref ID</label>
-            <input type="text" className="form-control" value={refId} onChange={(e) => setRefId(e.target.value)} required />
+            <label>Outlet Name</label>
+            <Select
+              options={customers.map((c) => ({ value: c.id, label: c.outletName }))}
+              onChange={handleOutletChange}
+              value={outletName}
+              isSearchable
+              placeholder="Select Outlet Name"
+              styles={{ control: (base) => ({ ...base, minHeight: "38px" }) }}
+            />
           </div>
         </div>
         <div className="row mb-3">
           <div className="col-md-6">
-            <label>Route</label>
-            <input type="text" className="form-control" value={route} onChange={(e) => setRoute(e.target.value)} required />
+            <label>Address</label>
+            <input type="text" className="form-control" value={address} onChange={(e) => setAddress(e.target.value)} required />
           </div>
           <div className="col-md-6">
-            <label>Outlet</label>
-            <input type="text" className="form-control" value={outlet} onChange={(e) => setOutlet(e.target.value)} required />
+            <label>Contact</label>
+            <input type="text" className="form-control" value={contact} onChange={(e) => setContact(e.target.value)} required />
+          </div>
+        </div>
+        <div className="row mb-3">
+          <div className="col-md-6">
+            <label>Sales Ref</label>
+            <input type="text" className="form-control" value={salesRef} onChange={(e) => setSalesRef(e.target.value)} required />
+          </div>
+          <div className="col-md-6">
+            <label>Ref Contact</label>
+            <input type="text" className="form-control" value={refContact} onChange={(e) => setRefContact(e.target.value)} required />
+          </div>
+        </div>
+        <div className="row mb-3">
+          <div className="col-md-6">
+            <label>Create Date</label>
+            <input type="date" className="form-control" value={createDate} onChange={(e) => setCreateDate(e.target.value)} required />
           </div>
         </div>
         <h5>Product Options</h5>
@@ -253,7 +335,7 @@ const BillAdd = () => {
           </div>
         ))}
         <button type="button" className="btn btn-success" onClick={addProductOption}>+ Add Option</button>
-        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        <div style={{ display: "flex", justifyContent: "center" }}>
           <button 
             type="submit" 
             className="btn btn-primary mt-3" 
@@ -293,9 +375,12 @@ const BillAdd = () => {
         <thead>
           <tr>
             <th>Bill No</th>
-            <th>Ref ID</th>
-            <th>Route</th>
-            <th>Outlet</th>
+            <th>Outlet Name</th>
+            {/* <th>Address</th> */}
+            {/* <th>Contact</th> */}
+            <th>Sales Ref</th>
+            <th>Ref Contact</th>
+            <th>Create Date</th>
             <th>Product Options</th>
             <th></th>
           </tr>
@@ -304,9 +389,12 @@ const BillAdd = () => {
           {currentBills.map((bill) => (
             <tr key={bill.id}>
               <td>{bill.billNo}</td>
-              <td>{bill.refId}</td>
-              <td>{bill.route}</td>
-              <td>{bill.outlet}</td>
+              <td>{bill.outletName}</td>
+              {/* <td>{bill.address}</td> */}
+              {/* <td>{bill.contact}</td> */}
+              <td>{bill.salesRef}</td>
+              <td>{bill.refContact}</td>
+              <td>{bill.createDate}</td>
               <td>
                 <table style={{
                   width: "100%",
@@ -328,15 +416,14 @@ const BillAdd = () => {
                       <tr key={idx} style={{
                         backgroundColor: idx % 2 === 0 ? "#ffffff" : "#f1f1f1",
                       }}>
-                     <td style={{ padding: "10px", borderBottom: "1px solid #ddd" }}>
-  {
-    products.find((p) => p.id === option.productId)?.name &&
-    option.optionId
-      ? `${products.find((p) => p.id === option.productId)?.name} - ${option.optionId}`
-      : "N/A"
-  }
-</td>
-
+                        <td style={{ padding: "10px", borderBottom: "1px solid #ddd" }}>
+                          {
+                            products.find((p) => p.id === option.productId)?.name &&
+                            option.optionId
+                              ? `${products.find((p) => p.id === option.productId)?.name} - ${option.optionId}`
+                              : "N/A"
+                          }
+                        </td>
                         <td style={{ padding: "10px", borderBottom: "1px solid #ddd", fontWeight: "bold", color: "blue" }}>
                           Rs.{option.price}
                         </td>
