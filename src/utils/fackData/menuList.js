@@ -191,7 +191,7 @@ export const menuList = [
             },
             {
                 id: 2,
-                name: "Stock View",
+                name: "Bill",
                 path: "/customers/view",
                 subdropdownMenu: false
             },
