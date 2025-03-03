@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Select from "react-select";
 import { db } from "../../utilities/firebaseConfig";
-import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, serverTimestamp, query, where } from "firebase/firestore";
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
 const BillAdd = () => {
@@ -48,7 +48,11 @@ const BillAdd = () => {
     const fetchBills = async () => {
       try {
         const querySnapshot = await getDocs(billsCollectionRef);
-        const billList = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        const billList = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+          printStatus: doc.data().printStatus || false, // Default to false if not set
+        }));
         setBills(billList);
       } catch (error) {
         console.error("Error fetching bills:", error.message);
@@ -127,6 +131,151 @@ const BillAdd = () => {
 
   const handleClosePopup = () => {
     setSelectedBill(null);
+  };
+
+  const handlePrintBill = async (bill) => {
+    if (!bill.printStatus) {
+      // Update Firebase to set printStatus to true for the first print
+      try {
+        await updateDoc(doc(db, "Bill", bill.id), {
+          printStatus: true,
+        });
+        // Update local state to reflect the change
+        setBills(bills.map(b => b.id === bill.id ? { ...b, printStatus: true } : b));
+      } catch (error) {
+        console.error("Error updating print status:", error.message);
+      }
+    }
+
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Invoice - ${bill.billNo}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 5px; font-size: 10px; line-height: 1.2; }
+            .invoice-container { max-width: 700px; margin: 0 auto; border: 1px solid #333; padding: 5px; background-color: #f9f9f9; }
+            .header { text-align: center; padding: 2px; }
+            .header h1 { margin: 0; font-size: 16px; color: #4CAF50; }
+            .header p { margin: 0; font-size: 10px; }
+            .company { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+            .company-title { font-size: 12px; font-weight: bold; color:rgb(0, 0, 0); }
+            .company-pepsi { font-size: 15px; font-weight: bold; color:rgb(112, 112, 112); }
+            .details table { width: 100%; border: none; }
+            .details td { padding: 2px; vertical-align: top; }
+            .details td:first-child { width: 30%; font-weight: bold; }
+            .payment-options { display: flex; justify-content: space-around; margin: 5px 0; }
+            .payment-option { width: 33%; text-align: center; border: 1px solid #ddd; padding: 2px; }
+            .discounts { display: flex; justify-content: space-between; margin: 5px 0; }
+            .discounts div { width: 32%; border: 1px solid #ddd; padding: 2px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 5px; }
+            th, td { border: 1px solid #ddd; padding: 2px; text-align: left; font-size: 10px; }
+            th { background-color: #4CAF50; color: white; }
+            .total-section { margin-top: 5px; text-align: right; }
+            .total-section p { margin: 2px 0; font-weight: bold; }
+            .footer { text-align: center; margin-top: 5px; font-size: 8px; color: #777; }
+            .signature { border-top: 1px dashed #000; margin-top: 5px; text-align: center; font-size: 8px; }
+            @media print {
+              @page { size: A4; margin: 5mm; }
+              .no-print { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="invoice-container">
+            <div class="company">
+              
+             
+            </div>
+            <div class="header">
+              <div class="company-pepsi">- INVOICE -</div>
+              <div class="company-title">Advance Trading</div>
+             
+            </div>
+            <div class="details">
+              <table>
+                <tr><td><strong>Invoice Number</strong></td><td>${bill.billNo}</td></tr>
+                <tr><td><strong>Customer Name</strong></td><td>${bill.outletName}</td></tr>
+                <tr><td><strong>Customer Contact Number</strong></td><td>${bill.contact}</td></tr>
+                <tr><td><strong>Address</strong></td><td>${bill.address}</td></tr>
+                <tr><td><strong>Ref Name</strong></td><td>${bill.salesRef}</td></tr>
+                <tr><td><strong>Ref Contact Number</strong></td><td>${bill.refContact}</td></tr>
+                <tr><td><strong>Date</strong></td><td>${bill.createDate}</td></tr>
+              </table>
+            </div>
+            <div class="payment-options">
+              <div class="payment-option"><input type="checkbox" name="payment" value="cash"> cash</div>
+              <div class="payment-option"><input type="checkbox" name="payment" value="credit"> credit</div>
+              <div class="payment-option"><input type="checkbox" name="payment" value="cheque"> cheque</div>
+            </div>
+            <div class="discounts">
+              <div>
+                <p><strong>DISCOUNT</strong></p>
+                ${bill.discountOptions.map(option => `
+                  <p>${option.name}: ${option.case} * ${option.perCaseRate} = ${option.total}</p>
+                `).join('')}
+                <p><strong>Total</strong> ${calculateTotal(bill.discountOptions)}</p>
+              </div>
+              <div>
+                <p><strong>FREE ISSUE</strong></p>
+                ${bill.freeIssueOptions.map(option => `
+                  <p>${option.name}: ${option.case} * ${option.perCaseRate} = ${option.total}</p>
+                `).join('')}
+                <p><strong>Total</strong> ${calculateTotal(bill.freeIssueOptions)}</p>
+              </div>
+              <div>
+                <p><strong>EXPIRE</strong></p>
+                ${bill.expireOptions.map(option => `
+                  <p>${option.name}: ${option.case} * ${option.perCaseRate} = ${option.total}</p>
+                `).join('')}
+                <p><strong>Total</strong> ${calculateTotal(bill.expireOptions)}</p>
+              </div>
+            </div>
+
+            <table>
+              <thead>
+                <tr>
+                  <th>PRODUCTS</th>
+                  <th>QTY</th>
+                  <th>RATE (Rs.)</th>
+                  <th>AMOUNT (Rs.)</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${bill.productOptions.map(option => `
+                  <tr>
+                    <td>${products.find(p => p.id === option.productId)?.name || 'N/A'} - ${option.optionId}</td>
+                    <td>${option.qty} *</td>
+                    <td>${option.price}</td>
+                    <td>${((parseFloat(option.price) || 0) * (parseFloat(option.qty) || 0)).toFixed(2)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+
+            <div class="total-section">
+              <p><strong>SUBTOTAL</strong> = ${calculateProductTotal(bill.productOptions)}</p>
+              <p><strong>DISCOUNT</strong> = ${calculateTotal(bill.discountOptions)}</p>
+              <p><strong>FREE ISSUE</strong> = ${calculateTotal(bill.freeIssueOptions)}</p>
+              <p><strong>EXPIRE</strong> = ${calculateTotal(bill.expireOptions)}</p>
+              <p style="color: #e74c3c;"><strong>TOTAL</strong> = ${(
+                parseFloat(calculateProductTotal(bill.productOptions)) -
+                ((parseFloat(bill.discountOptions?.length > 0 ? calculateTotal(bill.discountOptions) : 0)) +
+                 (parseFloat(bill.freeIssueOptions?.length > 0 ? calculateTotal(bill.freeIssueOptions) : 0)) +
+                 (parseFloat(bill.expireOptions?.length > 0 ? calculateTotal(bill.expireOptions) : 0)))
+              ).toFixed(2)}</p>
+            </div>
+
+            <div class="signature">customer signature</div>
+            <div class="footer">
+              <p>Thank you!</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
   };
 
   const handleOutletChange = (selectedOption) => {
@@ -306,13 +455,18 @@ const BillAdd = () => {
           discountOptions,
           freeIssueOptions,
           expireOptions,
+          printStatus: false, // Default print status to false for new bills
           createdAt: serverTimestamp(),
         });
         alert("Bill added successfully!");
       }
 
       const querySnapshot = await getDocs(billsCollectionRef);
-      const billList = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      const billList = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+        printStatus: doc.data().printStatus || false,
+      }));
       setBills(billList);
 
       generateBillNo();
@@ -446,59 +600,58 @@ const BillAdd = () => {
         <h5>Discount Options</h5>
         <button type="button" className="btn btn-success mb-3" onClick={addDiscountOption}>+ Add Discount</button>
 
-{discountOptions.length > 0 && (
-  <>
-    <table
-      className="table table-bordered mb-3"
-      style={{ backgroundColor: "white", width: "100%" }}
-    >
-      <thead>
-        <tr>
-          <th>Option Name</th>
-          <th>Case</th>
-          <th>Per Case Rate</th>
-          <th>Total</th>
-        </tr>
-      </thead>
-      <tbody>
-        {discountOptions.map((option, index) => (
-          <tr key={index}>
-            <td>{option.name}</td>
-            <td>
-              <input
-                type="number"
-                className="form-control"
-                value={option.case}
-                onChange={(e) => handleDiscountChange(index, "case", e.target.value)}
-              />
-            </td>
-            <td>
-              <input
-                type="number"
-                className="form-control"
-                value={option.perCaseRate}
-                onChange={(e) => handleDiscountChange(index, "perCaseRate", e.target.value)}
-              />
-            </td>
-            <td>{option.total}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-    <div
-      style={{
-        textAlign: "right",
-        color: "green",
-        fontWeight: "bold",
-        padding: "10px",
-        borderRadius: "5px",
-      }}
-    >
-      Total: Rs. {calculateTotal(discountOptions)}
-    </div>
-  </>
-)}
-
+        {discountOptions.length > 0 && (
+          <>
+            <table
+              className="table table-bordered mb-3"
+              style={{ backgroundColor: "white", width: "100%" }}
+            >
+              <thead>
+                <tr>
+                  <th>Option Name</th>
+                  <th>Case</th>
+                  <th>Per Case Rate</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {discountOptions.map((option, index) => (
+                  <tr key={index}>
+                    <td>{option.name}</td>
+                    <td>
+                      <input
+                        type="number"
+                        className="form-control"
+                        value={option.case}
+                        onChange={(e) => handleDiscountChange(index, "case", e.target.value)}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        className="form-control"
+                        value={option.perCaseRate}
+                        onChange={(e) => handleDiscountChange(index, "perCaseRate", e.target.value)}
+                      />
+                    </td>
+                    <td>{option.total}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div
+              style={{
+                textAlign: "right",
+                color: "green",
+                fontWeight: "bold",
+                padding: "10px",
+                borderRadius: "5px",
+              }}
+            >
+              Total: Rs. {calculateTotal(discountOptions)}
+            </div>
+          </>
+        )}
 
         <h5>Free Issue Options</h5>
         <button type="button" className="btn btn-success mb-3" onClick={addFreeIssueOption}>+ Add Free Issue</button>
@@ -589,7 +742,7 @@ const BillAdd = () => {
             </div>
           </>
         )}
-<br /><br />
+        <br /><br />
         <div style={{ textAlign: "right", marginBottom: "20px" }}>
           {discountOptions.length > 0 && (
             <div style={{ color: "red", fontWeight: "bold" }}>
@@ -712,7 +865,13 @@ const BillAdd = () => {
                 <div className="d-flex justify-content-end align-items-center">
                   <button className="btn btn-info btn-sm me-2" onClick={() => handleViewBill(bill)}>View</button>
                   <button className="btn btn-warning btn-sm me-2" onClick={() => handleEditBill(bill)}>Edit</button>
-                  <button className="btn btn-danger btn-sm" onClick={() => handleDeleteBill(bill.id)}>Delete</button>
+                  <button className="btn btn-danger btn-sm me-2" onClick={() => handleDeleteBill(bill.id)}>Delete</button>
+                  <button 
+                    className="btn btn-success btn-sm" 
+                    onClick={() => handlePrintBill(bill)}
+                  >
+                    {bill.printStatus ? "Re-print" : "Print"}
+                  </button>
                 </div>
               </td>
             </tr>
@@ -875,17 +1034,17 @@ const BillAdd = () => {
                 </div>
                 {selectedBill.discountOptions?.length > 0 && (
                   <div style={{ color: "red", fontWeight: "bold" }}>
-                    Discount Options Total: Rs. {calculateTotal(selectedBill.discountOptions)}
+                    Discount : Rs. {calculateTotal(selectedBill.discountOptions)}
                   </div>
                 )}
                 {selectedBill.freeIssueOptions?.length > 0 && (
                   <div style={{ color: "red", fontWeight: "bold" }}>
-                    Free Issue Options Total: Rs. {calculateTotal(selectedBill.freeIssueOptions)}
+                    Free Issue : Rs. {calculateTotal(selectedBill.freeIssueOptions)}
                   </div>
                 )}
                 {selectedBill.expireOptions?.length > 0 && (
                   <div style={{ color: "red", fontWeight: "bold" }}>
-                    Expire Options Total: Rs. {calculateTotal(selectedBill.expireOptions)}
+                    Expire : Rs. {calculateTotal(selectedBill.expireOptions)}
                   </div>
                 )}
                 <div style={{ color: "blue", fontWeight: "bold", marginTop: "10px" }}>
@@ -901,7 +1060,6 @@ const BillAdd = () => {
                     Close
                   </button>
                 </div>
-
               </div>
             </div>
           </div>

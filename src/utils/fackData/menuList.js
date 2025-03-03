@@ -179,25 +179,45 @@ export const menuList = [
 
     {
         id: 5,
-        name: "Stock",
+        name: "Bill",
         path: "#",
         icon: 'feather-file-text',
+        dropdownMenu: [
+     
+            {
+                id: 1,
+                name: "Create Bill",
+                path: "/customers/view",
+                subdropdownMenu: false
+            }
+           
+        ]
+    },
+
+    {
+        id: 6,
+        name: "Stock",
+        path: "#",
+        icon: 'feather-briefcase',
         dropdownMenu: [
             {
                 id: 1,
                 name: "Stocks",
                 path: "/customers/list",
                 subdropdownMenu: false
-            },
+            }
+        ]
+    },
+    {
+        id: 7,
+        name: "Customers",
+        path: "#",
+        icon: 'feather-users',
+        dropdownMenu: [
+          
             {
-                id: 2,
-                name: "Bill",
-                path: "/customers/view",
-                subdropdownMenu: false
-            },
-            {
-                id: 3,
-                name: "Stock Create",
+                id: 1,
+                name: "Customer Create",
                 path: "/customers/create",
                 subdropdownMenu: false
             }
@@ -226,32 +246,32 @@ export const menuList = [
     //     ]
     // },
 
-    {
-        id: 7,
-        name: "Sales & Payments",
-        path: "#",
-        icon: 'feather-users',
-        dropdownMenu: [
-            {
-                id: 1,
-                name: "Invoice Create",
-                path: "/invoice/create",
-                subdropdownMenu: false
-            },
-            {
-                id: 2,
-                name: "Invoices",
-                path: "/invoice/list",
-                subdropdownMenu: false
-            },
-            {
-                id: 3,
-                name: "Customers",
-                path: "/customers/list",
-                subdropdownMenu: false
-            },
-        ]
-    },
+    // {
+    //     id: 7,
+    //     name: "Sales & Payments",
+    //     path: "#",
+    //     icon: 'feather-users',
+    //     dropdownMenu: [
+    //         {
+    //             id: 1,
+    //             name: "Invoice Create",
+    //             path: "/invoice/create",
+    //             subdropdownMenu: false
+    //         },
+    //         {
+    //             id: 2,
+    //             name: "Invoices",
+    //             path: "/invoice/list",
+    //             subdropdownMenu: false
+    //         },
+    //         {
+    //             id: 3,
+    //             name: "Customers",
+    //             path: "/customers/list",
+    //             subdropdownMenu: false
+    //         },
+    //     ]
+    // },
     
     // {
     //     id: 6,

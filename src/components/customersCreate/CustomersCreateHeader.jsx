@@ -12,17 +12,17 @@ const CustomersCreateHeader = () => {
   return (
     <>
       <div className="d-flex align-items-center gap-2 page-header-right-items-wrapper">
-        <button className="btn btn-light-brand" onClick={handleClick}>
+        {/* <button className="btn btn-light-brand" onClick={handleClick}>
           <FiLayers size={16} className="me-2" />
           <span>Save as Draft</span>
-        </button>
-        <button
+        </button> */}
+        {/* <button
           className="btn btn-primary"
           onClick={() => setIsModalOpen(true)}
         >
           <FiUserPlus size={16} className="me-2" />
           <span>Create Customer</span>
-        </button>
+        </button> */}
       </div>
 
       {/* Modal Backdrop */}
