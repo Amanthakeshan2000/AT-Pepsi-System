@@ -6,25 +6,29 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 
 const BillAdd = () => {
   const [billNo, setBillNo] = useState("");
-  const [outletName, setOutletName] = useState(null); // Changed to null for react-select
+  const [outletName, setOutletName] = useState(null);
   const [address, setAddress] = useState("");
   const [contact, setContact] = useState("");
   const [salesRef, setSalesRef] = useState("");
   const [refContact, setRefContact] = useState("");
-  const [createDate, setCreateDate] = useState(new Date().toISOString().split("T")[0]); // Default to current date
+  const [createDate, setCreateDate] = useState(new Date().toISOString().split("T")[0]);
   const [productOptions, setProductOptions] = useState([]);
+  const [discountOptions, setDiscountOptions] = useState([]);
+  const [freeIssueOptions, setFreeIssueOptions] = useState([]);
+  const [expireOptions, setExpireOptions] = useState([]);
   const [products, setProducts] = useState([]);
   const [bills, setBills] = useState([]);
-  const [customers, setCustomers] = useState([]); // Added to fetch customer data
+  const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [editBill, setEditBill] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(5);
+  const [selectedBill, setSelectedBill] = useState(null);
 
   const billsCollectionRef = collection(db, "Bill");
   const productsCollectionRef = collection(db, "Product");
-  const customersCollectionRef = collection(db, "Customers"); // Added for customer data
+  const customersCollectionRef = collection(db, "Customers");
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -52,35 +56,35 @@ const BillAdd = () => {
     };
 
     const fetchCustomers = async () => {
-        try {
-          const querySnapshot = await getDocs(customersCollectionRef);
-          const customerList = querySnapshot.docs
-            .map((doc) => ({
-              id: doc.id,
-              outletName: doc.data().outletName,
-              address: doc.data().address,
-              contactNumber: doc.data().contactNumber,
-              salesRefName: doc.data().salesRefName,
-              refContactNumber: doc.data().refContactNumber,
-              status: doc.data().status, // Include status field
-            }))
-            .filter(customer => customer.status === 1); // Filter for status === 1 (Active)
-          setCustomers(customerList);
-        } catch (error) {
-          console.error("Error fetching customers:", error.message);
-        }
-      };
+      try {
+        const querySnapshot = await getDocs(customersCollectionRef);
+        const customerList = querySnapshot.docs
+          .map((doc) => ({
+            id: doc.id,
+            outletName: doc.data().outletName,
+            address: doc.data().address,
+            contactNumber: doc.data().contactNumber,
+            salesRefName: doc.data().salesRefName,
+            refContactNumber: doc.data().refContactNumber,
+            status: doc.data().status,
+          }))
+          .filter(customer => customer.status === 1);
+        setCustomers(customerList);
+      } catch (error) {
+        console.error("Error fetching customers:", error.message);
+      }
+    };
 
     fetchProducts();
     fetchBills();
     fetchCustomers();
-    generateBillNo(); // Ensure the Bill No is generated when the component mounts
+    generateBillNo();
   }, []);
 
   const generateBillNo = async () => {
     const querySnapshot = await getDocs(billsCollectionRef);
-    const count = querySnapshot.size + 1; // Bill No increments by 1
-    setBillNo(`INV${count.toString().padStart(6, "0")}`); // Fixed template literal syntax
+    const count = querySnapshot.size + 1;
+    setBillNo(`INV${count.toString().padStart(6, "0")}`);
   };
 
   const handleDeleteBill = async (id) => {
@@ -112,6 +116,17 @@ const BillAdd = () => {
       qty: option.qty || "",
       currentQty: option.currentQty || "",
     })));
+    setDiscountOptions(bill.discountOptions || []);
+    setFreeIssueOptions(bill.freeIssueOptions || []);
+    setExpireOptions(bill.expireOptions || []);
+  };
+
+  const handleViewBill = (bill) => {
+    setSelectedBill(bill);
+  };
+
+  const handleClosePopup = () => {
+    setSelectedBill(null);
   };
 
   const handleOutletChange = (selectedOption) => {
@@ -172,12 +187,97 @@ const BillAdd = () => {
     setProductOptions(newOptions);
   };
 
+  const addDiscountOption = () => {
+    const distinctOptionIds = [...new Set(productOptions.map(option => option.optionId))];
+    const newDiscountOptions = distinctOptionIds
+      .filter(optionId => optionId)
+      .map(optionId => ({
+        name: optionId,
+        case: "",
+        perCaseRate: "",
+        total: "",
+      }));
+    setDiscountOptions(newDiscountOptions);
+  };
+
+  const handleDiscountChange = (index, field, value) => {
+    const newOptions = [...discountOptions];
+    newOptions[index][field] = value;
+    const caseVal = parseFloat(newOptions[index].case) || 0;
+    const perCaseRateVal = parseFloat(newOptions[index].perCaseRate) || 0;
+    if (caseVal && perCaseRateVal) {
+      newOptions[index].total = (caseVal * perCaseRateVal).toFixed(2);
+    } else {
+      newOptions[index].total = "";
+    }
+    setDiscountOptions(newOptions);
+  };
+
+  const addFreeIssueOption = () => {
+    const distinctOptionIds = [...new Set(productOptions.map(option => option.optionId))];
+    const newFreeIssueOptions = distinctOptionIds
+      .filter(optionId => optionId)
+      .map(optionId => ({
+        name: optionId,
+        case: "",
+        perCaseRate: "",
+        total: "",
+      }));
+    setFreeIssueOptions(newFreeIssueOptions);
+  };
+
+  const handleFreeIssueChange = (index, field, value) => {
+    const newOptions = [...freeIssueOptions];
+    newOptions[index][field] = value;
+    const caseVal = parseFloat(newOptions[index].case) || 0;
+    const perCaseRateVal = parseFloat(newOptions[index].perCaseRate) || 0;
+    if (caseVal && perCaseRateVal) {
+      newOptions[index].total = (caseVal * perCaseRateVal).toFixed(2);
+    } else {
+      newOptions[index].total = "";
+    }
+    setFreeIssueOptions(newOptions);
+  };
+
+  const addExpireOption = () => {
+    const distinctOptionIds = [...new Set(productOptions.map(option => option.optionId))];
+    const newExpireOptions = distinctOptionIds
+      .filter(optionId => optionId)
+      .map(optionId => ({
+        name: optionId,
+        case: "",
+        perCaseRate: "",
+        total: "",
+      }));
+    setExpireOptions(newExpireOptions);
+  };
+
+  const handleExpireChange = (index, field, value) => {
+    const newOptions = [...expireOptions];
+    newOptions[index][field] = value;
+    const caseVal = parseFloat(newOptions[index].case) || 0;
+    const perCaseRateVal = parseFloat(newOptions[index].perCaseRate) || 0;
+    if (caseVal && perCaseRateVal) {
+      newOptions[index].total = (caseVal * perCaseRateVal).toFixed(2);
+    } else {
+      newOptions[index].total = "";
+    }
+    setExpireOptions(newOptions);
+  };
+
+  const calculateTotal = (options) => {
+    return options.reduce((sum, option) => sum + (parseFloat(option.total) || 0), 0).toFixed(2);
+  };
+
+  const calculateProductTotal = (options) => {
+    return options.reduce((sum, option) => sum + ((parseFloat(option.price) || 0) * (parseFloat(option.qty) || 0)), 0).toFixed(2);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
       if (editBill) {
-        // Update the existing bill
         await updateDoc(doc(db, "Bill", editBill.id), {
           billNo,
           outletName: outletName ? outletName.label : "",
@@ -187,11 +287,13 @@ const BillAdd = () => {
           refContact,
           createDate,
           productOptions,
+          discountOptions,
+          freeIssueOptions,
+          expireOptions,
         });
         alert("Bill updated successfully!");
         setEditBill(null);
       } else {
-        // Add a new bill
         await addDoc(billsCollectionRef, {
           billNo,
           outletName: outletName ? outletName.label : "",
@@ -201,17 +303,18 @@ const BillAdd = () => {
           refContact,
           createDate,
           productOptions,
+          discountOptions,
+          freeIssueOptions,
+          expireOptions,
           createdAt: serverTimestamp(),
         });
         alert("Bill added successfully!");
       }
 
-      // Fetch and update the bills state after adding or updating the bill
       const querySnapshot = await getDocs(billsCollectionRef);
       const billList = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
       setBills(billList);
 
-      // After saving, refresh the Bill No and reset form
       generateBillNo();
       setEditBill(null);
       setOutletName(null);
@@ -221,6 +324,9 @@ const BillAdd = () => {
       setRefContact("");
       setCreateDate(new Date().toISOString().split("T")[0]);
       setProductOptions([]);
+      setDiscountOptions([]);
+      setFreeIssueOptions([]);
+      setExpireOptions([]);
     } catch (error) {
       console.error("Error saving bill:", error.message);
     } finally {
@@ -228,7 +334,6 @@ const BillAdd = () => {
     }
   };
 
-  // Reset form to create a new bill
   const handleCreateNewBill = () => {
     setEditBill(null);
     setOutletName(null);
@@ -238,7 +343,10 @@ const BillAdd = () => {
     setRefContact("");
     setCreateDate(new Date().toISOString().split("T")[0]);
     setProductOptions([]);
-    generateBillNo(); // Refresh Bill No when creating a new bill
+    setDiscountOptions([]);
+    setFreeIssueOptions([]);
+    setExpireOptions([]);
+    generateBillNo();
   };
 
   const filteredBills = bills.filter(bill => 
@@ -250,7 +358,6 @@ const BillAdd = () => {
     bill.refContact.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Pagination
   const indexOfLastBill = currentPage * itemsPerPage;
   const indexOfFirstBill = indexOfLastBill - itemsPerPage;
   const currentBills = filteredBills.slice(indexOfFirstBill, indexOfLastBill);
@@ -261,7 +368,6 @@ const BillAdd = () => {
     <div className="container">
       <h3>{editBill ? "Edit Bill" : "Add New Bill"}</h3>
 
-      {/* Create New Bill Button */}
       <div style={{ display: "flex", justifyContent: "flex-end" }}>
         <button className="btn btn-primary" onClick={handleCreateNewBill}>Create New Bill</button>
       </div>
@@ -310,6 +416,7 @@ const BillAdd = () => {
             <input type="date" className="form-control" value={createDate} onChange={(e) => setCreateDate(e.target.value)} required />
           </div>
         </div>
+
         <h5>Product Options</h5>
         {productOptions.map((option, index) => (
           <div key={index} className="d-flex gap-2 mb-2">
@@ -334,7 +441,173 @@ const BillAdd = () => {
             <button type="button" className="btn btn-danger" onClick={() => removeProductOption(index)}>✖</button>
           </div>
         ))}
-        <button type="button" className="btn btn-success" onClick={addProductOption}>+ Add Option</button>
+        <button type="button" className="btn btn-success mb-3" onClick={addProductOption}>+ Add Option</button>
+
+        <h5>Discount Options</h5>
+        <button type="button" className="btn btn-success mb-3" onClick={addDiscountOption}>+ Add Discount</button>
+
+{discountOptions.length > 0 && (
+  <>
+    <table
+      className="table table-bordered mb-3"
+      style={{ backgroundColor: "white", width: "100%" }}
+    >
+      <thead>
+        <tr>
+          <th>Option Name</th>
+          <th>Case</th>
+          <th>Per Case Rate</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {discountOptions.map((option, index) => (
+          <tr key={index}>
+            <td>{option.name}</td>
+            <td>
+              <input
+                type="number"
+                className="form-control"
+                value={option.case}
+                onChange={(e) => handleDiscountChange(index, "case", e.target.value)}
+              />
+            </td>
+            <td>
+              <input
+                type="number"
+                className="form-control"
+                value={option.perCaseRate}
+                onChange={(e) => handleDiscountChange(index, "perCaseRate", e.target.value)}
+              />
+            </td>
+            <td>{option.total}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+    <div
+      style={{
+        textAlign: "right",
+        color: "green",
+        fontWeight: "bold",
+        padding: "10px",
+        borderRadius: "5px",
+      }}
+    >
+      Total: Rs. {calculateTotal(discountOptions)}
+    </div>
+  </>
+)}
+
+
+        <h5>Free Issue Options</h5>
+        <button type="button" className="btn btn-success mb-3" onClick={addFreeIssueOption}>+ Add Free Issue</button>
+
+        {freeIssueOptions.length > 0 && (
+          <>
+            <table className="table table-bordered mb-3" style={{ backgroundColor: "white", width: "100%" }}>
+              <thead>
+                <tr>
+                  <th>Option Name</th>
+                  <th>Case</th>
+                  <th>Per Case Rate</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {freeIssueOptions.map((option, index) => (
+                  <tr key={index}>
+                    <td>{option.name}</td>
+                    <td>
+                      <input
+                        type="number"
+                        className="form-control"
+                        value={option.case}
+                        onChange={(e) => handleFreeIssueChange(index, "case", e.target.value)}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        className="form-control"
+                        value={option.perCaseRate}
+                        onChange={(e) => handleFreeIssueChange(index, "perCaseRate", e.target.value)}
+                      />
+                    </td>
+                    <td>{option.total}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div style={{ textAlign: "right", color: "green", fontWeight: "bold" }}>
+              Total: Rs. {calculateTotal(freeIssueOptions)}
+            </div>
+          </>
+        )}
+
+        <h5>Expire Options</h5>
+        <button type="button" className="btn btn-success mb-3" onClick={addExpireOption}>+ Add Expire</button>
+
+        {expireOptions.length > 0 && (
+          <>
+            <table className="table table-bordered mb-3" style={{ backgroundColor: "white", width: "100%" }}>
+              <thead>
+                <tr>
+                  <th>Option Name</th>
+                  <th>Case</th>
+                  <th>Per Case Rate</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {expireOptions.map((option, index) => (
+                  <tr key={index}>
+                    <td>{option.name}</td>
+                    <td>
+                      <input
+                        type="number"
+                        className="form-control"
+                        value={option.case}
+                        onChange={(e) => handleExpireChange(index, "case", e.target.value)}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        className="form-control"
+                        value={option.perCaseRate}
+                        onChange={(e) => handleExpireChange(index, "perCaseRate", e.target.value)}
+                      />
+                    </td>
+                    <td>{option.total}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div style={{ textAlign: "right", color: "green", fontWeight: "bold" }}>
+              Total: Rs. {calculateTotal(expireOptions)}
+            </div>
+          </>
+        )}
+<br /><br />
+        <div style={{ textAlign: "right", marginBottom: "20px" }}>
+          {discountOptions.length > 0 && (
+            <div style={{ color: "red", fontWeight: "bold" }}>
+              Discount Total: Rs. {calculateTotal(discountOptions)}
+            </div>
+          )}
+          {freeIssueOptions.length > 0 && (
+            <div style={{ color: "red", fontWeight: "bold" }}>
+              Free Issue Total: Rs. {calculateTotal(freeIssueOptions)}
+            </div>
+          )}
+          {expireOptions.length > 0 && (
+            <div style={{ color: "red", fontWeight: "bold" }}>
+              Expire Total: Rs. {calculateTotal(expireOptions)}
+            </div>
+          )}
+        </div>
+
         <div style={{ display: "flex", justifyContent: "center" }}>
           <button 
             type="submit" 
@@ -346,7 +619,6 @@ const BillAdd = () => {
         </div>
       </form>
 
-      {/* Bill List Table */}
       <h3 className="mt-4">Bills</h3>
       <div className="mt-4" style={{ display: "flex", justifyContent: "flex-end" }}>
         <div style={{ position: "relative", width: "400px" }}>
@@ -356,10 +628,10 @@ const BillAdd = () => {
             placeholder="Search bills..." 
             value={searchTerm} 
             onChange={(e) => setSearchTerm(e.target.value)} 
-            style={{ paddingLeft: "40px", width: "100%" }} // Padding for icon space
+            style={{ paddingLeft: "40px", width: "100%" }}
           />
           <i
-            className="bi bi-search" // Bootstrap search icon
+            className="bi bi-search"
             style={{
               position: "absolute",
               left: "10px",
@@ -376,8 +648,6 @@ const BillAdd = () => {
           <tr>
             <th>Bill No</th>
             <th>Outlet Name</th>
-            {/* <th>Address</th> */}
-            {/* <th>Contact</th> */}
             <th>Sales Ref</th>
             <th>Ref Contact</th>
             <th>Create Date</th>
@@ -390,8 +660,6 @@ const BillAdd = () => {
             <tr key={bill.id}>
               <td>{bill.billNo}</td>
               <td>{bill.outletName}</td>
-              {/* <td>{bill.address}</td> */}
-              {/* <td>{bill.contact}</td> */}
               <td>{bill.salesRef}</td>
               <td>{bill.refContact}</td>
               <td>{bill.createDate}</td>
@@ -442,6 +710,7 @@ const BillAdd = () => {
               </td>
               <td className="text-end">
                 <div className="d-flex justify-content-end align-items-center">
+                  <button className="btn btn-info btn-sm me-2" onClick={() => handleViewBill(bill)}>View</button>
                   <button className="btn btn-warning btn-sm me-2" onClick={() => handleEditBill(bill)}>Edit</button>
                   <button className="btn btn-danger btn-sm" onClick={() => handleDeleteBill(bill.id)}>Delete</button>
                 </div>
@@ -451,7 +720,6 @@ const BillAdd = () => {
         </tbody>
       </table>
 
-      {/* Pagination */}
       <div className="d-flex justify-content-center">
         <nav>
           <ul className="pagination">
@@ -463,6 +731,182 @@ const BillAdd = () => {
           </ul>
         </nav>
       </div>
+
+      {/* Popup Modal for View Bill */}
+      {selectedBill && (
+        <div className="modal" style={{ display: "block", position: "fixed", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <div className="modal-content" style={{ backgroundColor: "#fff", margin: "5% auto", padding: "20px", width: "80%", maxWidth: "800px", borderRadius: "8px", maxHeight: "80vh", overflowY: "auto" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "2px solid #ddd", paddingBottom: "10px" }}>
+              <h4>Bill Details - {selectedBill.billNo}</h4>
+              <button className="btn btn-danger" onClick={handleClosePopup}>Close</button>
+            </div>
+            <div style={{ marginTop: "20px" }}>
+              <div className="row">
+                <div className="col-md-6">
+                  <p><strong>Outlet Name:</strong> {selectedBill.outletName}</p>
+                  <p><strong>Address:</strong> {selectedBill.address}</p>
+                  <p><strong>Contact:</strong> {selectedBill.contact}</p>
+                </div>
+                <div className="col-md-6">
+                  <p><strong>Sales Ref:</strong> {selectedBill.salesRef}</p>
+                  <p><strong>Ref Contact:</strong> {selectedBill.refContact}</p>
+                  <p><strong>Create Date:</strong> {selectedBill.createDate}</p>
+                </div>
+              </div>
+
+              <h5>Product Options</h5>
+              <table className="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Price (Rs.)</th>
+                    <th>Quantity</th>
+                    <th>Total Price (Rs.)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedBill.productOptions.map((option, idx) => (
+                    <tr key={idx}>
+                      <td>{products.find(p => p.id === option.productId)?.name} - {option.optionId}</td>
+                      <td>Rs. {option.price}</td>
+                      <td>{option.qty}</td>
+                      <td>Rs. {((parseFloat(option.price) || 0) * (parseFloat(option.qty) || 0)).toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colSpan="3" style={{ textAlign: "right", fontWeight: "bold" }}>Total:</td>
+                    <td>Rs. {calculateProductTotal(selectedBill.productOptions)}</td>
+                  </tr>
+                </tfoot>
+              </table>
+
+              {selectedBill.discountOptions?.length > 0 && (
+                <>
+                  <h5>Discount Options</h5>
+                  <table className="table table-bordered">
+                    <thead>
+                      <tr>
+                        <th>Option Name</th>
+                        <th>Case</th>
+                        <th>Per Case Rate</th>
+                        <th>Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedBill.discountOptions.map((option, idx) => (
+                        <tr key={idx}>
+                          <td>{option.name}</td>
+                          <td>{option.case}</td>
+                          <td>{option.perCaseRate}</td>
+                          <td>{option.total}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <div style={{ textAlign: "right", color: "green", fontWeight: "bold" }}>
+                    Total: Rs. {calculateTotal(selectedBill.discountOptions)}
+                  </div>
+                </>
+              )}
+
+              {selectedBill.freeIssueOptions?.length > 0 && (
+                <>
+                  <h5>Free Issue Options</h5>
+                  <table className="table table-bordered">
+                    <thead>
+                      <tr>
+                        <th>Option Name</th>
+                        <th>Case</th>
+                        <th>Per Case Rate</th>
+                        <th>Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedBill.freeIssueOptions.map((option, idx) => (
+                        <tr key={idx}>
+                          <td>{option.name}</td>
+                          <td>{option.case}</td>
+                          <td>{option.perCaseRate}</td>
+                          <td>{option.total}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <div style={{ textAlign: "right", color: "green", fontWeight: "bold" }}>
+                    Total: Rs. {calculateTotal(selectedBill.freeIssueOptions)}
+                  </div>
+                </>
+              )}
+
+              {selectedBill.expireOptions?.length > 0 && (
+                <>
+                  <h5>Expire Options</h5>
+                  <table className="table table-bordered">
+                    <thead>
+                      <tr>
+                        <th>Option Name</th>
+                        <th>Case</th>
+                        <th>Per Case Rate</th>
+                        <th>Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedBill.expireOptions.map((option, idx) => (
+                        <tr key={idx}>
+                          <td>{option.name}</td>
+                          <td>{option.case}</td>
+                          <td>{option.perCaseRate}</td>
+                          <td>{option.total}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <div style={{ textAlign: "right", color: "green", fontWeight: "bold" }}>
+                    Total: Rs. {calculateTotal(selectedBill.expireOptions)}
+                  </div>
+                </>
+              )}
+
+              <div style={{ textAlign: "right", marginTop: "20px" }}>
+                <div style={{ color: "red", fontWeight: "bold" }}>
+                  Product Options Total: Rs. {calculateProductTotal(selectedBill.productOptions)}
+                </div>
+                {selectedBill.discountOptions?.length > 0 && (
+                  <div style={{ color: "red", fontWeight: "bold" }}>
+                    Discount Options Total: Rs. {calculateTotal(selectedBill.discountOptions)}
+                  </div>
+                )}
+                {selectedBill.freeIssueOptions?.length > 0 && (
+                  <div style={{ color: "red", fontWeight: "bold" }}>
+                    Free Issue Options Total: Rs. {calculateTotal(selectedBill.freeIssueOptions)}
+                  </div>
+                )}
+                {selectedBill.expireOptions?.length > 0 && (
+                  <div style={{ color: "red", fontWeight: "bold" }}>
+                    Expire Options Total: Rs. {calculateTotal(selectedBill.expireOptions)}
+                  </div>
+                )}
+                <div style={{ color: "blue", fontWeight: "bold", marginTop: "10px" }}>
+                  Final Total: Rs. {(
+                    parseFloat(calculateProductTotal(selectedBill.productOptions)) -
+                    ((parseFloat(selectedBill.discountOptions?.length > 0 ? calculateTotal(selectedBill.discountOptions) : 0)) +
+                     (parseFloat(selectedBill.freeIssueOptions?.length > 0 ? calculateTotal(selectedBill.freeIssueOptions) : 0)) +
+                     (parseFloat(selectedBill.expireOptions?.length > 0 ? calculateTotal(selectedBill.expireOptions) : 0)))
+                  ).toFixed(2)}
+                </div>
+                <div style={{ display: "flex", justifyContent: "center", marginTop: "10px" }}>
+                  <button className="btn btn-danger" onClick={handleClosePopup}>
+                    Close
+                  </button>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
