@@ -1,0 +1,22 @@
+/*
+<--!----------------------------------------------------------------!-->
+<--! Analytics !-->
+<--!----------------------------------------------------------------!-->
+*/
+
+
+.goal-card {
+  .CircularProgressbar {
+    width: 80px;
+    &-trail {
+      stroke: #e9ecef;
+      stroke-width: 5px;
+    }
+    &-text {
+      fill: #283c50;
+      color: #283c50;
+      font-size: 13px;
+      font-weight: 600
+    }
+  }
+}

@@ -1,0 +1,42 @@
+/*
+<--!----------------------------------------------------------------!-->
+<--! countdown SCSS Start !-->
+<--!----------------------------------------------------------------!-->
+*/
+.countdown-container {
+    display: flex;
+    // justify-content: space-between;
+    gap: 5px;
+
+    .countdown {
+        border: 1px solid var(--bs-border-color);
+        display: flex;
+
+        span {
+            width: 25px;
+            height: 30px;
+            display: flex;
+            justify-content: center;
+            color: #023047;
+            font-size: 20px;
+            font-weight: 700;
+            position: relative;
+
+            &:first-child::after {
+                content: "";
+                position: absolute;
+                right: 0;
+                top: 0;
+                border-right: 1px solid var(--bs-border-color);
+                width: 1px;
+                height: 100%;
+            }
+        }
+    }
+
+    .seprator {
+        font-size: 20px;
+        font-weight: 700;
+        color: #023047;
+    }
+}

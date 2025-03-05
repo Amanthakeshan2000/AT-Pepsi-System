@@ -1,0 +1,365 @@
+/*
+<--!----------------------------------------------------------------!-->
+<--! Calendar !-->
+<--!----------------------------------------------------------------!-->
+*/
+.nxl-container {
+	&.apps-calendar {
+		.nxl-content {
+			.main-content {
+				.content-sidebar {
+
+					// display: none;
+					.filter-item {
+						padding: 10px 0;
+
+						label {
+							color: rgb(40, 60, 80);
+							font-weight: 600;
+							font-size: 13.44px;
+							display: inline-block;
+							padding-left: 3px;
+						}
+					}
+
+					[data-category="Office"] {
+						.custom-control-input:checked~.custom-control-label::before {
+							border-color: #5485e4;
+							background-color: #5485e4;
+						}
+					}
+
+					[data-category="Family"] {
+						.custom-control-input:checked~.custom-control-label::before {
+							border-color: rgb(37, 184, 101);
+							background-color: rgb(37, 184, 101);
+						}
+					}
+
+					[data-category="Friend"] {
+						.custom-control-input:checked~.custom-control-label::before {
+							border-color: rgb(209, 59, 76);
+							background-color: rgb(209, 59, 76);
+						}
+					}
+
+					[data-category="Travel"] {
+						.custom-control-input:checked~.custom-control-label::before {
+							border-color: rgb(23, 162, 184);
+							background-color: rgb(23, 162, 184);
+						}
+					}
+
+					[data-category="Private"] {
+						.custom-control-input:checked~.custom-control-label::before {
+							border-color: rgb(228, 158, 61);
+							background-color: rgb(228, 158, 61);
+						}
+					}
+
+					[data-category="Holidays"] {
+						.custom-control-input:checked~.custom-control-label::before {
+							border-color: rgb(88, 86, 214);
+							background-color: rgb(88, 86, 214);
+						}
+					}
+
+					[data-category="Company"] {
+						.custom-control-input:checked~.custom-control-label::before {
+							border-color: rgb(61, 199, 190);
+							background-color: rgb(61, 199, 190);
+						}
+					}
+
+					[data-category="Birthdays"] {
+						.custom-control-input:checked~.custom-control-label::before {
+							border-color: rgb(71, 94, 119);
+							background-color: rgb(71, 94, 119);
+						}
+					}
+
+					.lnb-calendars>div {
+						padding: 25px 30px;
+						border-bottom: 1px solid #e5e7eb;
+					}
+
+					.lnb-calendars-item {
+						cursor: pointer;
+						padding: 10px 0;
+					}
+				}
+
+				.react-full-calender {
+					.renderRange {
+						color: #283c50;
+						font-size: 16px;
+						font-weight: 700;
+						margin-right: 10px;
+					}
+
+					.calendar-action-btn {
+
+						.menu-navi>.move-today,
+						.calendar-dropdown-btn {
+							color: $dark;
+							padding: 12px 15px;
+							line-height: normal;
+							font-size: $font-11;
+							font-weight: $font-700;
+							border-radius: $radius-xs;
+							border: 1px solid $border-color;
+							text-transform: $font-uppercase;
+							background-color: transparent;
+							display: flex;
+							align-items: center;
+							justify-content: center;
+						}
+					}
+				}
+
+
+				.fc-view-harness {
+					background-color: $white;
+					min-height: 100vh;
+
+					.fc-scrollgrid {
+						border: none;
+
+						.fc-col-header-cell {
+							border: none;
+
+							&.fc-day-sun {
+								.fc-col-header-cell-cushion {
+									color: #d13b4c;
+								}
+							}
+
+							&-cushion {
+								display: flex;
+								align-items: center;
+								padding: 6px 10px;
+								color: rgb(71, 94, 119);
+								font-weight: 700;
+								font-size: 12px;
+							}
+						}
+
+						tbody {
+							tr {
+								td {
+									border: 1px solid $border-color;
+									// border-bottom: 1px solid $border-color;
+								}
+							}
+						}
+
+						.fc-daygrid-day {
+							.fc-scrollgrid-sync-inner {
+								padding: 3px;
+
+								.fc-h-event {
+									border: none;
+									background-color: transparent;
+								}
+
+								.fc-event-start {
+									text-overflow: ellipsis;
+									white-space: nowrap;
+									overflow: hidden;
+									width: 100%;
+								}
+
+								.event-title-name {
+									padding: 5px 5px;
+									border-radius: 0px;
+									display: inline-flex;
+									align-items: center;
+									gap: 3px;
+									width: 100%;
+									text-overflow: ellipsis;
+									white-space: nowrap;
+									overflow: hidden;
+									width: 100%;
+								}
+							}
+						}
+
+						.fc-daygrid-day.fc-day-today {
+							background-color: transparent;
+
+							.fc-daygrid-day-top {
+
+								a {
+									background-color: $primary;
+									color: $white;
+									border-radius: 100%;
+									width: 27px;
+									height: 27px;
+									display: flex;
+									justify-content: center;
+									align-items: center;
+								}
+							}
+						}
+
+						.fc-day-sun {
+							color: #d13b4c;
+						}
+
+						.fc-daygrid-day-top {
+							justify-content: start;
+
+							a {
+								font-size: 12px;
+								font-weight: 600;
+								font-family: "Maven Pro", sans-serif;
+							}
+						}
+					}
+
+					.fc-v-event {
+						background-color: transparent;
+						border: none;
+					}
+				}
+			}
+
+			.calender-event-modal-container {
+				position: fixed;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 100%;
+				background-color: rgba(0, 0, 0, 0.1);
+				z-index: 19999;
+
+				.calender-event-modal {
+					position: absolute;
+					top: 50%;
+					left: 50%;
+					transform: translate(-50%, -50%);
+					background-color: $white;
+					padding: 20px;
+					box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+					z-index: 1000;
+					max-width: 500px;
+					min-width: 350px;
+
+					&-close {
+						position: absolute;
+						right: 12px;
+						top: 5px;
+						cursor: pointer;
+					}
+
+
+					.modal-top-arrow {
+						position: absolute;
+						border-top: none;
+						border-right: 7px solid transparent;
+						border-bottom: 7px solid rgb(211, 83, 83);
+						border-left: 7px solid transparent;
+						left: 50%;
+						transform: translateX(-50%);
+						top: -6px;
+					}
+
+					.modal-buttons {
+						display: flex;
+						justify-content: space-between;
+						gap: 20px;
+					}
+
+
+
+					/* event create modal filed */
+					.form-control {
+						border: none;
+						padding-left: 0;
+						padding-right: 0px;
+					}
+
+					.input-container {}
+
+					textarea {
+						// padding: 15px 55px;
+						max-height: 150px;
+						height: 120px;
+					}
+
+					.input-group {
+						display: flex;
+						align-items: center;
+						gap: 10px;
+
+						.rdt-calender {
+							flex: 1;
+						}
+					}
+
+					.edit-delete-modal {
+						max-width: 350px;
+
+						&-title {
+							font-size: 15px;
+							font-weight: 700;
+							// line-height: 1.6;
+							word-break: break-all;
+							margin-bottom: 0;
+						}
+
+						&-details {
+							margin-top: 10px;
+						}
+
+						&-location,
+						&-category,
+						&-posotion {
+							display: flex;
+							align-items: center;
+							gap: 8px;
+							margin-top: 10px;
+						}
+
+						&-category {
+							span {
+								width: 8px;
+								height: 8px;
+								background-color: #d13b4c;
+								border-radius: 100%;
+								display: block;
+								margin-right: 6px;
+							}
+						}
+
+						// &-posotion{
+						// 	@extend &-location
+						// }
+
+						small {
+							color: #789;
+							font-weight: 500;
+							align-items: center;
+							text-transform: uppercase;
+							height: auto;
+							font-size: 10px;
+							display: block;
+
+						}
+
+						button {}
+					}
+
+				}
+
+				@media(min-width:768px) {
+					.calender-event-modal {
+						min-width: 500px;
+					}
+				}
+			}
+
+
+		}
+	}
+}

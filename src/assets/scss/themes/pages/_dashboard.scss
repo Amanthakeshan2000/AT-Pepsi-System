@@ -1,0 +1,107 @@
+/*
+<--!----------------------------------------------------------------!-->
+<--! Dashboard !-->
+<--!----------------------------------------------------------------!-->
+*/
+#leads-overview-donut {
+	.apexcharts-canvas {
+		margin: auto;
+	}
+}
+
+.leads-overview {
+	.circle-1 {
+		background-color: #3454d1;
+	}
+
+	.circle-2 {
+		background-color: #0d519e;
+	}
+
+	.circle-3 {
+		background-color: #1976d2;
+	}
+
+	.circle-4 {
+		background-color: #1e88e5;
+	}
+
+	.circle-5 {
+		background-color: #2196f3;
+	}
+
+	.circle-6 {
+		background-color: #42a5f5;
+	}
+
+	.circle-7 {
+		background-color: #64b5f6;
+	}
+
+	.circle-8 {
+		background-color: #90caf9;
+	}
+
+	.circle-9 {
+		background-color: #aad6fa;
+	}
+
+}
+
+.schedule-card,
+.team-card {
+	margin-bottom: 16px;
+}
+
+.schedule-card:last-child {
+	margin-bottom: 8px;
+}
+
+.team-card:last-child {
+	margin-bottom: 0px;
+}
+
+
+
+.project-status {
+	.border-dashed:first-child {
+		display: none;
+	}
+
+	.hrozintioal-card:not(:last-child) {
+		margin-bottom: 24px;
+		padding-bottom: 4px;
+	}
+}
+
+.task-overview-card {
+	.progress-1 {
+		color: var(--bs-primary)
+	}
+
+	.progress-2 {
+		color: var(--bs-success)
+	}
+
+	.progress-3 {
+		color: var(--bs-danger)
+	}
+}
+
+.team-card {
+	.CircularProgressbar {
+		width: 50px;
+	}
+
+	.CircularProgressbar-trail {
+		stroke: #e9ecef;
+		stroke-width: 3px;
+	}
+
+	.CircularProgressbar-text {
+		fill: #283c50;
+		color: #283c50;
+		font-size: 22px;
+		font-weight: 700
+	}
+}

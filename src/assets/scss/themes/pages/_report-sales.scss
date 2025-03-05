@@ -1,0 +1,149 @@
+/*
+<--!----------------------------------------------------------------!-->
+<--! Sales Report !-->
+<--!----------------------------------------------------------------!-->
+*/
+.nxl-container {
+	.nxl-content {
+		.main-content {
+			.sales-pipeline-tabs {
+				.nav-item {
+					.nav-link {
+						padding: 15px 30px;
+						color: $brand-dark;
+						background-color: $white;
+						border-radius: $radius-sm;
+						border: 1px dashed $border-color-2;
+
+						&.active {
+							color: $black;
+							border: 1px dashed $gray-500;
+						}
+					}
+				}
+			}
+
+			.upcoming-event-report-lead {
+				.list-group-item {
+					padding-top: 25px;
+					padding-bottom: 26px;
+				}
+			}
+		}
+	}
+}
+
+.revenue-progress {
+	.CircularProgressbar {
+		width: 225px;
+		height: 225px;
+		// margin-top: 10px;
+
+		&-path {
+			stroke-width: 5px;
+			stroke: $primary;
+		}
+
+		&-trail {
+			stroke: $white;
+			stroke-width: 15px;
+			fill: $bg-soft-primary;
+		}
+
+		&-background {
+			fill: #f0f2fc;
+		}
+
+		&-text {
+			fill: $brand-dark;
+			font-size: $font-13;
+			font-weight: $font-700;
+		}
+	}
+}
+
+.revenue-progress-2 {
+	.CircularProgressbar{
+		width: 195px;
+		height: 195px;
+		&-trail {
+			stroke: $white;
+			stroke-width: 10px;
+			fill: $bg-soft-primary;
+		}
+	}
+}
+
+.sales-progress-1,
+.sales-progress-2,
+.sales-progress-3,
+.sales-progress-0 {
+	.CircularProgressbar {
+		width: 100px;
+		height: 100px;
+
+		&-path {
+			stroke-width: 6px;
+		}
+
+		&-trail {
+			stroke: #e3e7f9;
+			stroke-width: 3px;
+		}
+
+		&-text {
+			fill: $brand-dark;
+			font-size: $font-13;
+			font-weight: $font-700;
+		}
+	}
+}
+
+.sales-progress-0 {
+	.CircularProgressbar-path {
+		stroke: $primary;
+	}
+}
+
+.sales-progress-1 {
+	.CircularProgressbar-path {
+		stroke: $success ;
+	}
+
+	.CircularProgressbar-trail {
+		stroke: #caf9df;
+	}
+}
+
+.sales-progress-2 {
+	.CircularProgressbar-path {
+		stroke: $warning ;
+	}
+
+	.CircularProgressbar-trail {
+		stroke: #ffebd0;
+	}
+}
+
+.sales-progress-3 {
+	.CircularProgressbar-path {
+		stroke: $danger ;
+	}
+
+	.CircularProgressbar-trail {
+		stroke: #fdeded;
+	}
+}
+
+.leads-inquiry-channel {
+	.apexcharts-legend-marker {
+		display: flex;
+		align-items: center;
+
+		svg {
+			width: 10px;
+			height: 10px;
+			border-radius: 50%;
+		}
+	}
+}
