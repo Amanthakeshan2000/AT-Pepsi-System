@@ -1062,7 +1062,7 @@ const BillAdd = () => {
                     className="btn btn-success btn-sm" 
                     onClick={() => handlePrintBill(bill)}
                   >
-                    ${bill.printStatus ? "Re-print" : "Print"}
+                    {bill.printStatus ? "Re-print" : "Print"}
                   </button>
                 </div>
               </td>
@@ -1074,9 +1074,9 @@ const BillAdd = () => {
       <div className="d-flex justify-content-center">
         <nav>
           <ul className="pagination">
-            ${Array.from({ length: Math.ceil(filteredBills.length / itemsPerPage) }, (_, index) => (
+            {Array.from({ length: Math.ceil(filteredBills.length / itemsPerPage) }, (_, index) => (
               <li key={index} className={`page-item ${currentPage === index + 1 ? "active" : ""}`}>
-                <button className="page-link" onClick={() => paginate(index + 1)}>${index + 1}</button>
+                <button className="page-link" onClick={() => paginate(index + 1)}>{index + 1}</button>
               </li>
             ))}
           </ul>
@@ -1088,20 +1088,20 @@ const BillAdd = () => {
         <div className="modal" style={{ display: "block", position: "fixed", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.5)" }}>
           <div className="modal-content" style={{ backgroundColor: "#fff", margin: "5% auto", padding: "20px", width: "80%", maxWidth: "800px", borderRadius: "8px", maxHeight: "80vh", overflowY: "auto" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "2px solid #ddd", paddingBottom: "10px" }}>
-              <h4>Bill Details - ${selectedBill.billNo}</h4>
+              <h4>Bill Details - {selectedBill.billNo}</h4>
               <button className="btn btn-danger" onClick={handleClosePopup}>Close</button>
             </div>
             <div style={{ marginTop: "20px" }}>
               <div className="row">
                 <div className="col-md-6">
-                  <p><strong>Outlet Name:</strong> ${selectedBill.outletName}</p>
-                  <p><strong>Address:</strong> ${selectedBill.address}</p>
-                  <p><strong>Contact:</strong> ${selectedBill.contact}</p>
+                  <p><strong>Outlet Name:</strong> {selectedBill.outletName}</p>
+                  <p><strong>Address:</strong> {selectedBill.address}</p>
+                  <p><strong>Contact:</strong> {selectedBill.contact}</p>
                 </div>
                 <div className="col-md-6">
-                  <p><strong>Sales Ref:</strong> ${selectedBill.salesRef}</p>
-                  <p><strong>Ref Contact:</strong> ${selectedBill.refContact}</p>
-                  <p><strong>Create Date:</strong> ${selectedBill.createDate}</p>
+                  <p><strong>Sales Ref:</strong> {selectedBill.salesRef}</p>
+                  <p><strong>Ref Contact:</strong> {selectedBill.refContact}</p>
+                  <p><strong>Create Date:</strong> {selectedBill.createDate}</p>
                 </div>
               </div>
 
@@ -1116,24 +1116,24 @@ const BillAdd = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  ${selectedBill.productOptions.map((option, idx) => (
+                  {selectedBill.productOptions.map((option, idx) => (
                     <tr key={idx}>
-                      <td>${products.find(p => p.id === option.productId)?.name} - ${option.optionId}</td>
-                      <td>Rs. ${option.price}</td>
-                      <td>${option.qty}</td>
-                      <td>Rs. ${((parseFloat(option.price) || 0) * (parseFloat(option.qty) || 0)).toFixed(2)}</td>
+                      <td>{products.find(p => p.id === option.productId)?.name} - {option.optionId}</td>
+                      <td>Rs. {option.price}</td>
+                      <td>{option.qty}</td>
+                      <td>Rs. {((parseFloat(option.price) || 0) * (parseFloat(option.qty) || 0)).toFixed(2)}</td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot>
                   <tr>
                     <td colSpan="3" style={{ textAlign: "right", fontWeight: "bold" }}>Total:</td>
-                    <td>Rs. ${calculateProductTotal(selectedBill.productOptions)}</td>
+                    <td>Rs. {calculateProductTotal(selectedBill.productOptions)}</td>
                   </tr>
                 </tfoot>
               </table>
 
-              ${selectedBill.discountOptions?.length > 0 && (
+              {selectedBill.discountOptions?.length > 0 && (
                 <>
                   <h5>Discount Options</h5>
                   <table className="table table-bordered">
@@ -1146,23 +1146,23 @@ const BillAdd = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      ${selectedBill.discountOptions.map((option, idx) => (
+                      {selectedBill.discountOptions.map((option, idx) => (
                         <tr key={idx}>
-                          <td>${option.name}</td>
-                          <td>${option.case}</td>
-                          <td>${option.perCaseRate}</td>
-                          <td>${option.total}</td>
+                          <td>{option.name}</td>
+                          <td>{option.case}</td>
+                          <td>{option.perCaseRate}</td>
+                          <td>{option.total}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                   <div style={{ textAlign: "right", color: "green", fontWeight: "bold" }}>
-                    Total: Rs. ${calculateTotal(selectedBill.discountOptions)}
+                    Total: Rs. {calculateTotal(selectedBill.discountOptions)}
                   </div>
                 </>
               )}
 
-              ${selectedBill.freeIssueOptions?.length > 0 && (
+              {selectedBill.freeIssueOptions?.length > 0 && (
                 <>
                   <h5>Free Issue Options</h5>
                   <table className="table table-bordered">
@@ -1175,23 +1175,23 @@ const BillAdd = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      ${selectedBill.freeIssueOptions.map((option, idx) => (
+                      {selectedBill.freeIssueOptions.map((option, idx) => (
                         <tr key={idx}>
-                          <td>${option.name}</td>
-                          <td>${option.case}</td>
-                          <td>${option.perCaseRate}</td>
-                          <td>${option.total}</td>
+                          <td>{option.name}</td>
+                          <td>{option.case}</td>
+                          <td>{option.perCaseRate}</td>
+                          <td>{option.total}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                   <div style={{ textAlign: "right", color: "green", fontWeight: "bold" }}>
-                    Total: Rs. ${calculateTotal(selectedBill.freeIssueOptions)}
+                    Total: Rs. {calculateTotal(selectedBill.freeIssueOptions)}
                   </div>
                 </>
               )}
 
-              ${selectedBill.expireOptions?.length > 0 && (
+              {selectedBill.expireOptions?.length > 0 && (
                 <>
                   <h5>Expire Options</h5>
                   <table className="table table-bordered">
@@ -1204,43 +1204,43 @@ const BillAdd = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      ${selectedBill.expireOptions.map((option, idx) => (
+                      {selectedBill.expireOptions.map((option, idx) => (
                         <tr key={idx}>
-                          <td>${option.name}</td>
-                          <td>${option.case}</td>
-                          <td>${option.perCaseRate}</td>
-                          <td>${option.total}</td>
+                          <td>{option.name}</td>
+                          <td>{option.case}</td>
+                          <td>{option.perCaseRate}</td>
+                          <td>{option.total}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                   <div style={{ textAlign: "right", color: "green", fontWeight: "bold" }}>
-                    Total: Rs. ${calculateTotal(selectedBill.expireOptions)}
+                    Total: Rs. {calculateTotal(selectedBill.expireOptions)}
                   </div>
                 </>
               )}
 
               <div style={{ textAlign: "right", marginTop: "20px" }}>
                 <div style={{ color: "red", fontWeight: "bold" }}>
-                  Product Options Total: Rs. ${calculateProductTotal(selectedBill.productOptions)}
+                  Product Options Total: Rs. {calculateProductTotal(selectedBill.productOptions)}
                 </div>
-                ${selectedBill.discountOptions?.length > 0 && (
+                {selectedBill.discountOptions?.length > 0 && (
                   <div style={{ color: "red", fontWeight: "bold" }}>
-                    Discount : Rs. ${calculateTotal(selectedBill.discountOptions)}
+                    Discount : Rs. {calculateTotal(selectedBill.discountOptions)}
                   </div>
                 )}
-                ${selectedBill.freeIssueOptions?.length > 0 && (
+                {selectedBill.freeIssueOptions?.length > 0 && (
                   <div style={{ color: "red", fontWeight: "bold" }}>
-                    Free Issue : Rs. ${calculateTotal(selectedBill.freeIssueOptions)}
+                    Free Issue : Rs. {calculateTotal(selectedBill.freeIssueOptions)}
                   </div>
                 )}
-                ${selectedBill.expireOptions?.length > 0 && (
+                {selectedBill.expireOptions?.length > 0 && (
                   <div style={{ color: "red", fontWeight: "bold" }}>
-                    Expire : Rs. ${calculateTotal(selectedBill.expireOptions)}
+                    Expire : Rs. {calculateTotal(selectedBill.expireOptions)}
                   </div>
                 )}
                 <div style={{ color: "blue", fontWeight: "bold", marginTop: "10px" }}>
-                  Final Total: Rs. ${(
+                  Final Total: Rs. {(
                     parseFloat(calculateProductTotal(selectedBill.productOptions)) -
                     ((parseFloat(selectedBill.discountOptions?.length > 0 ? calculateTotal(selectedBill.discountOptions) : 0)) +
                      (parseFloat(selectedBill.freeIssueOptions?.length > 0 ? calculateTotal(selectedBill.freeIssueOptions) : 0)) +
