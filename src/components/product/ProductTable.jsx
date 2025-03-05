@@ -202,7 +202,7 @@ const ProductTable = () => {
                       style={{
                         padding: "10px",
                         borderBottom: "1px solid #ddd",
-                        textAlign: "center",
+                        textAlign: "left",
                         color: "#28a745",
                         fontWeight: "bold",
                       }}

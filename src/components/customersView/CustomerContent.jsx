@@ -135,12 +135,10 @@ const BillAdd = () => {
 
   const handlePrintBill = async (bill) => {
     if (!bill.printStatus) {
-      // Update Firebase to set printStatus to true for the first print
       try {
         await updateDoc(doc(db, "Bill", bill.id), {
           printStatus: true,
         });
-        // Update local state to reflect the change
         setBills(bills.map(b => b.id === bill.id ? { ...b, printStatus: true } : b));
       } catch (error) {
         console.error("Error updating print status:", error.message);
@@ -153,28 +151,137 @@ const BillAdd = () => {
         <head>
           <title>Invoice - ${bill.billNo}</title>
           <style>
-            body { font-family: Arial, sans-serif; margin: 5px; font-size: 10px; line-height: 1.2; }
-            .invoice-container { max-width: 700px; margin: 0 auto; border: 1px solid #333; padding: 5px; background-color: #f9f9f9; }
-            .header { text-align: center; padding: 2px; }
-            .header h1 { margin: 0; font-size: 16px; color: #4CAF50; }
-            .header p { margin: 0; font-size: 10px; }
-            .company { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
-            .company-title { font-size: 12px; font-weight: bold; color:rgb(0, 0, 0); }
-            .company-pepsi { font-size: 15px; font-weight: bold; color:rgb(112, 112, 112); }
-            .details table { width: 100%; border: none; }
-            .details td { padding: 2px; vertical-align: top; }
-            .details td:first-child { width: 30%; font-weight: bold; }
-            .payment-options { display: flex; justify-content: space-around; margin: 5px 0; }
-            .payment-option { width: 33%; text-align: center; border: 1px solid #ddd; padding: 2px; }
-            .discounts { display: flex; justify-content: space-between; margin: 5px 0; }
-            .discounts div { width: 32%; border: 1px solid #ddd; padding: 2px; }
-            table { width: 100%; border-collapse: collapse; margin-top: 5px; }
-            th, td { border: 1px solid #ddd; padding: 2px; text-align: left; font-size: 10px; }
-            th { background-color: #4CAF50; color: white; }
-            .total-section { margin-top: 5px; text-align: right; }
-            .total-section p { margin: 2px 0; font-weight: bold; }
-            .footer { text-align: center; margin-top: 5px; font-size: 8px; color: #777; }
-            .signature { border-top: 1px dashed #000; margin-top: 5px; text-align: center; font-size: 8px; }
+            body { 
+              font-family: Arial, sans-serif; 
+              margin: 5px; 
+              font-size: 10px; 
+              line-height: 1.2; 
+              background-color: #f9f9f9;
+            }
+            .invoice-container { 
+              max-width: 700px; 
+              margin: 0 auto; 
+              border: 1px solid #333; 
+              padding: 5px; 
+            }
+            .header { 
+              text-align: center; 
+              padding: 2px; 
+            }
+            .header .company { 
+              display: flex; 
+              justify-content: space-between; 
+              align-items: center; 
+              margin-bottom: 5px; 
+            }
+            .company-title { 
+              font-size: 23px; 
+              font-weight: bold; 
+              color: rgb(0, 0, 0); 
+            }
+            .company-pepsi { 
+              font-size: 15px; 
+              font-weight: bold; 
+              color: rgb(112, 112, 112); 
+            }
+            .company-details { 
+              font-size: 8px; 
+              color: #333; 
+              margin-bottom: 5px; 
+              text-align: center;
+            }
+            .details table { 
+              width: 100%; 
+              border: none; 
+            }
+            .details td { 
+              padding: 2px; 
+              vertical-align: top; 
+            }
+            .details td:first-child { 
+              width: 30%; 
+              font-weight: bold; 
+            }
+            .details td:nth-child(3) { 
+              font-weight: bold; 
+              text-align: right; 
+            }
+            .payment-options { 
+              width: 50%; 
+              margin-left: auto; /* Right-align */
+              margin-top: 5px; 
+              display: flex; 
+              justify-content: space-around; 
+              border: 1px solid #ddd; 
+              padding: 2px; 
+            }
+            .payment-option { 
+              width: 33%; 
+              text-align: center; 
+            }
+            .discounts { 
+              display: flex; 
+              justify-content: space-between; 
+              margin: 5px 0; 
+            }
+            .discounts div { 
+              width: 32%; 
+              border: 1px solid #ddd; 
+              padding: 2px; 
+            }
+            table { 
+              width: 100%; 
+              border-collapse: collapse; 
+              margin-top: 5px; 
+            }
+            th, td { 
+              padding: 2px; 
+              text-align: left; 
+              font-size: 10px; 
+            }
+            .total-section table { 
+              width: 50%; 
+              border-collapse: collapse; 
+              margin-top: 5px; 
+              margin-left: auto; /* Right-align the table */
+              border: none; 
+            }
+            .total-section td { 
+              padding: 2px; 
+              text-align: right; 
+              font-size: 10px; 
+              font-weight: bold; 
+            }
+            .total-section .total-row td { 
+              color: #e74c3c; 
+            }
+            .products-table { 
+              width: 70%; /* Smaller width */
+              margin: 0 auto; /* Center-align */
+              border: 1px solid #ddd; 
+            }
+            .products-table thead { 
+              border-bottom: 1px solid #ddd; 
+            }
+            .products-table th { 
+              border: none; 
+              background-color: #fff; 
+            }
+            .products-table td { 
+              border: none; 
+            }
+            .signature { 
+              border-top: 1px dashed #000; 
+              margin-top: 5px; 
+              text-align: center; 
+              font-size: 8px; 
+            }
+            .footer { 
+              text-align: center; 
+              margin-top: 5px; 
+              font-size: 8px; 
+              color: #777; 
+            }
             @media print {
               @page { size: A4; margin: 5mm; }
               .no-print { display: none; }
@@ -183,24 +290,21 @@ const BillAdd = () => {
         </head>
         <body>
           <div class="invoice-container">
-            <div class="company">
-              
-             
-            </div>
             <div class="header">
-              <div class="company-pepsi">- INVOICE -</div>
+              <div class="company">
+                <div class="company-title"></div>
+                <div class="company-pepsi">pepsi</div>
+              </div>
               <div class="company-title">Advance Trading</div>
-             
+              <p class="company-details">Reg Office: No: 170/A, Nuwaraeliya Rd, Delpitiya, Gampola<br>Tel: 072-7070701</p>
             </div>
             <div class="details">
               <table>
-                <tr><td><strong>Invoice Number</strong></td><td>${bill.billNo}</td></tr>
-                <tr><td><strong>Customer Name</strong></td><td>${bill.outletName}</td></tr>
-                <tr><td><strong>Customer Contact Number</strong></td><td>${bill.contact}</td></tr>
+                <tr><td><strong>Customer Name</strong></td><td>${bill.outletName}</td><td><strong>Invoice No:</strong></td><td><strong>${bill.billNo}</strong></td></tr>
+                <tr><td><strong>Customer Contact</strong></td><td>${bill.contact}</td><td><strong>Date:</strong></td><td>${bill.createDate}</td></tr>
                 <tr><td><strong>Address</strong></td><td>${bill.address}</td></tr>
                 <tr><td><strong>Ref Name</strong></td><td>${bill.salesRef}</td></tr>
-                <tr><td><strong>Ref Contact Number</strong></td><td>${bill.refContact}</td></tr>
-                <tr><td><strong>Date</strong></td><td>${bill.createDate}</td></tr>
+                <tr><td><strong>Ref Contact</strong></td><td>${bill.refContact}</td></tr>
               </table>
             </div>
             <div class="payment-options">
@@ -232,20 +336,22 @@ const BillAdd = () => {
               </div>
             </div>
 
-            <table>
+            <table class="products-table">
               <thead>
                 <tr>
-                  <th>PRODUCTS</th>
+                  <th>DESCRIPTION</th>
                   <th>QTY</th>
-                  <th>RATE (Rs.)</th>
-                  <th>AMOUNT (Rs.)</th>
+                  <th>*</th>
+                  <th>RATE Rs.</th>
+                  <th>RATE Rs.</th>
                 </tr>
               </thead>
               <tbody>
                 ${bill.productOptions.map(option => `
                   <tr>
-                    <td>${products.find(p => p.id === option.productId)?.name || 'N/A'} - ${option.optionId}</td>
-                    <td>${option.qty} *</td>
+                    <td>${products.find(p => p.id === option.productId)?.name || 'N/A'} ${option.optionId}</td>
+                    <td>${option.qty}</td>
+                    <td>*</td>
                     <td>${option.price}</td>
                     <td>${((parseFloat(option.price) || 0) * (parseFloat(option.qty) || 0)).toFixed(2)}</td>
                   </tr>
@@ -254,16 +360,38 @@ const BillAdd = () => {
             </table>
 
             <div class="total-section">
-              <p><strong>SUBTOTAL</strong> = ${calculateProductTotal(bill.productOptions)}</p>
-              <p><strong>DISCOUNT</strong> = ${calculateTotal(bill.discountOptions)}</p>
-              <p><strong>FREE ISSUE</strong> = ${calculateTotal(bill.freeIssueOptions)}</p>
-              <p><strong>EXPIRE</strong> = ${calculateTotal(bill.expireOptions)}</p>
-              <p style="color: #e74c3c;"><strong>TOTAL</strong> = ${(
-                parseFloat(calculateProductTotal(bill.productOptions)) -
-                ((parseFloat(bill.discountOptions?.length > 0 ? calculateTotal(bill.discountOptions) : 0)) +
-                 (parseFloat(bill.freeIssueOptions?.length > 0 ? calculateTotal(bill.freeIssueOptions) : 0)) +
-                 (parseFloat(bill.expireOptions?.length > 0 ? calculateTotal(bill.expireOptions) : 0)))
-              ).toFixed(2)}</p>
+              <table>
+                <tr>
+                  <td><strong>SUBTOTAL</strong></td>
+                   <td>=</td>
+                  <td>${calculateProductTotal(bill.productOptions)}</td>
+                </tr>
+                <tr>
+                  <td><strong>DISCOUNT</strong></td>
+                  <td>=</td>
+                  <td>${calculateTotal(bill.discountOptions)}</td>
+                </tr>
+                <tr>
+                  <td><strong>FREE ISSUE</strong></td>
+                  <td>=</td>
+                  <td>${calculateTotal(bill.freeIssueOptions)}</td>
+                </tr>
+                <tr>
+                  <td><strong>EXPIRE</strong></td>
+                  <td>=</td>
+                  <td>${calculateTotal(bill.expireOptions)}</td>
+                </tr>
+                <tr>
+                  <td><strong>TOTAL</strong></td>
+                  <td>=</td>
+                  <td style="color: #e74c3c;">${(
+                    parseFloat(calculateProductTotal(bill.productOptions)) -
+                    (parseFloat(calculateTotal(bill.discountOptions)) +
+                     parseFloat(calculateTotal(bill.freeIssueOptions)) +
+                     parseFloat(calculateTotal(bill.expireOptions)))
+                  ).toFixed(2)}</td>
+                </tr>
+              </table>
             </div>
 
             <div class="signature">customer signature</div>
@@ -591,7 +719,9 @@ const BillAdd = () => {
             />
             <input type="text" className="form-control" style={{ maxWidth: "20%" }} value={`Rs: ${option.price}`} disabled />
             <input type="number" className="form-control" style={{ maxWidth: "20%" }} value={option.qty} onChange={(e) => handleQtyChange(index, e.target.value)} required />
-            <small style={{ color: "red", maxWidth: "20%", minWidth: "15%" }} >Current Stock: {option.currentQty}</small>
+            <small style={{ color: "red", maxWidth: "20%", minWidth: "15%" }}>
+              Current Stock: {option.currentQty - option.qty}
+            </small>
             <button type="button" className="btn btn-danger" onClick={() => removeProductOption(index)}>✖</button>
           </div>
         ))}

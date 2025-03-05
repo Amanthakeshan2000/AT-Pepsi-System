@@ -6,7 +6,7 @@ import { collection, addDoc, getDocs, serverTimestamp } from "firebase/firestore
 const ProductCreate = () => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [price, setPrice] = useState("");
+  const [price, setPrice] = useState(""); // Kept for potential future use
   const [categoryId, setCategoryId] = useState(null);
   const [categories, setCategories] = useState([]);
   const [productOptions, setProductOptions] = useState([]);
@@ -98,15 +98,15 @@ const ProductCreate = () => {
     setMessage("");
 
     try {
-      if (!name || !description || !price || !categoryId) {
+      // Removed price from validation since it's no longer in the form
+      if (!name || !description || !categoryId) {
         throw new Error("All fields are required.");
       }
 
-      // Add product to Firestore
+      // Add product to Firestore (price is omitted)
       await addDoc(productsCollectionRef, {
         name,
         description,
-        price: parseFloat(price),
         categoryId,
         createdAt: serverTimestamp(),
         productOptions,
@@ -116,7 +116,7 @@ const ProductCreate = () => {
       setMessage("Product created successfully!");
       setName("");
       setDescription("");
-      setPrice("");
+      setPrice(""); // Still resetting price even though it's not used
       setCategoryId(null);
       setImageBase64("");
       setProductOptions([]);
@@ -156,11 +156,6 @@ const ProductCreate = () => {
               <div className="mb-3">
                 <label className="form-label">Product Description</label>
                 <textarea className="form-control" placeholder="Enter product description" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} required />
-              </div>
-
-              <div className="mb-3">
-                <label className="form-label">Product Price</label>
-                <input type="number" className="form-control" placeholder="Enter product price" value={price} onChange={(e) => setPrice(e.target.value)} required />
               </div>
 
               <div className="mb-3">

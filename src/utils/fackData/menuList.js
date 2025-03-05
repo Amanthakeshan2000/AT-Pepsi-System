@@ -224,27 +224,27 @@ export const menuList = [
         ]
     },
 
-    // {
-    //     id: 6,
-    //     name: "devices",
-    //     path: "#",
-    //     icon: 'feather-monitor',
-    //     dropdownMenu: [
-    //         {
-    //             id: 1,
-    //             name: "Devices",
-    //             path: "/device/device-list",
-    //             subdropdownMenu: false
-    //         },
+    {
+        id: 6,
+        name: "Manual Invoice",
+        path: "#",
+        icon: 'feather-file-text',
+        dropdownMenu: [
+            // {
+            //     id: 1,
+            //     name: "Devices",
+            //     path: "/device/device-list",
+            //     subdropdownMenu: false
+            // },
            
-    //         {
-    //             id: 2,
-    //             name: "Device Create",
-    //             path: "/device/create-device",
-    //             subdropdownMenu: false
-    //         }
-    //     ]
-    // },
+            {
+                id: 1,
+                name: "Invoice Create",
+                path: "/device/create-device",
+                subdropdownMenu: false
+            }
+        ]
+    },
 
     // {
     //     id: 7,
