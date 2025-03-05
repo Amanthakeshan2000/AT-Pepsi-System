@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { db } from "../../utilities/firebaseConfig";
-import { collection, getDocs, addDoc, updateDoc, doc, deleteDoc } from "firebase/firestore";
+import { collection, getDocs, addDoc, updateDoc, doc, deleteDoc, query, orderBy, limit } from "firebase/firestore";
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
@@ -44,9 +44,27 @@ const ManualInvoice = () => {
   }, []);
 
   const generateInvoiceId = async () => {
-    const querySnapshot = await getDocs(manualBillsCollectionRef);
-    const count = querySnapshot.size + 1;
-    return `MI${count.toString().padStart(5, "0")}`;
+    try {
+      // Fetch the latest invoice sorted by createdAt in descending order
+      const q = query(manualBillsCollectionRef, orderBy("createdAt", "desc"), limit(1));
+      const querySnapshot = await getDocs(q);
+      
+      let newCount = 1; // Default to 1 if no invoices exist
+      if (!querySnapshot.empty) {
+        const latestInvoice = querySnapshot.docs[0].data();
+        const latestInvoiceId = latestInvoice.invoiceId || "MI00000";
+        const latestNumber = parseInt(latestInvoiceId.replace("MI", ""), 10);
+        newCount = latestNumber + 1;
+      }
+      
+      return `MI${newCount.toString().padStart(5, "0")}`;
+    } catch (error) {
+      console.error("Error generating invoice ID:", error.message);
+      // Fallback in case of error
+      const fallbackSnapshot = await getDocs(manualBillsCollectionRef);
+      const fallbackCount = fallbackSnapshot.size + 1;
+      return `MI${fallbackCount.toString().padStart(5, "0")}`;
+    }
   };
 
   const handleAddBill = (bill) => {
