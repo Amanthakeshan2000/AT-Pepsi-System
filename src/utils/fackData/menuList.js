@@ -226,20 +226,20 @@ export const menuList = [
 
     {
         id: 6,
-        name: "devices",
+        name: "Manual Invoice",
         path: "#",
-        icon: 'feather-monitor',
+        icon: 'feather-file-text',
         dropdownMenu: [
-            {
-                id: 1,
-                name: "Devices",
-                path: "/device/device-list",
-                subdropdownMenu: false
-            },
+            // {
+            //     id: 1,
+            //     name: "Devices",
+            //     path: "/device/device-list",
+            //     subdropdownMenu: false
+            // },
            
             {
-                id: 2,
-                name: "Device Create",
+                id: 1,
+                name: "Invoice Create",
                 path: "/device/create-device",
                 subdropdownMenu: false
             }

@@ -175,7 +175,7 @@ const BillAdd = () => {
               margin-bottom: 5px; 
             }
             .company-title { 
-              font-size: 18px; 
+              font-size: 23px; 
               font-weight: bold; 
               color: rgb(0, 0, 0); 
             }
@@ -719,7 +719,9 @@ const BillAdd = () => {
             />
             <input type="text" className="form-control" style={{ maxWidth: "20%" }} value={`Rs: ${option.price}`} disabled />
             <input type="number" className="form-control" style={{ maxWidth: "20%" }} value={option.qty} onChange={(e) => handleQtyChange(index, e.target.value)} required />
-            <small style={{ color: "red", maxWidth: "20%", minWidth: "15%" }} >Current Stock: {option.currentQty}</small>
+            <small style={{ color: "red", maxWidth: "20%", minWidth: "15%" }}>
+              Current Stock: {option.currentQty - option.qty}
+            </small>
             <button type="button" className="btn btn-danger" onClick={() => removeProductOption(index)}>✖</button>
           </div>
         ))}
