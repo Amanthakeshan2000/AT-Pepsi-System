@@ -108,14 +108,26 @@ const ManualInvoice = () => {
   };
 
   const handleDeleteManualInvoice = async (invoiceId) => {
-    if (window.confirm("Are you sure you want to delete this manual invoice?")) {
+    if (window.confirm("Are you sure you want to delete this manual invoice and its sales summary?")) {
       try {
+        // Delete the manual invoice from ManualBill collection
         await deleteDoc(doc(db, "ManualBill", invoiceId));
+        
+        // Check if there's a corresponding sales summary and delete it
+        const salesSummaryToDelete = salesSummaries.find((summary) => summary.invoiceId === (manualInvoices.find(inv => inv.id === invoiceId)?.invoiceId || invoiceId));
+        if (salesSummaryToDelete) {
+          await deleteDoc(doc(db, "SaleSummaryNew", salesSummaryToDelete.id));
+          // Update local salesSummaries state
+          setSalesSummaries(salesSummaries.filter((summary) => summary.id !== salesSummaryToDelete.id));
+        }
+
+        // Update local manualInvoices state
         setManualInvoices(manualInvoices.filter((invoice) => invoice.id !== invoiceId));
-        alert("Manual Invoice Deleted!");
+        
+        alert("Manual Invoice and its Sales Summary (if any) Deleted!");
       } catch (error) {
-        console.error("Error deleting manual invoice:", error.message);
-        alert("Failed to delete manual invoice.");
+        console.error("Error deleting manual invoice or sales summary:", error.message);
+        alert("Failed to delete manual invoice or its sales summary.");
       }
     }
   };
@@ -129,7 +141,7 @@ const ManualInvoice = () => {
   };
 
   const handleCreateSalesSummary = (invoice) => {
-    const allOptions = invoice.bills.flatMap((bill) => bill.productOptions);
+    const allOptions = invoice.bills.flatMap((bill) => bill.productOptions || []);
     const uniqueOptions = [...new Map(allOptions.map((opt) => [opt.optionId, { optionId: opt.optionId, price: parseFloat(opt.price) || 0 }])).values()];
 
     const initialSummary = invoice.bills.map((bill) => {
@@ -150,17 +162,23 @@ const ManualInvoice = () => {
         credit: "",
       };
     });
-    setSalesSummary({ invoiceId: invoice.invoiceId || invoice.id, data: initialSummary, uniqueOptions });
+
+    setSalesSummary({ 
+      invoiceId: invoice.invoiceId || invoice.id, 
+      data: initialSummary, 
+      uniqueOptions 
+    });
     setEditSalesSummaryId(null);
   };
 
   const handleEditSalesSummary = (invoice) => {
     const existingSummary = salesSummaries.find((summary) => summary.invoiceId === (invoice.invoiceId || invoice.id));
     if (existingSummary) {
+      const uniqueOptions = [...new Map(existingSummary.data.flatMap((bill) => bill.productOptions).map((opt) => [opt.optionId, { optionId: opt.optionId, price: parseFloat(opt.price) || 0 }])).values()];
       setSalesSummary({
         invoiceId: existingSummary.invoiceId,
         data: existingSummary.data,
-        uniqueOptions: [...new Map(existingSummary.data.flatMap((bill) => bill.productOptions).map((opt) => [opt.optionId, { optionId: opt.optionId, price: parseFloat(opt.price) || 0 }])).values()],
+        uniqueOptions,
       });
       setEditSalesSummaryId(existingSummary.id);
     } else {
@@ -194,6 +212,11 @@ const ManualInvoice = () => {
   };
 
   const handleSaveSalesSummary = async () => {
+    if (!salesSummary || !salesSummary.data) {
+      alert("No sales summary data to save!");
+      return;
+    }
+
     try {
       const summaryData = {
         invoiceId: salesSummary.invoiceId,
@@ -273,17 +296,15 @@ const ManualInvoice = () => {
 
     const uniqueOptions = [...new Map(existingSummary.data.flatMap((bill) => bill.productOptions).map((opt) => [opt.optionId, { optionId: opt.optionId, price: parseFloat(opt.price) || 0 }])).values()];
 
-    // Create a temporary container for PDF rendering
     const tempDiv = document.createElement("div");
     tempDiv.style.position = "absolute";
-    tempDiv.style.left = "-9999px"; // Off-screen
-    tempDiv.style.width = "1123px"; // Approx A4 landscape width in pixels (297mm at 96dpi)
+    tempDiv.style.left = "-9999px";
+    tempDiv.style.width = "1123px";
     tempDiv.style.padding = "10mm";
     tempDiv.style.backgroundColor = "#fff";
     tempDiv.style.fontFamily = "Arial, sans-serif";
     document.body.appendChild(tempDiv);
 
-    // Populate the temporary div with content
     tempDiv.innerHTML = `
       <div style="margin-bottom: 10mm;">
         <h2 style="font-size: 16px; margin: 0;">Sales Summary for Invoice ${invoice.invoiceId || invoice.id}</h2>
@@ -343,38 +364,31 @@ const ManualInvoice = () => {
     `;
 
     try {
-      // Ensure the DOM is fully updated before rendering
       await new Promise((resolve) => setTimeout(resolve, 500));
-
-      // Convert to canvas with proper scaling
       const canvas = await html2canvas(tempDiv, {
-        scale: 2, // Increased scale for better quality
-        useCORS: true, // Handle cross-origin issues if any
-        logging: false, // Disable logging for cleaner console
+        scale: 2,
+        useCORS: true,
+        logging: false,
       });
       const imgData = canvas.toDataURL("image/png");
-
-      // Create PDF in landscape A4 format
       const pdf = new jsPDF({
         orientation: "landscape",
         unit: "mm",
         format: "a4",
       });
 
-      const pageWidth = 297; // A4 width in mm (landscape)
-      const pageHeight = 210; // A4 height in mm (landscape)
-      const margin = 10; // 10mm margin
+      const pageWidth = 297;
+      const pageHeight = 210;
+      const margin = 10;
       const imgWidth = pageWidth - 2 * margin;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
       let heightLeft = imgHeight;
       let position = 0;
 
-      // Add first page
       pdf.addImage(imgData, "PNG", margin, margin, imgWidth, imgHeight);
       heightLeft -= (pageHeight - 2 * margin);
 
-      // Add additional pages if content exceeds one page
       while (heightLeft > 0) {
         position -= (pageHeight - 2 * margin);
         pdf.addPage();
@@ -382,13 +396,11 @@ const ManualInvoice = () => {
         heightLeft -= (pageHeight - 2 * margin);
       }
 
-      // Save the PDF
       pdf.save(`Sales_Summary_${invoice.invoiceId || invoice.id}.pdf`);
     } catch (error) {
       console.error("Error generating PDF:", error);
       alert("Failed to generate PDF. Please try again.");
     } finally {
-      // Clean up
       document.body.removeChild(tempDiv);
     }
   };
@@ -517,7 +529,7 @@ const ManualInvoice = () => {
           </tbody>
         </table>
         {selectedBills.length > 0 && (
-          <div className="d-flex justify-content-end">
+          <div className="d-flex justifyContent-end">
             <button className="btn btn-primary" onClick={handleSaveManualInvoice}>
               {editInvoiceId ? "Update Manual Invoice" : "Save Manual Invoice"}
             </button>
@@ -559,12 +571,7 @@ const ManualInvoice = () => {
                       <button className="btn btn-danger btn-sm" onClick={() => handleDeleteManualInvoice(invoice.id)} title="Delete">
                         <i className="bi bi-trash"></i>
                       </button>
-                      {!hasSalesSummary(invoice.invoiceId || invoice.id) && (
-                        <button className="btn btn-primary btn-sm" onClick={() => handleCreateSalesSummary(invoice)} title="Create Sales Summary">
-                          <i className="bi bi-file-earmark-text"></i>
-                        </button>
-                      )}
-                      {hasSalesSummary(invoice.invoiceId || invoice.id) && (
+                      {hasSalesSummary(invoice.invoiceId || invoice.id) ? (
                         <>
                           <button className="btn btn-warning btn-sm" onClick={() => handleEditSalesSummary(invoice)} title="Edit Sales Summary">
                             <i className="bi bi-pencil-square"></i>
@@ -573,6 +580,10 @@ const ManualInvoice = () => {
                             <i className="bi bi-printer"></i>
                           </button>
                         </>
+                      ) : (
+                        <button className="btn btn-primary btn-sm" onClick={() => handleCreateSalesSummary(invoice)} title="Create Sales Summary">
+                          <i className="bi bi-file-earmark-text"></i>
+                        </button>
                       )}
                     </div>
                   </td>
@@ -784,7 +795,7 @@ const ManualInvoice = () => {
                             type="number"
                             className="form-control"
                             style={{ width: "80px" }}
-                            value={bill.productOptions[optIdx].qty}
+                            value={bill.productOptions.find(po => po.optionId === opt.optionId)?.qty || ""}
                             onChange={(e) => handleSalesQtyChange(billIdx, optIdx, e.target.value)}
                           />
                         </td>
@@ -794,7 +805,7 @@ const ManualInvoice = () => {
                         <input
                           type="number"
                           className="form-control"
-                          value={bill.discount}
+                          value={bill.discount || ""}
                           onChange={(e) => handleSalesFieldChange(billIdx, "discount", e.target.value)}
                         />
                       </td>
@@ -802,7 +813,7 @@ const ManualInvoice = () => {
                         <input
                           type="number"
                           className="form-control"
-                          value={bill.expire}
+                          value={bill.expire || ""}
                           onChange={(e) => handleSalesFieldChange(billIdx, "expire", e.target.value)}
                         />
                       </td>
@@ -811,7 +822,7 @@ const ManualInvoice = () => {
                         <input
                           type="number"
                           className="form-control"
-                          value={bill.cash}
+                          value={bill.cash || ""}
                           onChange={(e) => handleSalesFieldChange(billIdx, "cash", e.target.value)}
                         />
                       </td>
@@ -819,7 +830,7 @@ const ManualInvoice = () => {
                         <input
                           type="number"
                           className="form-control"
-                          value={bill.cheque}
+                          value={bill.cheque || ""}
                           onChange={(e) => handleSalesFieldChange(billIdx, "cheque", e.target.value)}
                         />
                       </td>
@@ -827,7 +838,7 @@ const ManualInvoice = () => {
                         <input
                           type="number"
                           className="form-control"
-                          value={bill.credit}
+                          value={bill.credit || ""}
                           onChange={(e) => handleSalesFieldChange(billIdx, "credit", e.target.value)}
                         />
                       </td>
