@@ -175,7 +175,7 @@ const BillAdd = () => {
               margin-bottom: 5px; 
             }
             .company-title { 
-              font-size: 23px; 
+              font-size: 30px; 
               font-weight: bold; 
               color: rgb(0, 0, 0); 
             }
@@ -185,26 +185,37 @@ const BillAdd = () => {
               color: rgb(112, 112, 112); 
             }
             .company-details { 
-              font-size: 8px; 
+              font-size: 13px; 
+              font-weight: bold; 
               color: #333; 
+              margin-top: -1px; 
               margin-bottom: 5px; 
               text-align: center;
             }
             .details table { 
               width: 100%; 
+              
               border: none; 
             }
             .details td { 
               padding: 2px; 
+              font-size: 11px; 
               vertical-align: top; 
             }
             .details td:first-child { 
-              width: 30%; 
+              width: 20%; /* Adjusted width for label */
               font-weight: bold; 
             }
+            .details td:nth-child(2) { 
+              width: 38%; /* Adjusted width for value */
+            }
             .details td:nth-child(3) { 
+              width: 30%; /* Adjusted width for label */
               font-weight: bold; 
               text-align: right; 
+            }
+            .details td:nth-child(4) { 
+              width: 22%; /* Adjusted width for value */
             }
             .payment-options { 
               width: 50%; 
@@ -223,11 +234,24 @@ const BillAdd = () => {
               display: flex; 
               justify-content: space-between; 
               margin: 5px 0; 
+              gap: 5px; 
             }
-            .discounts div { 
+            .discounts table { 
               width: 32%; 
+              border-collapse: collapse; 
               border: 1px solid #ddd; 
+            }
+            .discounts th, .discounts td { 
               padding: 2px; 
+              text-align: left; 
+              border: none; 
+            }
+            .discounts th { 
+              font-weight: bold; 
+              background-color: #f1f1f1; 
+            }
+            .discounts .total-row td { 
+              font-weight: bold; 
             }
             table { 
               width: 100%; 
@@ -266,9 +290,11 @@ const BillAdd = () => {
             .products-table th { 
               border: none; 
               background-color: #fff; 
+              padding: 5px; /* Increased padding for taller rows */
             }
             .products-table td { 
               border: none; 
+              padding: 5px; /* Increased padding for taller rows */
             }
             .signature { 
               border-top: 1px dashed #000; 
@@ -300,11 +326,11 @@ const BillAdd = () => {
             </div>
             <div class="details">
               <table>
-                <tr><td><strong>Customer Name</strong></td><td>${bill.outletName}</td><td><strong>Invoice No:</strong></td><td><strong>${bill.billNo}</strong></td></tr>
-                <tr><td><strong>Customer Contact</strong></td><td>${bill.contact}</td><td><strong>Date:</strong></td><td>${bill.createDate}</td></tr>
-                <tr><td><strong>Address</strong></td><td>${bill.address}</td></tr>
-                <tr><td><strong>Ref Name</strong></td><td>${bill.salesRef}</td></tr>
-                <tr><td><strong>Ref Contact</strong></td><td>${bill.refContact}</td></tr>
+                <tr><td><strong>Customer Name</strong></td><td>: ${bill.outletName}</td><td><strong>Invoice No:</strong></td><td><strong>${bill.billNo}</strong></td></tr>
+                <tr><td><strong>Customer Contact</strong></td><td>: ${bill.contact}</td><td><strong>Date:</strong></td><td>${bill.createDate}</td></tr>
+                <tr><td><strong>Address</strong></td><td>: ${bill.address}</td></tr>
+                <tr><td><strong>Ref Name</strong></td><td>: ${bill.salesRef}</td></tr>
+                <tr><td><strong>Ref Contact</strong></td><td>: ${bill.refContact}</td></tr>
               </table>
             </div>
             <div class="payment-options">
@@ -313,29 +339,65 @@ const BillAdd = () => {
               <div class="payment-option"><input type="checkbox" name="payment" value="cheque"> cheque</div>
             </div>
             <div class="discounts">
-              <div>
-                <p><strong>DISCOUNT</strong></p>
+              <table>
+                <tr><th colspan="3">DISCOUNT</th></tr>
+                <tr>
+                  <th>Name</th>
+                  <th>Case</th>
+                  <th>Total</th>
+                </tr>
                 ${bill.discountOptions.map(option => `
-                  <p>${option.name}: ${option.case} * ${option.perCaseRate} = ${option.total}</p>
+                  <tr>
+                    <td>${option.name}</td>
+                    <td>${option.case} * ${option.perCaseRate}</td>
+                    <td>= ${option.total}</td>
+                  </tr>
                 `).join('')}
-                <p><strong>Total</strong> ${calculateTotal(bill.discountOptions)}</p>
-              </div>
-              <div>
-                <p><strong>FREE ISSUE</strong></p>
+                <tr class="total-row">
+                  <td colspan="2">Total</td>
+                  <td>= ${calculateTotal(bill.discountOptions)}</td>
+                </tr>
+              </table>
+              <table>
+                <tr><th colspan="3">FREE ISSUE</th></tr>
+                <tr>
+                  <th>Name</th>
+                  <th>Case</th>
+                  <th>Total</th>
+                </tr>
                 ${bill.freeIssueOptions.map(option => `
-                  <p>${option.name}: ${option.case} * ${option.perCaseRate} = ${option.total}</p>
+                  <tr>
+                    <td>${option.name}</td>
+                    <td>${option.case} * ${option.perCaseRate}</td>
+                    <td>= ${option.total}</td>
+                  </tr>
                 `).join('')}
-                <p><strong>Total</strong> ${calculateTotal(bill.freeIssueOptions)}</p>
-              </div>
-              <div>
-                <p><strong>EXPIRE</strong></p>
+                <tr class="total-row">
+                  <td colspan="2">Total</td>
+                  <td>= ${calculateTotal(bill.freeIssueOptions)}</td>
+                </tr>
+              </table>
+              <table>
+                <tr><th colspan="3">EXPIRE</th></tr>
+                <tr>
+                  <th>Name</th>
+                  <th>Case</th>
+                  <th>Total</th>
+                </tr>
                 ${bill.expireOptions.map(option => `
-                  <p>${option.name}: ${option.case} * ${option.perCaseRate} = ${option.total}</p>
+                  <tr>
+                    <td>${option.name}</td>
+                    <td>${option.case} * ${option.perCaseRate}</td>
+                    <td>= ${option.total}</td>
+                  </tr>
                 `).join('')}
-                <p><strong>Total</strong> ${calculateTotal(bill.expireOptions)}</p>
-              </div>
+                <tr class="total-row">
+                  <td colspan="2">Total</td>
+                  <td>= ${calculateTotal(bill.expireOptions)}</td>
+                </tr>
+              </table>
             </div>
-
+<br/>
             <table class="products-table">
               <thead>
                 <tr>
@@ -358,13 +420,13 @@ const BillAdd = () => {
                 `).join('')}
               </tbody>
             </table>
-
+<br/>
             <div class="total-section">
               <table>
                 <tr>
-                  <td><strong>SUBTOTAL</strong></td>
-                   <td>=</td>
-                  <td>${calculateProductTotal(bill.productOptions)}</td>
+                  <td style="color: #e74c3c;"><strong>SUBTOTAL</strong></td>
+                   <td style="color: #e74c3c;">=</td>
+                  <td style="color: #e74c3c;">${calculateProductTotal(bill.productOptions)}</td>
                 </tr>
                 <tr>
                   <td><strong>DISCOUNT</strong></td>
@@ -382,8 +444,8 @@ const BillAdd = () => {
                   <td>${calculateTotal(bill.expireOptions)}</td>
                 </tr>
                 <tr>
-                  <td><strong>TOTAL</strong></td>
-                  <td>=</td>
+                  <td style="color: #e74c3c;"><strong>TOTAL</strong></td>
+                  <td style="color: #e74c3c;">=</td>
                   <td style="color: #e74c3c;">${(
                     parseFloat(calculateProductTotal(bill.productOptions)) -
                     (parseFloat(calculateTotal(bill.discountOptions)) +
@@ -984,7 +1046,7 @@ const BillAdd = () => {
                           color: "#28a745",
                           fontWeight: "bold",
                         }}>
-                          {option.qty}
+                          ${option.qty}
                         </td>
                       </tr>
                     ))}
@@ -1000,7 +1062,7 @@ const BillAdd = () => {
                     className="btn btn-success btn-sm" 
                     onClick={() => handlePrintBill(bill)}
                   >
-                    {bill.printStatus ? "Re-print" : "Print"}
+                    ${bill.printStatus ? "Re-print" : "Print"}
                   </button>
                 </div>
               </td>
@@ -1012,9 +1074,9 @@ const BillAdd = () => {
       <div className="d-flex justify-content-center">
         <nav>
           <ul className="pagination">
-            {Array.from({ length: Math.ceil(filteredBills.length / itemsPerPage) }, (_, index) => (
+            ${Array.from({ length: Math.ceil(filteredBills.length / itemsPerPage) }, (_, index) => (
               <li key={index} className={`page-item ${currentPage === index + 1 ? "active" : ""}`}>
-                <button className="page-link" onClick={() => paginate(index + 1)}>{index + 1}</button>
+                <button className="page-link" onClick={() => paginate(index + 1)}>${index + 1}</button>
               </li>
             ))}
           </ul>
@@ -1022,24 +1084,24 @@ const BillAdd = () => {
       </div>
 
       {/* Popup Modal for View Bill */}
-      {selectedBill && (
+      ${selectedBill && (
         <div className="modal" style={{ display: "block", position: "fixed", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.5)" }}>
           <div className="modal-content" style={{ backgroundColor: "#fff", margin: "5% auto", padding: "20px", width: "80%", maxWidth: "800px", borderRadius: "8px", maxHeight: "80vh", overflowY: "auto" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "2px solid #ddd", paddingBottom: "10px" }}>
-              <h4>Bill Details - {selectedBill.billNo}</h4>
+              <h4>Bill Details - ${selectedBill.billNo}</h4>
               <button className="btn btn-danger" onClick={handleClosePopup}>Close</button>
             </div>
             <div style={{ marginTop: "20px" }}>
               <div className="row">
                 <div className="col-md-6">
-                  <p><strong>Outlet Name:</strong> {selectedBill.outletName}</p>
-                  <p><strong>Address:</strong> {selectedBill.address}</p>
-                  <p><strong>Contact:</strong> {selectedBill.contact}</p>
+                  <p><strong>Outlet Name:</strong> ${selectedBill.outletName}</p>
+                  <p><strong>Address:</strong> ${selectedBill.address}</p>
+                  <p><strong>Contact:</strong> ${selectedBill.contact}</p>
                 </div>
                 <div className="col-md-6">
-                  <p><strong>Sales Ref:</strong> {selectedBill.salesRef}</p>
-                  <p><strong>Ref Contact:</strong> {selectedBill.refContact}</p>
-                  <p><strong>Create Date:</strong> {selectedBill.createDate}</p>
+                  <p><strong>Sales Ref:</strong> ${selectedBill.salesRef}</p>
+                  <p><strong>Ref Contact:</strong> ${selectedBill.refContact}</p>
+                  <p><strong>Create Date:</strong> ${selectedBill.createDate}</p>
                 </div>
               </div>
 
@@ -1054,24 +1116,24 @@ const BillAdd = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {selectedBill.productOptions.map((option, idx) => (
+                  ${selectedBill.productOptions.map((option, idx) => (
                     <tr key={idx}>
-                      <td>{products.find(p => p.id === option.productId)?.name} - {option.optionId}</td>
-                      <td>Rs. {option.price}</td>
-                      <td>{option.qty}</td>
-                      <td>Rs. {((parseFloat(option.price) || 0) * (parseFloat(option.qty) || 0)).toFixed(2)}</td>
+                      <td>${products.find(p => p.id === option.productId)?.name} - ${option.optionId}</td>
+                      <td>Rs. ${option.price}</td>
+                      <td>${option.qty}</td>
+                      <td>Rs. ${((parseFloat(option.price) || 0) * (parseFloat(option.qty) || 0)).toFixed(2)}</td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot>
                   <tr>
                     <td colSpan="3" style={{ textAlign: "right", fontWeight: "bold" }}>Total:</td>
-                    <td>Rs. {calculateProductTotal(selectedBill.productOptions)}</td>
+                    <td>Rs. ${calculateProductTotal(selectedBill.productOptions)}</td>
                   </tr>
                 </tfoot>
               </table>
 
-              {selectedBill.discountOptions?.length > 0 && (
+              ${selectedBill.discountOptions?.length > 0 && (
                 <>
                   <h5>Discount Options</h5>
                   <table className="table table-bordered">
@@ -1084,23 +1146,23 @@ const BillAdd = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {selectedBill.discountOptions.map((option, idx) => (
+                      ${selectedBill.discountOptions.map((option, idx) => (
                         <tr key={idx}>
-                          <td>{option.name}</td>
-                          <td>{option.case}</td>
-                          <td>{option.perCaseRate}</td>
-                          <td>{option.total}</td>
+                          <td>${option.name}</td>
+                          <td>${option.case}</td>
+                          <td>${option.perCaseRate}</td>
+                          <td>${option.total}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                   <div style={{ textAlign: "right", color: "green", fontWeight: "bold" }}>
-                    Total: Rs. {calculateTotal(selectedBill.discountOptions)}
+                    Total: Rs. ${calculateTotal(selectedBill.discountOptions)}
                   </div>
                 </>
               )}
 
-              {selectedBill.freeIssueOptions?.length > 0 && (
+              ${selectedBill.freeIssueOptions?.length > 0 && (
                 <>
                   <h5>Free Issue Options</h5>
                   <table className="table table-bordered">
@@ -1113,23 +1175,23 @@ const BillAdd = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {selectedBill.freeIssueOptions.map((option, idx) => (
+                      ${selectedBill.freeIssueOptions.map((option, idx) => (
                         <tr key={idx}>
-                          <td>{option.name}</td>
-                          <td>{option.case}</td>
-                          <td>{option.perCaseRate}</td>
-                          <td>{option.total}</td>
+                          <td>${option.name}</td>
+                          <td>${option.case}</td>
+                          <td>${option.perCaseRate}</td>
+                          <td>${option.total}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                   <div style={{ textAlign: "right", color: "green", fontWeight: "bold" }}>
-                    Total: Rs. {calculateTotal(selectedBill.freeIssueOptions)}
+                    Total: Rs. ${calculateTotal(selectedBill.freeIssueOptions)}
                   </div>
                 </>
               )}
 
-              {selectedBill.expireOptions?.length > 0 && (
+              ${selectedBill.expireOptions?.length > 0 && (
                 <>
                   <h5>Expire Options</h5>
                   <table className="table table-bordered">
@@ -1142,43 +1204,43 @@ const BillAdd = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {selectedBill.expireOptions.map((option, idx) => (
+                      ${selectedBill.expireOptions.map((option, idx) => (
                         <tr key={idx}>
-                          <td>{option.name}</td>
-                          <td>{option.case}</td>
-                          <td>{option.perCaseRate}</td>
-                          <td>{option.total}</td>
+                          <td>${option.name}</td>
+                          <td>${option.case}</td>
+                          <td>${option.perCaseRate}</td>
+                          <td>${option.total}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                   <div style={{ textAlign: "right", color: "green", fontWeight: "bold" }}>
-                    Total: Rs. {calculateTotal(selectedBill.expireOptions)}
+                    Total: Rs. ${calculateTotal(selectedBill.expireOptions)}
                   </div>
                 </>
               )}
 
               <div style={{ textAlign: "right", marginTop: "20px" }}>
                 <div style={{ color: "red", fontWeight: "bold" }}>
-                  Product Options Total: Rs. {calculateProductTotal(selectedBill.productOptions)}
+                  Product Options Total: Rs. ${calculateProductTotal(selectedBill.productOptions)}
                 </div>
-                {selectedBill.discountOptions?.length > 0 && (
+                ${selectedBill.discountOptions?.length > 0 && (
                   <div style={{ color: "red", fontWeight: "bold" }}>
-                    Discount : Rs. {calculateTotal(selectedBill.discountOptions)}
+                    Discount : Rs. ${calculateTotal(selectedBill.discountOptions)}
                   </div>
                 )}
-                {selectedBill.freeIssueOptions?.length > 0 && (
+                ${selectedBill.freeIssueOptions?.length > 0 && (
                   <div style={{ color: "red", fontWeight: "bold" }}>
-                    Free Issue : Rs. {calculateTotal(selectedBill.freeIssueOptions)}
+                    Free Issue : Rs. ${calculateTotal(selectedBill.freeIssueOptions)}
                   </div>
                 )}
-                {selectedBill.expireOptions?.length > 0 && (
+                ${selectedBill.expireOptions?.length > 0 && (
                   <div style={{ color: "red", fontWeight: "bold" }}>
-                    Expire : Rs. {calculateTotal(selectedBill.expireOptions)}
+                    Expire : Rs. ${calculateTotal(selectedBill.expireOptions)}
                   </div>
                 )}
                 <div style={{ color: "blue", fontWeight: "bold", marginTop: "10px" }}>
-                  Final Total: Rs. {(
+                  Final Total: Rs. ${(
                     parseFloat(calculateProductTotal(selectedBill.productOptions)) -
                     ((parseFloat(selectedBill.discountOptions?.length > 0 ? calculateTotal(selectedBill.discountOptions) : 0)) +
                      (parseFloat(selectedBill.freeIssueOptions?.length > 0 ? calculateTotal(selectedBill.freeIssueOptions) : 0)) +

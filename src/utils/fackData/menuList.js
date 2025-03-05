@@ -246,32 +246,21 @@ export const menuList = [
         ]
     },
 
-    // {
-    //     id: 7,
-    //     name: "Sales & Payments",
-    //     path: "#",
-    //     icon: 'feather-users',
-    //     dropdownMenu: [
-    //         {
-    //             id: 1,
-    //             name: "Invoice Create",
-    //             path: "/invoice/create",
-    //             subdropdownMenu: false
-    //         },
-    //         {
-    //             id: 2,
-    //             name: "Invoices",
-    //             path: "/invoice/list",
-    //             subdropdownMenu: false
-    //         },
-    //         {
-    //             id: 3,
-    //             name: "Customers",
-    //             path: "/customers/list",
-    //             subdropdownMenu: false
-    //         },
-    //     ]
-    // },
+    {
+        id: 7,
+        name: "Boottle per Case",
+        path: "#",
+        icon: 'feather-briefcase',
+        dropdownMenu: [
+            {
+                id: 1,
+                name: "Boottle per Case assign",
+                path: "/invoice/create",
+                subdropdownMenu: false
+            },
+          
+        ]
+    },
     
     // {
     //     id: 6,

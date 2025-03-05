@@ -6,6 +6,7 @@ const StockTable = () => {
   const [products, setProducts] = useState([]);
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [productOptions, setProductOptions] = useState([]);
+  const [bottleAssignments, setBottleAssignments] = useState({});
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -43,8 +44,23 @@ const StockTable = () => {
       }
     };
 
+    const fetchBottleAssignments = async () => {
+      try {
+        const assignmentsSnapshot = await getDocs(collection(db, "BottleCaseAssignments"));
+        const assignmentsData = {};
+        assignmentsSnapshot.docs.forEach((doc) => {
+          const data = doc.data();
+          assignmentsData[data.optionName] = data.bottlesPerCase;
+        });
+        setBottleAssignments(assignmentsData);
+      } catch (error) {
+        console.error("Error fetching bottle assignments:", error);
+      }
+    };
+
     fetchProducts();
     fetchProductOptions();
+    fetchBottleAssignments();
   }, []);
 
   const toggleProductColumn = (product) => {
@@ -57,6 +73,15 @@ const StockTable = () => {
 
   const showAllProducts = () => {
     setSelectedProducts(products);
+  };
+
+  const calculateCasesAndBottles = (totalQty, optionName) => {
+    const bottlesPerCase = bottleAssignments[optionName] || 0;
+    if (bottlesPerCase <= 0) return "N/A"; // If no assignment or invalid, return N/A
+
+    const cases = Math.floor(totalQty / bottlesPerCase);
+    const extraBottles = totalQty % bottlesPerCase;
+    return `${cases}/${extraBottles}`;
   };
 
   let grandTotalPrice = 0;
@@ -90,7 +115,7 @@ const StockTable = () => {
             transform: scale(1.05);
           }
           .selected {
-            background: #53a6ff;
+            background: rgb(26, 137, 255);
             color: #fff;
           }
           .table-header {
@@ -107,13 +132,19 @@ const StockTable = () => {
             text-align: left;
           }
           .total-column {
-            background-color:rgb(244, 255, 181) !important;
+            background-color: rgb(244, 255, 181) !important;
+            color: black !important;
+            font-weight: bold;
+            text-align: left;
+          }
+          .cases-column {
+            background-color: rgb(181, 255, 244) !important;
             color: black !important;
             font-weight: bold;
             text-align: left;
           }
           .final-total {
-            background-color:rgb(98, 255, 98) !important;
+            background-color: rgb(98, 255, 98) !important;
             color: black !important;
             font-weight: bold;
             text-align: left;
@@ -170,6 +201,7 @@ const StockTable = () => {
                 </th>
               ))}
               <th className="table-header total-column">Total</th>
+              <th className="table-header cases-column">Cases/Bottles</th>
             </tr>
           </thead>
           <tbody>
@@ -187,6 +219,8 @@ const StockTable = () => {
               // Accumulate Grand Totals
               grandTotalPrice += totalPrice;
               grandTotalQty += totalQty;
+
+              const casesAndBottles = calculateCasesAndBottles(totalQty, option.name);
 
               return (
                 <tr key={option.name}>
@@ -208,6 +242,9 @@ const StockTable = () => {
                     • <span>Total Price:</span> Rs.{totalPrice.toLocaleString()} <br />
                     • <span>Total Qty:</span> {totalQty.toLocaleString()}
                   </td>
+                  <td className="table-cell cases-column">
+                    {casesAndBottles}
+                  </td>
                 </tr>
               );
             })}
@@ -218,6 +255,9 @@ const StockTable = () => {
               <td className="final-total">
                 • <span>Total Price:</span> Rs.{grandTotalPrice.toLocaleString()} <br />
                 • <span>Total Qty:</span> {grandTotalQty.toLocaleString()}
+              </td>
+              <td className="final-total">
+                {calculateCasesAndBottles(grandTotalQty, "grandTotal")}
               </td>
             </tr>
           </tbody>
