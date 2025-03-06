@@ -31,6 +31,8 @@ import OrganizationCreate from "../pages/organization-create";
 import ProductCreate from "../pages/product-create";
 import ProductList from "../pages/product-list";
 import OrganizationList from "../pages/organization-list";
+import LoadingSheet from "../pages/LoadingList";
+import UnLoadingSheet from "../pages/UnLoadingList";
 
 import PaymentView from "../pages/payment-view";
 import PaymentCreate from "../pages/payment-create";
@@ -165,6 +167,14 @@ export const router = createBrowserRouter([
             {
                 path: "/customers/view",
                 element: <CustomersView />,
+            },
+            {
+                path: "/loadingsheet/loadingList",
+                element: <LoadingSheet />,
+            },
+            {
+                path: "/loadingsheet/UnloadingList",
+                element: <UnLoadingSheet />,
             },
             {
                 path: "/customers/create",
