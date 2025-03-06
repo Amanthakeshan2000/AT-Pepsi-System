@@ -262,32 +262,27 @@ export const menuList = [
         ]
     },
     
-    // {
-    //     id: 6,
-    //     name: "leads",
-    //     path: "#",
-    //     icon: 'feather-alert-circle',
-    //     dropdownMenu: [
-    //         {
-    //             id: 1,
-    //             name: "Leads",
-    //             path: "/leads/list",
-    //             subdropdownMenu: false
-    //         },
-    //         {
-    //             id: 2,
-    //             name: "Leads View",
-    //             path: "/leads/view",
-    //             subdropdownMenu: false
-    //         },
-    //         {
-    //             id: 3,
-    //             name: "Leads Create",
-    //             path: "/leads/create",
-    //             subdropdownMenu: false
-    //         }
-    //     ]
-    // },
+    {
+        id: 8,
+        name: "Loading Sheet",
+        path: "#",
+        icon: 'feather-layout',
+        dropdownMenu: [
+            {
+                id: 1,
+                name: "Loading sales",
+                path: "/loadingSheet/LoadingList",
+                subdropdownMenu: false
+            },
+            {
+                id: 2,
+                name: "UnLoading sales",
+                path: "/loadingSheet/UnLoadingList",
+                subdropdownMenu: false
+            },
+         
+        ]
+    },
     // {
     //     id: 7,
     //     name: "projects",
