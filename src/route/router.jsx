@@ -32,7 +32,7 @@ import ProductCreate from "../pages/product-create";
 import ProductList from "../pages/product-list";
 import OrganizationList from "../pages/organization-list";
 import LoadingSheet from "../pages/LoadingList";
-import UnLoadingSheet from "../pages/UnLoadingList";
+import UnLoadingSheet from "../pages/unLoadingList";
 
 import PaymentView from "../pages/payment-view";
 import PaymentCreate from "../pages/payment-create";
@@ -173,7 +173,7 @@ export const router = createBrowserRouter([
                 element: <LoadingSheet />,
             },
             {
-                path: "/loadingsheet/UnloadingList",
+                path: "/loadingsheet/unloadingList",
                 element: <UnLoadingSheet />,
             },
             {
