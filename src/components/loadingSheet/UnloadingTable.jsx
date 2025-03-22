@@ -90,14 +90,55 @@ const ProcessedBillReview = () => {
 
   const handleUnloadingBTChange = (billIndex, productIndex, value) => {
     const newBills = [...currentUnitBills];
-    const qtyBT = parseInt(newBills[billIndex].products[productIndex].qty) || 0;
-    const unloadingBT = parseInt(value) || 0;
     
-    newBills[billIndex].products[productIndex].unloadingBT = value;
-    newBills[billIndex].products[productIndex].saleBT = qtyBT - unloadingBT;
-    newBills[billIndex].products[productIndex].salesValue = 
-      newBills[billIndex].products[productIndex].saleBT * 
-      (parseFloat(newBills[billIndex].products[productIndex].price) || 0);
+    // Get the product details from the target product
+    const targetProduct = newBills[billIndex].products[productIndex];
+    const productId = targetProduct.productId;
+    const optionId = targetProduct.optionId;
+    
+    // Update all instances of this product across all bills
+    let totalQty = 0;
+    let totalUnloadingBT = 0;
+    
+    // First pass - update values and calculate totals
+    newBills.forEach((bill, bIndex) => {
+      bill.products.forEach((product, pIndex) => {
+        if (product.productId === productId && product.optionId === optionId) {
+          const qty = parseInt(product.qty) || 0;
+          totalQty += qty;
+          
+          if (bIndex === billIndex && pIndex === productIndex) {
+            // This is the product being directly edited
+            product.unloadingBT = value;
+            totalUnloadingBT += parseInt(value) || 0;
+          } else {
+            // For other instances of the same product
+            totalUnloadingBT += parseInt(product.unloadingBT) || 0;
+          }
+        }
+      });
+    });
+    
+    // Calculate proportions for distribution if unloading is less than total qty
+    const unloadingBT = parseInt(value) || 0;
+    if (totalUnloadingBT > totalQty) {
+      // If total unloading exceeds total qty, reset the edited field
+      newBills[billIndex].products[productIndex].unloadingBT = "";
+      alert("Total unloading bottles cannot exceed total quantity!");
+      return;
+    }
+    
+    // Second pass - update sales values
+    newBills.forEach((bill) => {
+      bill.products.forEach((product) => {
+        if (product.productId === productId && product.optionId === optionId) {
+          const qty = parseInt(product.qty) || 0;
+          const unloadingBT = parseInt(product.unloadingBT) || 0;
+          product.saleBT = qty - unloadingBT;
+          product.salesValue = product.saleBT * (parseFloat(product.price) || 0);
+        }
+      });
+    });
     
     setCurrentUnitBills(newBills);
   };
@@ -106,16 +147,37 @@ const ProcessedBillReview = () => {
     try {
       const q = query(billReviewsCollectionRef, where("unitId", "==", currentUnitId));
       const querySnapshot = await getDocs(q);
-      const review = querySnapshot.docs[0]?.data();
-      if (review) {
-        setCurrentUnitBills(review.bills);
+      
+      if (querySnapshot.docs.length > 0) {
+        const reviewData = querySnapshot.docs[0].data();
+        setCurrentUnitBills(reviewData.bills);
+        
         // Update isSaved to false to enable Save button again
         const reviewDocId = querySnapshot.docs[0].id;
         await updateDoc(doc(db, "BillReviews", reviewDocId), { isSaved: false });
         await fetchSavedReviews(); // Refresh reviews to reflect updated isSaved
         alert("Loaded saved values for editing. Save button re-enabled.");
       } else {
-        alert("No saved review found for this unit.");
+        // Check if there's a processed unit available
+        const processedUnit = processedUnits.find(unit => unit.unitId === currentUnitId);
+        
+        if (processedUnit) {
+          // Initialize bills with unloading values for new review
+          const initialBills = processedUnit.bills.map(bill => ({
+            ...bill,
+            products: bill.products.map(product => ({
+              ...product,
+              unloadingBT: "",
+              saleBT: 0,
+              salesValue: 0,
+            })),
+          }));
+          
+          setCurrentUnitBills(initialBills);
+          alert("Initialized new review from processed unit.");
+        } else {
+          alert("No saved review or processed unit found for this unit.");
+        }
       }
     } catch (error) {
       console.error("Error loading saved review:", error.message);
@@ -131,10 +193,82 @@ const ProcessedBillReview = () => {
         return;
       }
 
+      // Group products by their unique identifiers (optionId first)
+      const consolidatedProducts = [];
+      
+      // First, group by optionId
+      const optionGroups = {};
+      
+      currentUnitBills.forEach(item => {
+        item.products.forEach(product => {
+          const optionId = product.optionId;
+          if (!optionGroups[optionId]) {
+            optionGroups[optionId] = [];
+          }
+          optionGroups[optionId].push({
+            billId: item.billId,
+            productId: product.productId,
+            product: product
+          });
+        });
+      });
+      
+      // Then process each option group
+      Object.entries(optionGroups).forEach(([optionId, entries]) => {
+        // Group by product within this option
+        const productGroups = {};
+        
+        entries.forEach(entry => {
+          const productId = entry.productId;
+          if (!productGroups[productId]) {
+            productGroups[productId] = [];
+          }
+          productGroups[productId].push(entry);
+        });
+        
+        // Process each product group
+        Object.entries(productGroups).forEach(([productId, productEntries]) => {
+          const productName = products.find(p => p.id === productId)?.name || 'Unknown';
+          const firstProduct = productEntries[0].product;
+          
+          // Calculate totals
+          const totalQty = productEntries.reduce((sum, entry) => {
+            return sum + (parseInt(entry.product.qty) || 0);
+          }, 0);
+          
+          const totalUnloadingBT = productEntries.reduce((sum, entry) => {
+            return sum + (parseInt(entry.product.unloadingBT) || 0);
+          }, 0);
+          
+          const totalSaleBT = productEntries.reduce((sum, entry) => {
+            return sum + (parseInt(entry.product.saleBT) || 0);
+          }, 0);
+          
+          const totalSalesValue = productEntries.reduce((sum, entry) => {
+            return sum + (parseFloat(entry.product.salesValue) || 0);
+          }, 0);
+          
+          // Create consolidated product entry
+          consolidatedProducts.push({
+            optionId: optionId,
+            productId: productId,
+            productName: productName,
+            bottlesPerCase: firstProduct.bottlesPerCase,
+            totalQty: totalQty,
+            unloadingBT: totalUnloadingBT,
+            saleBT: totalSaleBT,
+            salesValue: totalSalesValue,
+            caseCount: firstProduct.bottlesPerCase ? Math.floor(totalQty / firstProduct.bottlesPerCase) : 0,
+            extraBottles: firstProduct.bottlesPerCase ? totalQty % firstProduct.bottlesPerCase : 0
+          });
+        });
+      });
+
       const existingReview = savedReviews.find(review => review.unitId === currentUnitId);
       const reviewData = {
         unitId: currentUnitId,
         bills: currentUnitBills,
+        consolidatedProducts: consolidatedProducts,
         isSaved: true, // Set to true on save
         createdAt: serverTimestamp(),
       };
@@ -242,52 +376,134 @@ const ProcessedBillReview = () => {
             </button>
           </div>
 
-          {currentUnitBills.map((item, billIndex) => (
-            <div key={billIndex} className="mb-4">
-              <h5>Bill: {item.billNo} - {item.outletName}</h5>
-              <table className="table table-bordered">
-                <thead>
-                  <tr>
-                    <th>Product Name</th>
-                    <th>Qty (BT)</th>
-                    <th>Bottles per Case</th>
-                    <th>Case</th>
-                    <th>Extra Bottles</th>
-                    <th>UnLoading BT</th>
-                    <th>Sale BT</th>
-                    <th>Sales Value (Rs.)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {item.products.map((product, productIndex) => (
-                    <tr key={productIndex}>
-                      <td>{products.find(p => p.id === product.productId)?.name} - {product.optionId}</td>
-                      <td>{product.qty}</td>
-                      <td>{product.bottlesPerCase || '-'}</td>
-                      <td>{product.bottlesPerCase ? product.caseCount : '-'}</td>
-                      <td>{product.bottlesPerCase ? product.extraBottles : '-'}</td>
-                      <td>
-                        <input
-                          type="number"
-                          className="form-control"
-                          value={product.unloadingBT}
-                          onChange={(e) => handleUnloadingBTChange(billIndex, productIndex, e.target.value)}
-                          min="0"
-                          style={{ width: "100px" }}
-                        />
-                      </td>
-                      <td>{product.saleBT}</td>
-                      <td>{product.salesValue.toFixed(2)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <div style={{ textAlign: "right", color: "green", fontWeight: "bold" }}>
-                Total Sales Value: Rs. {calculateSalesValueTotal(item.products)}
-              </div>
-              <hr />
+          {/* Display added bills as cards */}
+          <div className="mb-3">
+            <h5>Added Bills:</h5>
+            <div className="d-flex flex-wrap gap-2">
+              {currentUnitBills.map((item, billIndex) => (
+                <div key={billIndex} className="card" style={{ width: "18rem" }}>
+                  <div className="card-body">
+                    <h6 className="card-title">{item.billNo}</h6>
+                    <p className="card-text">{item.outletName}</p>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
+
+          {/* Consolidated products table */}
+          <div>
+            <h5>Review Products</h5>
+            <table className="table table-bordered">
+              <thead>
+                <tr>
+                  <th>Product Name</th>
+                  <th>Qty (BT)</th>
+                  <th>Bottles per Case</th>
+                  <th>Case</th>
+                  <th>Extra Bottles</th>
+                  <th>UnLoading BT</th>
+                  <th>Sale BT</th>
+                  <th>Sales Value (Rs.)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {/* Group products by their optionId first */}
+                {Object.entries(
+                  // Group by optionId
+                  currentUnitBills.flatMap(item => 
+                    item.products.map(product => ({
+                      productId: product.productId,
+                      optionId: product.optionId,
+                      product: product,
+                      billIndex: currentUnitBills.indexOf(item),
+                      productIndex: item.products.indexOf(product)
+                    }))
+                  ).reduce((acc, curr) => {
+                    if (!acc[curr.optionId]) {
+                      acc[curr.optionId] = [];
+                    }
+                    acc[curr.optionId].push(curr);
+                    return acc;
+                  }, {})
+                ).flatMap(([optionId, optionEntries], optionGroupIndex, optionGroups) => {
+                  // Further group by productId
+                  const productGroups = optionEntries.reduce((acc, entry) => {
+                    if (!acc[entry.productId]) {
+                      acc[entry.productId] = [];
+                    }
+                    acc[entry.productId].push(entry);
+                    return acc;
+                  }, {});
+
+                  // Create rows for this option group
+                  const optionRows = Object.entries(productGroups).map(([productId, entries], productIndex) => {
+                    // Get reference for first instance
+                    const firstEntry = entries[0];
+                    const firstInstance = firstEntry.product;
+                    const billIndex = firstEntry.billIndex;
+                    const entryProductIndex = firstEntry.productIndex;
+                    
+                    // Get product name
+                    const productName = products.find(p => p.id === productId)?.name || 'Unknown';
+                    
+                    // Calculate totals for this product option
+                    const totalQty = entries.reduce((sum, entry) => sum + (parseInt(entry.product.qty) || 0), 0);
+                    const totalUnloadingBT = entries.reduce((sum, entry) => sum + (parseInt(entry.product.unloadingBT) || 0), 0);
+                    const totalSaleBT = entries.reduce((sum, entry) => sum + (parseInt(entry.product.saleBT) || 0), 0);
+                    const totalSalesValue = entries.reduce((sum, entry) => sum + (parseFloat(entry.product.salesValue) || 0), 0);
+
+                    // Create a unique key for row
+                    const uniqueKey = `${productId}-${optionId}`;
+
+                    return (
+                      <tr key={uniqueKey}>
+                        <td>{productName} - {optionId}</td>
+                        <td>{totalQty}</td>
+                        <td>{firstInstance.bottlesPerCase || '-'}</td>
+                        <td>{firstInstance.bottlesPerCase ? Math.floor(totalQty / firstInstance.bottlesPerCase) : '-'}</td>
+                        <td>{firstInstance.bottlesPerCase ? totalQty % firstInstance.bottlesPerCase : '-'}</td>
+                        <td>
+                          <input
+                            type="number"
+                            className="form-control"
+                            value={firstInstance.unloadingBT}
+                            onChange={(e) => handleUnloadingBTChange(billIndex, entryProductIndex, e.target.value)}
+                            min="0"
+                            style={{ width: "100px" }}
+                          />
+                        </td>
+                        <td>{totalSaleBT}</td>
+                        <td>{totalSalesValue.toFixed(2)}</td>
+                      </tr>
+                    );
+                  });
+
+                  // Add a separator row if this is not the last option group
+                  if (optionGroupIndex < Object.keys(optionGroups).length - 1) {
+                    return [
+                      ...optionRows,
+                      <tr key={`separator-${optionId}`} style={{ height: "20px", backgroundColor: "#f8f9fa" }}>
+                        <td colSpan="8"></td>
+                      </tr>
+                    ];
+                  }
+                  
+                  return optionRows;
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="text-center mt-3">
+            <button 
+              className="btn btn-primary" 
+              onClick={handleSave}
+              disabled={loading || isSaveDisabled(currentUnitId)}
+            >
+              {loading ? "Saving..." : "Save All"}
+            </button>
+          </div>
         </div>
       )}
 
@@ -301,34 +517,116 @@ const ProcessedBillReview = () => {
             </div>
             <div style={{ marginTop: "20px" }}>
               <p><strong>Date:</strong> {selectedUnit.date}</p>
-              <h5>Bills</h5>
-              {selectedUnit.bills.map((bill, idx) => (
-                <div key={idx} className="mb-3">
-                  <h6>Bill: {bill.billNo} - {bill.outletName}</h6>
+              
+              {selectedUnit.consolidatedProducts ? (
+                // Display consolidated products if available
+                <>
+                  <h5>Consolidated Products</h5>
                   <table className="table table-bordered">
                     <thead>
                       <tr>
-                        <th>Name</th>
+                        <th>Option</th>
+                        <th>Product Name</th>
                         <th>Qty (BT)</th>
                         <th>Bottles/Case</th>
                         <th>Case</th>
                         <th>Extra Bottles</th>
+                        {selectedUnit.consolidatedProducts[0].unloadingBT !== undefined && (
+                          <>
+                            <th>UnLoading BT</th>
+                            <th>Sale BT</th>
+                            <th>Sales Value (Rs.)</th>
+                          </>
+                        )}
                       </tr>
                     </thead>
                     <tbody>
-                      {bill.products.map((product, pIdx) => (
-                        <tr key={pIdx}>
-                          <td>{products.find(p => p.id === product.productId)?.name} - {product.optionId}</td>
-                          <td>{product.qty}</td>
-                          <td>{product.bottlesPerCase || '-'}</td>
-                          <td>{product.bottlesPerCase ? product.caseCount : '-'}</td>
-                          <td>{product.bottlesPerCase ? product.extraBottles : '-'}</td>
-                        </tr>
-                      ))}
+                      {/* Group consolidated products by optionId */}
+                      {selectedUnit.consolidatedProducts
+                        .sort((a, b) => a.optionId.localeCompare(b.optionId))
+                        .reduce((result, product, index, array) => {
+                          // Add the current product to the result
+                          result.push(
+                            <tr key={`product-${index}`}>
+                              <td>{product.optionId}</td>
+                              <td>{product.productName || products.find(p => p.id === product.productId)?.name}</td>
+                              <td>{product.totalQty}</td>
+                              <td>{product.bottlesPerCase || '-'}</td>
+                              <td>{product.caseCount || '-'}</td>
+                              <td>{product.extraBottles || '-'}</td>
+                              {product.unloadingBT !== undefined && (
+                                <>
+                                  <td>{product.unloadingBT}</td>
+                                  <td>{product.saleBT}</td>
+                                  <td>{product.salesValue.toFixed(2)}</td>
+                                </>
+                              )}
+                            </tr>
+                          );
+                          
+                          // If the next product has a different optionId, add a separator row
+                          if (index < array.length - 1 && product.optionId !== array[index + 1].optionId) {
+                            const colSpan = product.unloadingBT !== undefined ? 9 : 6;
+                            result.push(
+                              <tr key={`separator-${index}`} style={{ height: "20px", backgroundColor: "#f8f9fa" }}>
+                                <td colSpan={colSpan}></td>
+                              </tr>
+                            );
+                          }
+                          
+                          return result;
+                        }, [])
+                      }
                     </tbody>
                   </table>
+                </>
+              ) : null}
+              
+              <h5>Added Bills</h5>
+              <div className="d-flex flex-wrap gap-2 mb-3">
+                {selectedUnit.bills.map((bill, idx) => (
+                  <div key={idx} className="card" style={{ width: "18rem" }}>
+                    <div className="card-body">
+                      <h6 className="card-title">{bill.billNo}</h6>
+                      <p className="card-text">{bill.outletName}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {(!selectedUnit.consolidatedProducts) && (
+                // Only show individual bill products if consolidated view isn't available
+                <div>
+                  <h5>Bill Details</h5>
+                  {selectedUnit.bills.map((bill, idx) => (
+                    <div key={idx} className="mb-3">
+                      <h6>Bill: {bill.billNo} - {bill.outletName}</h6>
+                      <table className="table table-bordered">
+                        <thead>
+                          <tr>
+                            <th>Name</th>
+                            <th>Qty (BT)</th>
+                            <th>Bottles/Case</th>
+                            <th>Case</th>
+                            <th>Extra Bottles</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {bill.products.map((product, pIdx) => (
+                            <tr key={pIdx}>
+                              <td>{products.find(p => p.id === product.productId)?.name} - {product.optionId}</td>
+                              <td>{product.qty}</td>
+                              <td>{product.bottlesPerCase || '-'}</td>
+                              <td>{product.bottlesPerCase ? product.caseCount : '-'}</td>
+                              <td>{product.bottlesPerCase ? product.extraBottles : '-'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </div>
