@@ -80,13 +80,15 @@ const BillManagement = () => {
       alert("This bill has already been added!");
       return;
     }
+    
+    // Add bill to newBillItems
     setNewBillItems(prevItems => [...prevItems, {
       billId: bill.id,
       billNo: bill.billNo,
       outletName: bill.outletName,
       products: bill.productOptions.map(opt => ({
         ...opt,
-        bottlesPerCase: null, // No default selection
+        bottlesPerCase: null,
         caseCount: 0,
         extraBottles: 0
       })),
@@ -96,10 +98,24 @@ const BillManagement = () => {
 
   const handleBottlesPerCaseChange = (billIndex, productIndex, value) => {
     const newItems = [...newBillItems];
-    const qty = parseInt(newItems[billIndex].products[productIndex].qty) || 0;
-    newItems[billIndex].products[productIndex].bottlesPerCase = value;
-    newItems[billIndex].products[productIndex].caseCount = Math.floor(qty / value);
-    newItems[billIndex].products[productIndex].extraBottles = qty % value;
+    
+    // Get the product details from the first instance
+    const firstInstance = newItems[billIndex].products[productIndex];
+    const productId = firstInstance.productId;
+    const optionId = firstInstance.optionId;
+    
+    // Update all instances of this product across all bills
+    newItems.forEach((item, itemIndex) => {
+      item.products.forEach((product, prodIndex) => {
+        if (product.productId === productId && product.optionId === optionId) {
+          const qty = parseInt(product.qty) || 0;
+          newItems[itemIndex].products[prodIndex].bottlesPerCase = value;
+          newItems[itemIndex].products[prodIndex].caseCount = Math.floor(qty / value);
+          newItems[itemIndex].products[prodIndex].extraBottles = qty % value;
+        }
+      });
+    });
+    
     setNewBillItems(newItems);
   };
 
@@ -146,11 +162,68 @@ const BillManagement = () => {
         return;
       }
 
+      // Group products by their unique identifiers
+      const consolidatedProducts = [];
+      
+      // First, group by optionId
+      const optionGroups = {};
+      
+      newBillItems.forEach(item => {
+        item.products.forEach(product => {
+          const optionId = product.optionId;
+          if (!optionGroups[optionId]) {
+            optionGroups[optionId] = [];
+          }
+          optionGroups[optionId].push({
+            billId: item.billId,
+            productId: product.productId,
+            product: product
+          });
+        });
+      });
+      
+      // Then process each option group
+      Object.entries(optionGroups).forEach(([optionId, entries]) => {
+        // Group by product within this option
+        const productGroups = {};
+        
+        entries.forEach(entry => {
+          const productId = entry.productId;
+          if (!productGroups[productId]) {
+            productGroups[productId] = [];
+          }
+          productGroups[productId].push(entry);
+        });
+        
+        // Process each product group
+        Object.entries(productGroups).forEach(([productId, productEntries]) => {
+          const productName = products.find(p => p.id === productId)?.name || 'Unknown';
+          const firstProduct = productEntries[0].product;
+          
+          // Calculate total quantity
+          const totalQty = productEntries.reduce((sum, entry) => {
+            return sum + (parseInt(entry.product.qty) || 0);
+          }, 0);
+          
+          // Create consolidated product entry
+          consolidatedProducts.push({
+            optionId: optionId,
+            productId: productId,
+            productName: productName,
+            bottlesPerCase: firstProduct.bottlesPerCase,
+            totalQty: totalQty,
+            caseCount: firstProduct.bottlesPerCase ? Math.floor(totalQty / firstProduct.bottlesPerCase) : 0,
+            extraBottles: firstProduct.bottlesPerCase ? totalQty % firstProduct.bottlesPerCase : 0
+          });
+        });
+      });
+
       const unitId = generateUnitId();
       const unitData = {
         unitId,
         date: selectedDate,
         bills: newBillItems,
+        consolidatedProducts: consolidatedProducts,
         createdAt: serverTimestamp(),
       };
 
@@ -272,12 +345,34 @@ const BillManagement = () => {
           />
         </div>
 
-        {newBillItems.map((item, billIndex) => (
-          <div key={billIndex} className="mb-4">
-            <h5>Bill: {item.billNo} - {item.outletName}</h5>
+        {/* Display added bills as cards */}
+        <div className="mb-3">
+          <h5>Added Bills:</h5>
+          <div className="d-flex flex-wrap gap-2">
+            {newBillItems.map((item, billIndex) => (
+              <div key={billIndex} className="card" style={{ width: "18rem" }}>
+                <div className="card-body">
+                  <h6 className="card-title">{item.billNo}</h6>
+                  <p className="card-text">{item.outletName}</p>
+                  <button 
+                    className="btn btn-danger btn-sm" 
+                    onClick={() => handleDeleteItem(billIndex)}
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        {newBillItems.length > 0 && (
+          <div>
+            <h5>Process Products</h5>
             <table className="table table-bordered">
               <thead>
                 <tr>
+                  {/* <th>Option</th> */}
                   <th>Product Name</th>
                   <th>Qty (BT)</th>
                   <th>Bottles per Case</th>
@@ -286,57 +381,123 @@ const BillManagement = () => {
                 </tr>
               </thead>
               <tbody>
-                {item.products.map((product, productIndex) => (
-                  <tr key={productIndex}>
-                    <td>{products.find(p => p.id === product.productId)?.name} - {product.optionId}</td>
-                    <td>{product.qty}</td>
-                    <td>
-                      <div className="form-check form-check-inline">
-                        <input
-                          type="radio"
-                          name={`bpc-${billIndex}-${productIndex}`}
-                          value={10}
-                          checked={product.bottlesPerCase === 10}
-                          onChange={() => handleBottlesPerCaseChange(billIndex, productIndex, 10)}
-                        />
-                        <label>10</label>
-                      </div>
-                      <div className="form-check form-check-inline">
-                        <input
-                          type="radio"
-                          name={`bpc-${billIndex}-${productIndex}`}
-                          value={20}
-                          checked={product.bottlesPerCase === 20}
-                          onChange={() => handleBottlesPerCaseChange(billIndex, productIndex, 20)}
-                        />
-                        <label>20</label>
-                      </div>
-                      <div className="form-check form-check-inline">
-                        <input
-                          type="radio"
-                          name={`bpc-${billIndex}-${productIndex}`}
-                          value={30}
-                          checked={product.bottlesPerCase === 30}
-                          onChange={() => handleBottlesPerCaseChange(billIndex, productIndex, 30)}
-                        />
-                        <label>30</label>
-                      </div>
-                    </td>
-                    <td>{product.bottlesPerCase ? product.caseCount : '-'}</td>
-                    <td>{product.bottlesPerCase ? product.extraBottles : '-'}</td>
-                  </tr>
-                ))}
+                {/* Group products by their optionId first */}
+                {Object.entries(
+                  // Group by optionId
+                  newBillItems.flatMap(item => 
+                    item.products.map(product => ({
+                      productId: product.productId,
+                      optionId: product.optionId,
+                      product: product,
+                      billIndex: newBillItems.indexOf(item),
+                      productIndex: item.products.indexOf(product)
+                    }))
+                  ).reduce((acc, curr) => {
+                    if (!acc[curr.optionId]) {
+                      acc[curr.optionId] = [];
+                    }
+                    acc[curr.optionId].push(curr);
+                    return acc;
+                  }, {})
+                ).flatMap(([optionId, optionEntries], optionGroupIndex, optionGroups) => {
+                  // Further group by productId
+                  const productGroups = optionEntries.reduce((acc, entry) => {
+                    if (!acc[entry.productId]) {
+                      acc[entry.productId] = [];
+                    }
+                    acc[entry.productId].push(entry);
+                    return acc;
+                  }, {});
+
+                  // Create rows for this option group
+                  const optionRows = Object.entries(productGroups).map(([productId, entries], productIndex) => {
+                    // Calculate total quantity for this product option
+                    const totalQty = entries.reduce((sum, entry) => {
+                      return sum + (parseInt(entry.product.qty) || 0);
+                    }, 0);
+
+                    // Get reference for first instance
+                    const firstEntry = entries[0];
+                    const firstInstance = firstEntry.product;
+                    const billIndex = firstEntry.billIndex;
+                    const entryProductIndex = firstEntry.productIndex;
+                    
+                    // Get product name
+                    const productName = products.find(p => p.id === productId)?.name || 'Unknown';
+                    
+                    // Create a unique key for the radio input group
+                    const uniqueKey = `${productId}-${optionId}`;
+
+                    return (
+                      <tr key={uniqueKey}>
+                        <td>{productName} - {optionId}</td>
+                        <td>{totalQty}</td>
+                        <td>
+                          <div className="form-check form-check-inline">
+                            <input
+                              type="radio"
+                              name={`bpc-${uniqueKey}`}
+                              value={10}
+                              checked={firstInstance.bottlesPerCase === 10}
+                              onChange={() => {
+                                if (billIndex !== -1 && entryProductIndex !== -1) {
+                                  handleBottlesPerCaseChange(billIndex, entryProductIndex, 10);
+                                }
+                              }}
+                            />
+                            <label>10</label>
+                          </div>
+                          <div className="form-check form-check-inline">
+                            <input
+                              type="radio"
+                              name={`bpc-${uniqueKey}`}
+                              value={20}
+                              checked={firstInstance.bottlesPerCase === 20}
+                              onChange={() => {
+                                if (billIndex !== -1 && entryProductIndex !== -1) {
+                                  handleBottlesPerCaseChange(billIndex, entryProductIndex, 20);
+                                }
+                              }}
+                            />
+                            <label>20</label>
+                          </div>
+                          <div className="form-check form-check-inline">
+                            <input
+                              type="radio"
+                              name={`bpc-${uniqueKey}`}
+                              value={30}
+                              checked={firstInstance.bottlesPerCase === 30}
+                              onChange={() => {
+                                if (billIndex !== -1 && entryProductIndex !== -1) {
+                                  handleBottlesPerCaseChange(billIndex, entryProductIndex, 30);
+                                }
+                              }}
+                            />
+                            <label>30</label>
+                          </div>
+                        </td>
+                        <td>{firstInstance.bottlesPerCase ? Math.floor(totalQty / firstInstance.bottlesPerCase) : '-'}</td>
+                        <td>{firstInstance.bottlesPerCase ? totalQty % firstInstance.bottlesPerCase : '-'}</td>
+                      </tr>
+                    );
+                  });
+
+                  // Add a separator row if this is not the last option group
+                  if (optionGroupIndex < Object.keys(optionGroups).length - 1) {
+                    return [
+                      ...optionRows,
+                      <tr key={`separator-${optionId}`} style={{ height: "20px", backgroundColor: "#f8f9fa" }}>
+                        <td colSpan="5"></td>
+                      </tr>
+                    ];
+                  }
+                  
+                  return optionRows;
+                })}
               </tbody>
             </table>
-            <button 
-              className="btn btn-danger btn-sm" 
-              onClick={() => handleDeleteItem(billIndex)}
-            >
-              Delete Bill
-            </button>
-            <hr />
           </div>
-        ))}
+        )}
 
         {newBillItems.length > 0 && (
           <div className="text-center">
@@ -408,34 +569,62 @@ const BillManagement = () => {
                 // View for Processed Unit
                 <>
                   <p><strong>Date:</strong> {selectedBill.date}</p>
-                  <h5>Bills</h5>
-                  {selectedBill.bills.map((bill, idx) => (
-                    <div key={idx} className="mb-3">
-                      <h6>Bill: {bill.billNo} - {bill.outletName}</h6>
-                      <table className="table table-bordered">
-                        <thead>
-                          <tr>
-                            <th>Name</th>
-                            <th>Qty (BT)</th>
-                            <th>Bottles/Case</th>
-                            <th>Case</th>
-                            <th>Extra Bottles</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {bill.products.map((product, pIdx) => (
-                            <tr key={pIdx}>
-                              <td>{products.find(p => p.id === product.productId)?.name} - {product.optionId}</td>
-                              <td>{product.qty}</td>
+                  
+                  <h5>Consolidated Products</h5>
+                  <table className="table table-bordered">
+                    <thead>
+                      <tr>
+                        <th>Option</th>
+                        <th>Product Name</th>
+                        <th>Qty (BT)</th>
+                        <th>Bottles/Case</th>
+                        <th>Case</th>
+                        <th>Extra Bottles</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {/* Group consolidated products by optionId */}
+                      {(selectedBill.consolidatedProducts || [])
+                        .sort((a, b) => a.optionId.localeCompare(b.optionId))
+                        .reduce((result, product, index, array) => {
+                          // Add the current product to the result
+                          result.push(
+                            <tr key={`product-${index}`}>
+                              <td>{product.optionId}</td>
+                              <td>{product.productName || products.find(p => p.id === product.productId)?.name}</td>
+                              <td>{product.totalQty}</td>
                               <td>{product.bottlesPerCase || '-'}</td>
-                              <td>{product.bottlesPerCase ? product.caseCount : '-'}</td>
-                              <td>{product.bottlesPerCase ? product.extraBottles : '-'}</td>
+                              <td>{product.caseCount || '-'}</td>
+                              <td>{product.extraBottles || '-'}</td>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  ))}
+                          );
+                          
+                          // If the next product has a different optionId, add a separator row
+                          if (index < array.length - 1 && product.optionId !== array[index + 1].optionId) {
+                            result.push(
+                              <tr key={`separator-${index}`} style={{ height: "20px", backgroundColor: "#f8f9fa" }}>
+                                <td colSpan="6"></td>
+                              </tr>
+                            );
+                          }
+                          
+                          return result;
+                        }, [])
+                      }
+                    </tbody>
+                  </table>
+                  
+                  <h5>Added Bills</h5>
+                  <div className="d-flex flex-wrap gap-2 mb-3">
+                    {selectedBill.bills.map((bill, idx) => (
+                      <div key={idx} className="card" style={{ width: "18rem" }}>
+                        <div className="card-body">
+                          <h6 className="card-title">{bill.billNo}</h6>
+                          <p className="card-text">{bill.outletName}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </>
               ) : (
                 // View for Available Bill

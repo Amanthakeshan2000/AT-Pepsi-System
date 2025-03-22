@@ -118,7 +118,7 @@ const ProductTable = () => {
 
   // Add a new product option
   const addProductOption = () => {
-    setEditedOptions([...editedOptions, { name: "", price: "" }]);
+    setEditedOptions([...editedOptions, { name: "", price: "", qty: "", margin: "" }]);
   };
 
   // Remove a product option
@@ -178,6 +178,7 @@ const ProductTable = () => {
                 <th style={{ padding: "10px", textAlign: "left", color: "#ffffff !important" }}>Name</th>
                 <th style={{ padding: "10px", textAlign: "left", color: "#ffffff !important" }}>Price (Rs.)</th>
                 <th style={{ padding: "10px", textAlign: "left", color: "#ffffff !important" }}>Quantity</th>
+                <th style={{ padding: "10px", textAlign: "left", color: "#ffffff !important" }}>Margin (Rs.)</th>
               </tr>
             </thead>
 
@@ -208,6 +209,17 @@ const ProductTable = () => {
                       }}
                     >
                       {option.qty}
+                    </td>
+                    <td
+                      style={{
+                        padding: "10px",
+                        borderBottom: "1px solid #ddd",
+                        textAlign: "left",
+                        color: "#ff9800",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      Rs.{option.margin || 0}
                     </td>
                   </tr>
                 ))}
@@ -362,11 +374,23 @@ const ProductTable = () => {
               border: "1px solid #ccc",
             }}
           />
-             <input
+          <input
             type="number"
             value={option.qty}
             onChange={(e) => handleOptionChange(index, "qty", e.target.value)}
-            placeholder="qty"
+            placeholder="Qty"
+            style={{
+              width: "100px",
+              padding: "8px",
+              borderRadius: "5px",
+              border: "1px solid #ccc",
+            }}
+          />
+          <input
+            type="number"
+            value={option.margin}
+            onChange={(e) => handleOptionChange(index, "margin", e.target.value)}
+            placeholder="Margin"
             style={{
               width: "100px",
               padding: "8px",

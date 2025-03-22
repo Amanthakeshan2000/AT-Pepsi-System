@@ -13,6 +13,7 @@ const ProductCreate = () => {
   const [optionName, setOptionName] = useState("");
   const [optionPrice, setOptionPrice] = useState("");
   const [optionQty, setOptionQty] = useState("");
+  const [optionMargin, setOptionMargin] = useState(""); // Add state for margin price
   const [imageBase64, setImageBase64] = useState(""); // Store image as Base64
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
@@ -79,10 +80,19 @@ const ProductCreate = () => {
   // Add a new product option
   const addProductOption = () => {
     if (optionName && optionPrice && optionQty) {
-      setProductOptions([...productOptions, { name: optionName, price: parseFloat(optionPrice), qty: parseFloat(optionQty) }]);
+      setProductOptions([
+        ...productOptions, 
+        { 
+          name: optionName, 
+          price: parseFloat(optionPrice), 
+          qty: parseFloat(optionQty),
+          margin: parseFloat(optionMargin) || 0 // Add margin with default 0 if empty
+        }
+      ]);
       setOptionName("");
       setOptionPrice("");
       setOptionQty("");
+      setOptionMargin(""); // Reset margin field
     }
   };
 
@@ -176,12 +186,13 @@ const ProductCreate = () => {
                   <input type="text" className="form-control" placeholder="Option Name" value={optionName} onChange={(e) => setOptionName(e.target.value)} />
                   <input type="number" className="form-control" placeholder="Price" value={optionPrice} onChange={(e) => setOptionPrice(e.target.value)} />
                   <input type="number" className="form-control" placeholder="Option Qty" value={optionQty} onChange={(e) => setOptionQty(e.target.value)} />
+                  <input type="number" className="form-control" placeholder="Margin" value={optionMargin} onChange={(e) => setOptionMargin(e.target.value)} />
                   <button type="button" className="btn btn-primary" onClick={addProductOption}>Add</button>
                 </div>
                 <ul className="list-group">
                   {productOptions.map((option, index) => (
                     <li key={index} className="list-group-item d-flex justify-content-between align-items-center">
-                      {option.name} - Rs.{option.price.toFixed(2)} - Qty: {option.qty}
+                      {option.name} - Rs.{option.price.toFixed(2)} - Qty: {option.qty} - Margin: Rs.{option.margin.toFixed(2)}
                       <button type="button" className="btn btn-sm btn-danger" onClick={() => removeProductOption(index)}>Remove</button>
                     </li>
                   ))}
