@@ -283,6 +283,38 @@ export const menuList = [
          
         ]
     },
+    {
+        id: 9,
+        name: "Summery of month",
+        path: "#",
+        icon: 'feather-file-text',
+        dropdownMenu: [
+            {
+                id: 1,
+                name: "Summery of month",
+                path: "/summeryofmonth/summeryofmonthList",
+                subdropdownMenu: false
+            },
+           
+         
+        ]
+    },
+    {
+        id: 10,
+        name: "Payment",
+        path: "#",
+        icon: 'feather-file-text',
+        dropdownMenu: [
+            {
+                id: 1,
+                name: "Payment",
+                path: "/payment/paymentList",
+                subdropdownMenu: false
+            },
+           
+         
+        ]
+    },
     // {
     //     id: 7,
     //     name: "projects",
