@@ -14,6 +14,8 @@ const BillManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(5);
+  const [printMode, setPrintMode] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
 
   const billsCollectionRef = collection(db, "Bill");
   const productsCollectionRef = collection(db, "Product");
@@ -72,6 +74,7 @@ const BillManagement = () => {
 
   const handleClosePopup = () => {
     setSelectedBill(null);
+    setPrintMode(false);
   };
 
   const handleAddToNewBill = (bill) => {
@@ -145,6 +148,12 @@ const BillManagement = () => {
 
   const handleViewProcessedUnit = (unit) => {
     setSelectedBill(unit);
+    setPrintMode(false);
+  };
+
+  const handlePrintUnit = (unit) => {
+    setSelectedBill(unit);
+    setPrintMode(true);
   };
 
   const generateUnitId = () => {
@@ -261,6 +270,26 @@ const BillManagement = () => {
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
+  const triggerPrint = () => {
+    setIsPrinting(true);
+    setTimeout(() => {
+      window.print();
+      setIsPrinting(false);
+    }, 300);
+  };
+
+  const handleDownloadPDF = () => {
+    const printContent = document.querySelector('.print-content');
+    const originalContents = document.body.innerHTML;
+    
+    document.body.innerHTML = printContent.innerHTML;
+    
+    window.print();
+    
+    document.body.innerHTML = originalContents;
+    window.location.reload();
+  };
+
   return (
     <div className="container">
       <h3>Bill Management</h3>
@@ -372,7 +401,6 @@ const BillManagement = () => {
             <table className="table table-bordered">
               <thead>
                 <tr>
-                  {/* <th>Option</th> */}
                   <th>Product Name</th>
                   <th>Qty (BT)</th>
                   <th>Bottles per Case</th>
@@ -381,16 +409,15 @@ const BillManagement = () => {
                 </tr>
               </thead>
               <tbody>
-                {/* Group products by their optionId first */}
                 {Object.entries(
-                  // Group by optionId
                   newBillItems.flatMap(item => 
                     item.products.map(product => ({
                       productId: product.productId,
                       optionId: product.optionId,
                       product: product,
                       billIndex: newBillItems.indexOf(item),
-                      productIndex: item.products.indexOf(product)
+                      productIndex: item.products.indexOf(product),
+                      productName: products.find(p => p.id === product.productId)?.name || 'Unknown'
                     }))
                   ).reduce((acc, curr) => {
                     if (!acc[curr.optionId]) {
@@ -399,8 +426,20 @@ const BillManagement = () => {
                     acc[curr.optionId].push(curr);
                     return acc;
                   }, {})
-                ).flatMap(([optionId, optionEntries], optionGroupIndex, optionGroups) => {
-                  // Further group by productId
+                )
+                // Sort by optionId and put WATER products last
+                .sort(([optionIdA, entriesA], [optionIdB, entriesB]) => {
+                  const isWaterA = entriesA[0].productName === "WATER";
+                  const isWaterB = entriesB[0].productName === "WATER";
+                  
+                  if (isWaterA && !isWaterB) return 1;
+                  if (!isWaterA && isWaterB) return -1;
+                  
+                  // Extract ML value and convert to number for comparison
+                  const getML = (str) => parseInt(str.match(/\d+/)?.[0] || 0);
+                  return getML(optionIdA) - getML(optionIdB);
+                })
+                .flatMap(([optionId, optionEntries], optionGroupIndex, optionGroups) => {
                   const productGroups = optionEntries.reduce((acc, entry) => {
                     if (!acc[entry.productId]) {
                       acc[entry.productId] = [];
@@ -409,23 +448,16 @@ const BillManagement = () => {
                     return acc;
                   }, {});
 
-                  // Create rows for this option group
                   const optionRows = Object.entries(productGroups).map(([productId, entries], productIndex) => {
-                    // Calculate total quantity for this product option
                     const totalQty = entries.reduce((sum, entry) => {
                       return sum + (parseInt(entry.product.qty) || 0);
                     }, 0);
 
-                    // Get reference for first instance
                     const firstEntry = entries[0];
                     const firstInstance = firstEntry.product;
                     const billIndex = firstEntry.billIndex;
                     const entryProductIndex = firstEntry.productIndex;
-                    
-                    // Get product name
-                    const productName = products.find(p => p.id === productId)?.name || 'Unknown';
-                    
-                    // Create a unique key for the radio input group
+                    const productName = firstEntry.productName;
                     const uniqueKey = `${productId}-${optionId}`;
 
                     return (
@@ -437,29 +469,57 @@ const BillManagement = () => {
                             <input
                               type="radio"
                               name={`bpc-${uniqueKey}`}
-                              value={10}
-                              checked={firstInstance.bottlesPerCase === 10}
+                              value={9}
+                              checked={firstInstance.bottlesPerCase === 9}
                               onChange={() => {
                                 if (billIndex !== -1 && entryProductIndex !== -1) {
-                                  handleBottlesPerCaseChange(billIndex, entryProductIndex, 10);
+                                  handleBottlesPerCaseChange(billIndex, entryProductIndex, 9);
                                 }
                               }}
                             />
-                            <label>10</label>
+                            <label>9</label>
                           </div>
                           <div className="form-check form-check-inline">
                             <input
                               type="radio"
                               name={`bpc-${uniqueKey}`}
-                              value={20}
-                              checked={firstInstance.bottlesPerCase === 20}
+                              value={12}
+                              checked={firstInstance.bottlesPerCase === 12}
                               onChange={() => {
                                 if (billIndex !== -1 && entryProductIndex !== -1) {
-                                  handleBottlesPerCaseChange(billIndex, entryProductIndex, 20);
+                                  handleBottlesPerCaseChange(billIndex, entryProductIndex, 12);
                                 }
                               }}
                             />
-                            <label>20</label>
+                            <label>12</label>
+                          </div>
+                          <div className="form-check form-check-inline">
+                            <input
+                              type="radio"
+                              name={`bpc-${uniqueKey}`}
+                              value={15}
+                              checked={firstInstance.bottlesPerCase === 15}
+                              onChange={() => {
+                                if (billIndex !== -1 && entryProductIndex !== -1) {
+                                  handleBottlesPerCaseChange(billIndex, entryProductIndex, 15);
+                                }
+                              }}
+                            />
+                            <label>15</label>
+                          </div>
+                          <div className="form-check form-check-inline">
+                            <input
+                              type="radio"
+                              name={`bpc-${uniqueKey}`}
+                              value={24}
+                              checked={firstInstance.bottlesPerCase === 24}
+                              onChange={() => {
+                                if (billIndex !== -1 && entryProductIndex !== -1) {
+                                  handleBottlesPerCaseChange(billIndex, entryProductIndex, 24);
+                                }
+                              }}
+                            />
+                            <label>24</label>
                           </div>
                           <div className="form-check form-check-inline">
                             <input
@@ -482,7 +542,6 @@ const BillManagement = () => {
                     );
                   });
 
-                  // Add a separator row if this is not the last option group
                   if (optionGroupIndex < Object.keys(optionGroups).length - 1) {
                     return [
                       ...optionRows,
@@ -534,19 +593,25 @@ const BillManagement = () => {
                       className="btn btn-info btn-sm" 
                       onClick={() => handleViewProcessedUnit(unit)}
                     >
-                      View
+                      <i className="bi bi-eye"></i> View
                     </button>
                     <button 
                       className="btn btn-warning btn-sm" 
                       onClick={() => handleEditProcessedUnit(unit)}
                     >
-                      Edit
+                      <i className="bi bi-pencil"></i> Edit
                     </button>
                     <button 
                       className="btn btn-danger btn-sm" 
                       onClick={() => handleDeleteProcessedUnit(unit.id)}
                     >
-                      Delete
+                      <i className="bi bi-trash"></i> Delete
+                    </button>
+                    <button 
+                      className="btn btn-success btn-sm" 
+                      onClick={() => handlePrintUnit(unit)}
+                    >
+                      <i className="bi bi-printer"></i> Print
                     </button>
                   </div>
                 </td>
@@ -557,12 +622,21 @@ const BillManagement = () => {
       </div>
 
       {/* Popup Modal for View Bill/Unit */}
-      {selectedBill && (
+      {selectedBill && !printMode && (
         <div className="modal" style={{ display: "block", position: "fixed", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.5)" }}>
           <div className="modal-content" style={{ backgroundColor: "#fff", margin: "5% auto", padding: "20px", width: "80%", maxWidth: "800px", borderRadius: "8px", maxHeight: "80vh", overflowY: "auto" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "2px solid #ddd", paddingBottom: "10px" }}>
               <h4>{selectedBill.unitId ? `Unit Details - ${selectedBill.unitId}` : `Bill Details - ${selectedBill.billNo}`}</h4>
-              <button className="btn btn-danger" onClick={handleClosePopup}>Close</button>
+              <div className="d-flex gap-2">
+                {selectedBill.unitId && (
+                  <button className="btn btn-success" onClick={() => handlePrintUnit(selectedBill)}>
+                    <i className="bi bi-printer"></i> Print
+                  </button>
+                )}
+                <button className="btn btn-danger" onClick={handleClosePopup}>
+                  <i className="bi bi-x-circle"></i> Close
+                </button>
+              </div>
             </div>
             <div style={{ marginTop: "20px" }}>
               {selectedBill.unitId ? (
@@ -771,6 +845,193 @@ const BillManagement = () => {
           </div>
         </div>
       )}
+
+      {/* Print Popup Modal */}
+      {selectedBill && printMode && (
+        <div className="modal" style={{ display: "block", position: "fixed", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <div className="modal-content" style={{ backgroundColor: "#fff", margin: "5% auto", padding: "20px", width: "90%", maxWidth: "800px", borderRadius: "8px", maxHeight: "80vh", overflowY: "auto" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "2px solid #ddd", paddingBottom: "10px", marginBottom: "20px" }} className="no-print">
+              <h4>Print Unit - {selectedBill.unitId}</h4>
+              <div className="d-flex gap-2">
+                <button 
+                  className="btn btn-primary" 
+                  onClick={triggerPrint}
+                  disabled={isPrinting}
+                >
+                  <i className="bi bi-printer"></i> {isPrinting ? "Printing..." : "Print"}
+                </button>
+                <button 
+                  className="btn btn-success" 
+                  onClick={handleDownloadPDF}
+                  disabled={isPrinting}
+                >
+                  <i className="bi bi-file-earmark-pdf"></i> Download PDF
+                </button>
+                <button className="btn btn-danger" onClick={handleClosePopup}>
+                  <i className="bi bi-x-circle"></i> Close
+                </button>
+              </div>
+            </div>
+            
+            <div className="print-content" style={{ marginTop: "20px" }}>
+              <div style={{ textAlign: "center", marginBottom: "10px" }}>
+                <h2 style={{ margin: "0" }}>Advance Trading</h2>
+                <p style={{ margin: "3px 0" }}>Reg Office: No: 170/A, Nuwaraeliya Rd, Delpitiya, Gampola</p>
+                <p style={{ margin: "2px 0" }}>Tel: 072-7070701</p>
+                <h3 style={{ margin: "8px 0" }}>Loading Sheet</h3>
+              </div>
+              
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                <div>
+                  <p><strong>Unit ID:</strong> {selectedBill.unitId}</p>
+                </div>
+                <div>
+                  <p><strong>Date:</strong> {selectedBill.date}</p>
+                </div>
+              </div>
+              
+              <h5 style={{ borderBottom: "1px solid #000", paddingBottom: "3px", marginBottom: "3px" }}>Consolidated Products</h5>
+              <table className="table table-bordered" style={{ marginBottom: "5px" }}>
+                <thead>
+                  <tr style={{ backgroundColor: "#f2f2f2" }}>
+                    <th>Option</th>
+                    <th>Product Name</th>
+                    <th>Qty</th>
+                    <th>Bottle/Case</th>
+                    <th>Case</th>
+                    <th>Extra</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {/* Group consolidated products by optionId */}
+                  {(selectedBill.consolidatedProducts || [])
+                    .sort((a, b) => {
+                      // Extract the numeric part at the beginning of optionId
+                      const numA = parseInt(a.optionId.match(/^\d+/) || [0]);
+                      const numB = parseInt(b.optionId.match(/^\d+/) || [0]);
+                      return numA - numB;
+                    })
+                    .reduce((result, product, index, array) => {
+                      // Add the current product to the result
+                      result.push(
+                        <tr key={`product-${index}`} style={{ lineHeight: "1" }}>
+                          <td>{product.optionId}</td>
+                          <td>{product.productName || products.find(p => p.id === product.productId)?.name}</td>
+                          <td>{product.totalQty}</td>
+                          <td>{product.bottlesPerCase || '-'}</td>
+                          <td>{product.caseCount || '-'}</td>
+                          <td>{product.extraBottles || '-'}</td>
+                        </tr>
+                      );
+                      
+                      // If the next product has a different optionId, add a separator row
+                      if (index < array.length - 1 && product.optionId !== array[index + 1].optionId) {
+                        result.push(
+                          <tr key={`separator-${index}`} style={{ height: "2px", backgroundColor: "#f0f0f0" }} className="separator-row">
+                            <td colSpan="6"></td>
+                          </tr>
+                        );
+                      }
+                      
+                      return result;
+                    }, [])
+                  }
+                </tbody>
+              </table>
+              <br /> <br /> <br />
+              <div style={{ marginTop: "8px", display: "flex", justifyContent: "space-between" }}>
+                <div style={{ width: "30%", borderTop: "0.5px solid #000", textAlign: "center", paddingTop: "2px" }}>
+                  <p style={{ margin: 0 }}>Prepared By</p>
+                </div>
+                <div style={{ width: "30%", borderTop: "0.5px solid #000", textAlign: "center", paddingTop: "2px" }}>
+                  <p style={{ margin: 0 }}>Checked By</p>
+                </div>
+                <div style={{ width: "30%", borderTop: "0.5px solid #000", textAlign: "center", paddingTop: "2px" }}>
+                  <p style={{ margin: 0 }}>Approved By</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style>
+        {`
+          @media print {
+            body * {
+              visibility: hidden;
+            }
+            .print-content, .print-content * {
+              visibility: visible;
+            }
+            .no-print {
+              display: none;
+            }
+            .print-content {
+              position: absolute;
+              left: 0;
+              top: 0;
+              width: 100%;
+              padding: 5px;
+              font-size: 8px;
+            }
+            .print-content h2 {
+              font-size: 14px;
+              margin: 0;
+            }
+            .print-content h3 {
+              font-size: 12px;
+              margin: 5px 0;
+            }
+            .print-content h5 {
+              font-size: 10px;
+              margin: 5px 0 2px;
+              padding-bottom: 3px !important;
+            }
+            .print-content p {
+              margin: 1px 0;
+              font-size: 8px;
+            }
+            @page {
+              size: A4;
+              margin: 5mm 3mm;
+            }
+            table {
+              border-collapse: collapse;
+              width: 100%;
+              margin-bottom: 5px;
+            }
+            table, th, td {
+              border: 0.5px solid black;
+            }
+            th, td {
+              padding: 1px 2px;
+              text-align: left;
+              font-size: 7px;
+              white-space: nowrap;
+            }
+            tr {
+              height: auto;
+              line-height: 1.1;
+            }
+            .print-content .table-bordered {
+              margin-bottom: 5px;
+            }
+            .separator-row {
+              height: 2px !important;
+            }
+            .print-content > div:last-child {
+              margin-top: 10px !important;
+            }
+            .print-content > div:last-child > div {
+              padding-top: 2px !important;
+            }
+            .print-content > div:last-child p {
+              margin: 0;
+            }
+          }
+        `}
+      </style>
     </div>
   );
 };

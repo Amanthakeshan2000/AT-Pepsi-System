@@ -226,7 +226,7 @@ export const menuList = [
 
     {
         id: 6,
-        name: "Manual Invoice",
+        name: "Sales Summery",
         path: "#",
         icon: 'feather-file-text',
         dropdownMenu: [

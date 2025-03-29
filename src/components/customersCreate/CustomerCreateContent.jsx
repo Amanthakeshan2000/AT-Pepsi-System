@@ -76,6 +76,12 @@ const CustomerRegistration = () => {
     setRefContactNumber(customer.refContactNumber);
     setDescription(customer.description);
     setStatus(customer.status);
+    
+    // Scroll to the top of the page
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
   };
 
   const handleDelete = async (id) => {
