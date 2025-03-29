@@ -53,6 +53,14 @@ const BillAdd = () => {
           ...doc.data(),
           printStatus: doc.data().printStatus || false, // Default to false if not set
         }));
+        
+        // Sort bills by create date in descending order (latest first)
+        billList.sort((a, b) => {
+          const dateA = new Date(a.createDate || 0);
+          const dateB = new Date(b.createDate || 0);
+          return dateB - dateA; // Descending order
+        });
+        
         setBills(billList);
       } catch (error) {
         console.error("Error fetching bills:", error.message);
@@ -123,6 +131,12 @@ const BillAdd = () => {
     setDiscountOptions(bill.discountOptions || []);
     setFreeIssueOptions(bill.freeIssueOptions || []);
     setExpireOptions(bill.expireOptions || []);
+    
+    // Scroll to the top of the page
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
   };
 
   const handleViewBill = (bill) => {
@@ -144,6 +158,15 @@ const BillAdd = () => {
         console.error("Error updating print status:", error.message);
       }
     }
+
+    // Check if sections have data with non-empty case values
+    const filteredDiscountOptions = bill.discountOptions?.filter(option => option.case && option.case.trim() !== '') || [];
+    const filteredFreeIssueOptions = bill.freeIssueOptions?.filter(option => option.case && option.case.trim() !== '') || [];
+    const filteredExpireOptions = bill.expireOptions?.filter(option => option.case && option.case.trim() !== '') || [];
+    
+    const hasDiscounts = filteredDiscountOptions.length > 0;
+    const hasFreeIssues = filteredFreeIssueOptions.length > 0;
+    const hasExpires = filteredExpireOptions.length > 0;
 
     const printWindow = window.open('', '_blank');
     printWindow.document.write(`
@@ -338,7 +361,9 @@ const BillAdd = () => {
               <div class="payment-option"><input type="checkbox" name="payment" value="credit"> credit</div>
               <div class="payment-option"><input type="checkbox" name="payment" value="cheque"> cheque</div>
             </div>
+            ${(hasDiscounts || hasFreeIssues || hasExpires) ? `
             <div class="discounts">
+              ${hasDiscounts ? `
               <table>
                 <tr><th colspan="3">DISCOUNT</th></tr>
                 <tr>
@@ -346,7 +371,7 @@ const BillAdd = () => {
                   <th>Case</th>
                   <th>Total</th>
                 </tr>
-                ${bill.discountOptions.map(option => `
+                ${filteredDiscountOptions.map(option => `
                   <tr>
                     <td>${option.name}</td>
                     <td>${option.case} * ${option.perCaseRate}</td>
@@ -355,9 +380,11 @@ const BillAdd = () => {
                 `).join('')}
                 <tr class="total-row">
                   <td colspan="2">Total</td>
-                  <td>= ${calculateTotal(bill.discountOptions)}</td>
+                  <td>= ${calculateTotal(filteredDiscountOptions)}</td>
                 </tr>
               </table>
+              ` : ''}
+              ${hasFreeIssues ? `
               <table>
                 <tr><th colspan="3">FREE ISSUE</th></tr>
                 <tr>
@@ -365,7 +392,7 @@ const BillAdd = () => {
                   <th>Case</th>
                   <th>Total</th>
                 </tr>
-                ${bill.freeIssueOptions.map(option => `
+                ${filteredFreeIssueOptions.map(option => `
                   <tr>
                     <td>${option.name}</td>
                     <td>${option.case} * ${option.perCaseRate}</td>
@@ -374,9 +401,11 @@ const BillAdd = () => {
                 `).join('')}
                 <tr class="total-row">
                   <td colspan="2">Total</td>
-                  <td>= ${calculateTotal(bill.freeIssueOptions)}</td>
+                  <td>= ${calculateTotal(filteredFreeIssueOptions)}</td>
                 </tr>
               </table>
+              ` : ''}
+              ${hasExpires ? `
               <table>
                 <tr><th colspan="3">EXPIRE</th></tr>
                 <tr>
@@ -384,7 +413,7 @@ const BillAdd = () => {
                   <th>Case</th>
                   <th>Total</th>
                 </tr>
-                ${bill.expireOptions.map(option => `
+                ${filteredExpireOptions.map(option => `
                   <tr>
                     <td>${option.name}</td>
                     <td>${option.case} * ${option.perCaseRate}</td>
@@ -393,10 +422,12 @@ const BillAdd = () => {
                 `).join('')}
                 <tr class="total-row">
                   <td colspan="2">Total</td>
-                  <td>= ${calculateTotal(bill.expireOptions)}</td>
+                  <td>= ${calculateTotal(filteredExpireOptions)}</td>
                 </tr>
               </table>
+              ` : ''}
             </div>
+            ` : ''}
 <br/>
             <table class="products-table">
               <thead>
@@ -424,33 +455,39 @@ const BillAdd = () => {
             <div class="total-section">
               <table>
                 <tr>
-                  <td style="color: #e74c3c;"><strong>SUBTOTAL</strong></td>
-                   <td style="color: #e74c3c;">=</td>
-                  <td style="color: #e74c3c;">${calculateProductTotal(bill.productOptions)}</td>
+                  <td style="color: #e74c3c; font-size: 15.5px;"><strong>SUBTOTAL</strong></td>
+                   <td style="color: #e74c3c; font-size: 16px;">=</td>
+                  <td style="color: #e74c3c; font-size: 16px;">${calculateProductTotal(bill.productOptions)}</td>
                 </tr>
+                ${hasDiscounts ? `
                 <tr>
                   <td><strong>DISCOUNT</strong></td>
                   <td>=</td>
-                  <td>${calculateTotal(bill.discountOptions)}</td>
+                  <td>${calculateTotal(filteredDiscountOptions)}</td>
                 </tr>
+                ` : ''}
+                ${hasFreeIssues ? `
                 <tr>
                   <td><strong>FREE ISSUE</strong></td>
                   <td>=</td>
-                  <td>${calculateTotal(bill.freeIssueOptions)}</td>
+                  <td>${calculateTotal(filteredFreeIssueOptions)}</td>
                 </tr>
+                ` : ''}
+                ${hasExpires ? `
                 <tr>
                   <td><strong>EXPIRE</strong></td>
                   <td>=</td>
-                  <td>${calculateTotal(bill.expireOptions)}</td>
+                  <td>${calculateTotal(filteredExpireOptions)}</td>
                 </tr>
+                ` : ''}
                 <tr>
-                  <td style="color: #e74c3c;"><strong>TOTAL</strong></td>
-                  <td style="color: #e74c3c;">=</td>
-                  <td style="color: #e74c3c;">${(
+                  <td style="color: #e74c3c; font-size: 15.5px;"><strong>TOTAL</strong></td>
+                  <td style="color: #e74c3c; font-size: 16px;">=</td>
+                  <td style="color: #e74c3c; font-size: 16px;">${(
                     parseFloat(calculateProductTotal(bill.productOptions)) -
-                    (parseFloat(calculateTotal(bill.discountOptions)) +
-                     parseFloat(calculateTotal(bill.freeIssueOptions)) +
-                     parseFloat(calculateTotal(bill.expireOptions)))
+                    (parseFloat(hasDiscounts ? calculateTotal(filteredDiscountOptions) : 0) +
+                     parseFloat(hasFreeIssues ? calculateTotal(filteredFreeIssueOptions) : 0) +
+                     parseFloat(hasExpires ? calculateTotal(filteredExpireOptions) : 0))
                   ).toFixed(2)}</td>
                 </tr>
               </table>
@@ -527,16 +564,20 @@ const BillAdd = () => {
   };
 
   const addDiscountOption = () => {
-    const distinctOptionIds = [...new Set(productOptions.map(option => option.optionId))];
-    const newDiscountOptions = distinctOptionIds
-      .filter(optionId => optionId)
-      .map(optionId => ({
-        name: optionId,
-        case: "",
-        perCaseRate: "",
-        total: "",
-      }));
-    setDiscountOptions(newDiscountOptions);
+    const selectedProducts = productOptions.filter(option => option.productId && option.optionId);
+    const newDiscountOptions = selectedProducts.map(option => ({
+      productId: option.productId,
+      optionId: option.optionId,
+      name: `${products.find(p => p.id === option.productId)?.name} - ${option.optionId}`,
+      case: "",
+      perCaseRate: "",
+      total: "",
+    }));
+    setDiscountOptions([...discountOptions, ...newDiscountOptions]);
+  };
+
+  const removeDiscountOption = (index) => {
+    setDiscountOptions(discountOptions.filter((_, i) => i !== index));
   };
 
   const handleDiscountChange = (index, field, value) => {
@@ -553,16 +594,20 @@ const BillAdd = () => {
   };
 
   const addFreeIssueOption = () => {
-    const distinctOptionIds = [...new Set(productOptions.map(option => option.optionId))];
-    const newFreeIssueOptions = distinctOptionIds
-      .filter(optionId => optionId)
-      .map(optionId => ({
-        name: optionId,
-        case: "",
-        perCaseRate: "",
-        total: "",
-      }));
-    setFreeIssueOptions(newFreeIssueOptions);
+    const selectedProducts = productOptions.filter(option => option.productId && option.optionId);
+    const newFreeIssueOptions = selectedProducts.map(option => ({
+      productId: option.productId,
+      optionId: option.optionId,
+      name: `${products.find(p => p.id === option.productId)?.name} - ${option.optionId}`,
+      case: "",
+      perCaseRate: "",
+      total: "",
+    }));
+    setFreeIssueOptions([...freeIssueOptions, ...newFreeIssueOptions]);
+  };
+
+  const removeFreeIssueOption = (index) => {
+    setFreeIssueOptions(freeIssueOptions.filter((_, i) => i !== index));
   };
 
   const handleFreeIssueChange = (index, field, value) => {
@@ -579,16 +624,20 @@ const BillAdd = () => {
   };
 
   const addExpireOption = () => {
-    const distinctOptionIds = [...new Set(productOptions.map(option => option.optionId))];
-    const newExpireOptions = distinctOptionIds
-      .filter(optionId => optionId)
-      .map(optionId => ({
-        name: optionId,
-        case: "",
-        perCaseRate: "",
-        total: "",
-      }));
-    setExpireOptions(newExpireOptions);
+    const selectedProducts = productOptions.filter(option => option.productId && option.optionId);
+    const newExpireOptions = selectedProducts.map(option => ({
+      productId: option.productId,
+      optionId: option.optionId,
+      name: `${products.find(p => p.id === option.productId)?.name} - ${option.optionId}`,
+      case: "",
+      perCaseRate: "",
+      total: "",
+    }));
+    setExpireOptions([...expireOptions, ...newExpireOptions]);
+  };
+
+  const removeExpireOption = (index) => {
+    setExpireOptions(expireOptions.filter((_, i) => i !== index));
   };
 
   const handleExpireChange = (index, field, value) => {
@@ -657,6 +706,14 @@ const BillAdd = () => {
         ...doc.data(),
         printStatus: doc.data().printStatus || false,
       }));
+      
+      // Sort bills by create date in descending order (latest first)
+      billList.sort((a, b) => {
+        const dateA = new Date(a.createDate || 0);
+        const dateB = new Date(b.createDate || 0);
+        return dateB - dateA; // Descending order
+      });
+      
       setBills(billList);
 
       generateBillNo();
@@ -804,6 +861,7 @@ const BillAdd = () => {
                   <th>Case</th>
                   <th>Per Case Rate</th>
                   <th>Total</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -827,6 +885,15 @@ const BillAdd = () => {
                       />
                     </td>
                     <td>{option.total}</td>
+                    <td>
+                      <button 
+                        type="button" 
+                        className="btn btn-danger btn-sm"
+                        onClick={() => removeDiscountOption(index)}
+                      >
+                        ✖
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -857,6 +924,7 @@ const BillAdd = () => {
                   <th>Case</th>
                   <th>Per Case Rate</th>
                   <th>Total</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -880,6 +948,15 @@ const BillAdd = () => {
                       />
                     </td>
                     <td>{option.total}</td>
+                    <td>
+                      <button 
+                        type="button" 
+                        className="btn btn-danger btn-sm"
+                        onClick={() => removeFreeIssueOption(index)}
+                      >
+                        ✖
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -902,6 +979,7 @@ const BillAdd = () => {
                   <th>Case</th>
                   <th>Per Case Rate</th>
                   <th>Total</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -925,6 +1003,15 @@ const BillAdd = () => {
                       />
                     </td>
                     <td>{option.total}</td>
+                    <td>
+                      <button 
+                        type="button" 
+                        className="btn btn-danger btn-sm"
+                        onClick={() => removeExpireOption(index)}
+                      >
+                        ✖
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -988,13 +1075,13 @@ const BillAdd = () => {
         </div>
       </div>
 
-      <table className="table table-striped">
+      <table className="table table-striped" >
         <thead>
           <tr>
             <th>Bill No</th>
             <th>Outlet Name</th>
             <th>Sales Ref</th>
-            <th>Ref Contact</th>
+            <th>Contact</th>
             <th>Create Date</th>
             <th>Product Options</th>
             <th></th>
@@ -1003,55 +1090,61 @@ const BillAdd = () => {
         <tbody>
           {currentBills.map((bill) => (
             <tr key={bill.id}>
-              <td>{bill.billNo}</td>
-              <td>{bill.outletName}</td>
-              <td>{bill.salesRef}</td>
-              <td>{bill.refContact}</td>
-              <td>{bill.createDate}</td>
+              <td style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{bill.billNo}</td>
+              <td style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{bill.outletName}</td>
+              <td style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{bill.salesRef}</td>
+              <td style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{bill.contact}</td>
+              <td style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{bill.createDate}</td>
               <td>
-                <table style={{
-                  width: "100%",
-                  borderCollapse: "collapse",
-                  backgroundColor: "#f9f9f9",
-                  borderRadius: "8px",
-                  overflow: "hidden",
-                  boxShadow: "0 2px 5px rgba(0, 0, 0, 0.1)",
-                }}>
-                  <thead>
-                    <tr style={{ backgroundColor: "#53a6ff", color: "#ffffff", fontWeight: "bold" }}>
-                      <th style={{ padding: "10px", textAlign: "left" }}>Name</th>
-                      <th style={{ padding: "10px", textAlign: "left" }}>Price (Rs.)</th>
-                      <th style={{ padding: "10px", textAlign: "left" }}>Quantity</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {bill.productOptions.map((option, idx) => (
-                      <tr key={idx} style={{
-                        backgroundColor: idx % 2 === 0 ? "#ffffff" : "#f1f1f1",
-                      }}>
-                        <td style={{ padding: "10px", borderBottom: "1px solid #ddd" }}>
-                          {
-                            products.find((p) => p.id === option.productId)?.name &&
-                            option.optionId
-                              ? `${products.find((p) => p.id === option.productId)?.name} - ${option.optionId}`
-                              : "N/A"
-                          }
-                        </td>
-                        <td style={{ padding: "10px", borderBottom: "1px solid #ddd", fontWeight: "bold", color: "blue" }}>
-                          Rs.{option.price}
-                        </td>
-                        <td style={{
-                          padding: "10px",
-                          borderBottom: "1px solid #ddd",
-                          color: "#28a745",
-                          fontWeight: "bold",
-                        }}>
-                          ${option.qty}
-                        </td>
+                <div style={{ overflowX: "auto", maxWidth: "100%" }}>
+                  <table style={{
+                    width: "100%",
+                    minWidth: "500px",
+                    borderCollapse: "collapse",
+                    backgroundColor: "#f9f9f9",
+                    borderRadius: "8px",
+                    overflow: "hidden",
+                    boxShadow: "0 2px 5px rgba(0, 0, 0, 0.1)",
+                  }}>
+                    <thead>
+                      <tr style={{ backgroundColor: "#53a6ff", color: "#ffffff", fontWeight: "bold" }}>
+                        <th style={{ padding: "10px", textAlign: "left", width: "40%" }}>Name</th>
+                        <th style={{ padding: "10px", textAlign: "left", width: "30%" }}>Price (Rs.)</th>
+                        <th style={{ padding: "10px", textAlign: "left", width: "30%" }}>Quantity</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {bill.productOptions.map((option, idx) => (
+                        <tr key={idx} style={{
+                          backgroundColor: idx % 2 === 0 ? "#ffffff" : "#f1f1f1",
+                        }}>
+                          <td style={{ padding: "10px", borderBottom: "1px solid #ddd", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                            {
+                              products.find((p) => p.id === option.productId)?.name &&
+                              option.optionId
+                                ? `${products.find((p) => p.id === option.productId)?.name} - ${option.optionId}`
+                                : "N/A"
+                            }
+                          </td>
+                          <td style={{ padding: "10px", borderBottom: "1px solid #ddd", fontWeight: "bold", color: "blue", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                            Rs.{option.price}
+                          </td>
+                          <td style={{
+                            padding: "10px",
+                            borderBottom: "1px solid #ddd",
+                            color: "#28a745",
+                            fontWeight: "bold",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis"
+                          }}>
+                            {option.qty}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </td>
               <td className="text-end">
                 <div className="d-flex justify-content-end align-items-center">
@@ -1133,7 +1226,7 @@ const BillAdd = () => {
                 </tfoot>
               </table>
 
-              {selectedBill.discountOptions?.length > 0 && (
+              {selectedBill.discountOptions?.filter(option => option.case && option.case.trim() !== '').length > 0 && (
                 <>
                   <h5>Discount Options</h5>
                   <table className="table table-bordered">
@@ -1146,7 +1239,7 @@ const BillAdd = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {selectedBill.discountOptions.map((option, idx) => (
+                      {selectedBill.discountOptions.filter(option => option.case && option.case.trim() !== '').map((option, idx) => (
                         <tr key={idx}>
                           <td>{option.name}</td>
                           <td>{option.case}</td>
@@ -1157,12 +1250,12 @@ const BillAdd = () => {
                     </tbody>
                   </table>
                   <div style={{ textAlign: "right", color: "green", fontWeight: "bold" }}>
-                    Total: Rs. {calculateTotal(selectedBill.discountOptions)}
+                    Total: Rs. {calculateTotal(selectedBill.discountOptions.filter(option => option.case && option.case.trim() !== ''))}
                   </div>
                 </>
               )}
 
-              {selectedBill.freeIssueOptions?.length > 0 && (
+              {selectedBill.freeIssueOptions?.filter(option => option.case && option.case.trim() !== '').length > 0 && (
                 <>
                   <h5>Free Issue Options</h5>
                   <table className="table table-bordered">
@@ -1175,7 +1268,7 @@ const BillAdd = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {selectedBill.freeIssueOptions.map((option, idx) => (
+                      {selectedBill.freeIssueOptions.filter(option => option.case && option.case.trim() !== '').map((option, idx) => (
                         <tr key={idx}>
                           <td>{option.name}</td>
                           <td>{option.case}</td>
@@ -1186,12 +1279,12 @@ const BillAdd = () => {
                     </tbody>
                   </table>
                   <div style={{ textAlign: "right", color: "green", fontWeight: "bold" }}>
-                    Total: Rs. {calculateTotal(selectedBill.freeIssueOptions)}
+                    Total: Rs. {calculateTotal(selectedBill.freeIssueOptions.filter(option => option.case && option.case.trim() !== ''))}
                   </div>
                 </>
               )}
 
-              {selectedBill.expireOptions?.length > 0 && (
+              {selectedBill.expireOptions?.filter(option => option.case && option.case.trim() !== '').length > 0 && (
                 <>
                   <h5>Expire Options</h5>
                   <table className="table table-bordered">
@@ -1204,7 +1297,7 @@ const BillAdd = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {selectedBill.expireOptions.map((option, idx) => (
+                      {selectedBill.expireOptions.filter(option => option.case && option.case.trim() !== '').map((option, idx) => (
                         <tr key={idx}>
                           <td>{option.name}</td>
                           <td>{option.case}</td>
@@ -1215,7 +1308,7 @@ const BillAdd = () => {
                     </tbody>
                   </table>
                   <div style={{ textAlign: "right", color: "green", fontWeight: "bold" }}>
-                    Total: Rs. {calculateTotal(selectedBill.expireOptions)}
+                    Total: Rs. {calculateTotal(selectedBill.expireOptions.filter(option => option.case && option.case.trim() !== ''))}
                   </div>
                 </>
               )}
@@ -1224,27 +1317,30 @@ const BillAdd = () => {
                 <div style={{ color: "red", fontWeight: "bold" }}>
                   Product Options Total: Rs. {calculateProductTotal(selectedBill.productOptions)}
                 </div>
-                {selectedBill.discountOptions?.length > 0 && (
+                {selectedBill.discountOptions?.filter(option => option.case && option.case.trim() !== '').length > 0 && (
                   <div style={{ color: "red", fontWeight: "bold" }}>
-                    Discount : Rs. {calculateTotal(selectedBill.discountOptions)}
+                    Discount : Rs. {calculateTotal(selectedBill.discountOptions.filter(option => option.case && option.case.trim() !== ''))}
                   </div>
                 )}
-                {selectedBill.freeIssueOptions?.length > 0 && (
+                {selectedBill.freeIssueOptions?.filter(option => option.case && option.case.trim() !== '').length > 0 && (
                   <div style={{ color: "red", fontWeight: "bold" }}>
-                    Free Issue : Rs. {calculateTotal(selectedBill.freeIssueOptions)}
+                    Free Issue : Rs. {calculateTotal(selectedBill.freeIssueOptions.filter(option => option.case && option.case.trim() !== ''))}
                   </div>
                 )}
-                {selectedBill.expireOptions?.length > 0 && (
+                {selectedBill.expireOptions?.filter(option => option.case && option.case.trim() !== '').length > 0 && (
                   <div style={{ color: "red", fontWeight: "bold" }}>
-                    Expire : Rs. {calculateTotal(selectedBill.expireOptions)}
+                    Expire : Rs. {calculateTotal(selectedBill.expireOptions.filter(option => option.case && option.case.trim() !== ''))}
                   </div>
                 )}
                 <div style={{ color: "blue", fontWeight: "bold", marginTop: "10px" }}>
                   Final Total: Rs. {(
                     parseFloat(calculateProductTotal(selectedBill.productOptions)) -
-                    ((parseFloat(selectedBill.discountOptions?.length > 0 ? calculateTotal(selectedBill.discountOptions) : 0)) +
-                     (parseFloat(selectedBill.freeIssueOptions?.length > 0 ? calculateTotal(selectedBill.freeIssueOptions) : 0)) +
-                     (parseFloat(selectedBill.expireOptions?.length > 0 ? calculateTotal(selectedBill.expireOptions) : 0)))
+                    ((parseFloat(selectedBill.discountOptions?.filter(option => option.case && option.case.trim() !== '').length > 0 ? 
+                      calculateTotal(selectedBill.discountOptions.filter(option => option.case && option.case.trim() !== '')) : 0)) +
+                     (parseFloat(selectedBill.freeIssueOptions?.filter(option => option.case && option.case.trim() !== '').length > 0 ? 
+                      calculateTotal(selectedBill.freeIssueOptions.filter(option => option.case && option.case.trim() !== '')) : 0)) +
+                     (parseFloat(selectedBill.expireOptions?.filter(option => option.case && option.case.trim() !== '').length > 0 ? 
+                      calculateTotal(selectedBill.expireOptions.filter(option => option.case && option.case.trim() !== '')) : 0)))
                   ).toFixed(2)}
                 </div>
                 <div style={{ display: "flex", justifyContent: "center", marginTop: "10px" }}>

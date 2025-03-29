@@ -82,7 +82,8 @@ import DevicesCreate from "../pages/device-create";
 import OrganizationChoose from "@/components/organization/SelectOrganization";
 import NewInvoiceCreate from "../pages/invoice-create";
 import InvoiceList from "../pages/invoice-list";
-
+import Summeryofmonth from "../pages/Summeryofmonth";
+import PaymentTables from "../pages/payment";
 // ProtectedRoute Component
 const ProtectedRoute = ({ children }) => {
     const accessToken = localStorage.getItem('accessToken'); // Check for access token
@@ -175,6 +176,14 @@ export const router = createBrowserRouter([
             {
                 path: "/loadingsheet/unloadingList",
                 element: <UnLoadingSheet />,
+            },
+            {
+                path: "/summeryofmonth/summeryofmonthList",
+                element: <Summeryofmonth />,
+            },
+            {
+                path: "/payment/paymentList",
+                element: <PaymentTables />,
             },
             {
                 path: "/customers/create",

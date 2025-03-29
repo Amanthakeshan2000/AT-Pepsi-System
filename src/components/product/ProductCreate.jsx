@@ -109,8 +109,8 @@ const ProductCreate = () => {
 
     try {
       // Removed price from validation since it's no longer in the form
-      if (!name || !description || !categoryId) {
-        throw new Error("All fields are required.");
+      if (!name || !categoryId) {
+        throw new Error("Product name and category are required.");
       }
 
       // Add product to Firestore (price is omitted)
@@ -165,7 +165,7 @@ const ProductCreate = () => {
 
               <div className="mb-3">
                 <label className="form-label">Product Description</label>
-                <textarea className="form-control" placeholder="Enter product description" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} required />
+                <textarea className="form-control" placeholder="Enter product description (optional)" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
               </div>
 
               <div className="mb-3">
@@ -218,7 +218,9 @@ const ProductCreate = () => {
               <ul className="list-group">
                 {filteredProducts.map((product) => (
                   <li key={product.id} className="list-group-item">
-                    <strong>{product.name}</strong> - {product.description}
+                    {/* <strong>{product.name}</strong> - {product.description} */}
+                    <strong>{product.name}</strong>
+
                   </li>
                 ))}
               </ul>

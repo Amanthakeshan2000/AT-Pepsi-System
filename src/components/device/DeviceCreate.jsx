@@ -107,28 +107,28 @@ const ManualInvoice = () => {
       if (editInvoiceId) {
         await updateDoc(doc(db, "ManualBill", editInvoiceId), invoiceData);
         setManualInvoices(manualInvoices.map((inv) => (inv.id === editInvoiceId ? { ...inv, ...invoiceData } : inv)));
-        alert("Manual Invoice Updated!");
+        alert("Sales Summery Updated!");
         setEditInvoiceId(null);
       } else {
         const newInvoiceId = await generateInvoiceId();
         const docRef = await addDoc(manualBillsCollectionRef, { ...invoiceData, invoiceId: newInvoiceId });
         setManualInvoices([...manualInvoices, { id: docRef.id, invoiceId: newInvoiceId, ...invoiceData }]);
-        alert("Manual Invoice Saved!");
+        alert("Sales Summery Saved!");
       }
       setSelectedBills([]);
       setCustomDate(new Date().toISOString().split("T")[0]);
       setDriver("");
       setRoute("");
     } catch (error) {
-      console.error("Error saving manual invoice:", error.message);
-      alert("Failed to save manual invoice.");
+      console.error("Error saving Sales Summery:", error.message);
+      alert("Failed to save Sales Summery.");
     }
   };
 
   const handleDeleteManualInvoice = async (invoiceId) => {
-    if (window.confirm("Are you sure you want to delete this manual invoice and its sales summary?")) {
+    if (window.confirm("Are you sure you want to delete this Sales Summery and its sales summary?")) {
       try {
-        // Delete the manual invoice from ManualBill collection
+        // Delete the Sales Summery from ManualBill collection
         await deleteDoc(doc(db, "ManualBill", invoiceId));
         
         // Check if there's a corresponding sales summary and delete it
@@ -142,10 +142,10 @@ const ManualInvoice = () => {
         // Update local manualInvoices state
         setManualInvoices(manualInvoices.filter((invoice) => invoice.id !== invoiceId));
         
-        alert("Manual Invoice and its Sales Summary (if any) Deleted!");
+        alert("Sales Summery and its Sales Summary (if any) Deleted!");
       } catch (error) {
-        console.error("Error deleting manual invoice or sales summary:", error.message);
-        alert("Failed to delete manual invoice or its sales summary.");
+        console.error("Error deleting Sales Summery or sales summary:", error.message);
+        alert("Failed to delete Sales Summery or its sales summary.");
       }
     }
   };
@@ -160,7 +160,14 @@ const ManualInvoice = () => {
 
   const handleCreateSalesSummary = (invoice) => {
     const allOptions = invoice.bills.flatMap((bill) => bill.productOptions || []);
-    const uniqueOptions = [...new Map(allOptions.map((opt) => [opt.optionId, { optionId: opt.optionId, price: parseFloat(opt.price) || 0 }])).values()];
+    let uniqueOptions = [...new Map(allOptions.map((opt) => [opt.optionId, { optionId: opt.optionId, price: parseFloat(opt.price) || 0 }])).values()];
+    
+    // Sort uniqueOptions by the numeric value at the beginning of optionId
+    uniqueOptions = uniqueOptions.sort((a, b) => {
+      const numA = parseInt(a.optionId.match(/^\d+/) || [0]);
+      const numB = parseInt(b.optionId.match(/^\d+/) || [0]);
+      return numA - numB;
+    });
 
     const initialSummary = invoice.bills.map((bill) => {
       const productOptions = uniqueOptions.map((opt) => ({
@@ -192,7 +199,15 @@ const ManualInvoice = () => {
   const handleEditSalesSummary = (invoice) => {
     const existingSummary = salesSummaries.find((summary) => summary.invoiceId === (invoice.invoiceId || invoice.id));
     if (existingSummary) {
-      const uniqueOptions = [...new Map(existingSummary.data.flatMap((bill) => bill.productOptions).map((opt) => [opt.optionId, { optionId: opt.optionId, price: parseFloat(opt.price) || 0 }])).values()];
+      let uniqueOptions = [...new Map(existingSummary.data.flatMap((bill) => bill.productOptions).map((opt) => [opt.optionId, { optionId: opt.optionId, price: parseFloat(opt.price) || 0 }])).values()];
+      
+      // Sort uniqueOptions by the numeric value at the beginning of optionId
+      uniqueOptions = uniqueOptions.sort((a, b) => {
+        const numA = parseInt(a.optionId.match(/^\d+/) || [0]);
+        const numB = parseInt(b.optionId.match(/^\d+/) || [0]);
+        return numA - numB;
+      });
+      
       setSalesSummary({
         invoiceId: existingSummary.invoiceId,
         data: existingSummary.data,
@@ -312,7 +327,14 @@ const ManualInvoice = () => {
       return;
     }
 
-    const uniqueOptions = [...new Map(existingSummary.data.flatMap((bill) => bill.productOptions).map((opt) => [opt.optionId, { optionId: opt.optionId, price: parseFloat(opt.price) || 0 }])).values()];
+    let uniqueOptions = [...new Map(existingSummary.data.flatMap((bill) => bill.productOptions).map((opt) => [opt.optionId, { optionId: opt.optionId, price: parseFloat(opt.price) || 0 }])).values()];
+    
+    // Sort uniqueOptions by the numeric value at the beginning of optionId
+    uniqueOptions = uniqueOptions.sort((a, b) => {
+      const numA = parseInt(a.optionId.match(/^\d+/) || [0]);
+      const numB = parseInt(b.optionId.match(/^\d+/) || [0]);
+      return numA - numB;
+    });
 
     const tempDiv = document.createElement("div");
     tempDiv.style.position = "absolute";
@@ -336,7 +358,7 @@ const ManualInvoice = () => {
             <th style="border: 1px solid #000; padding: 4px; text-align: left;">Invoice ID</th>
             <th style="border: 1px solid #000; padding: 4px; text-align: left;">Bill No</th>
             <th style="border: 1px solid #000; padding: 4px; text-align: left;">Outlet Name</th>
-            ${uniqueOptions.map((opt) => `<th style="border: 1px solid #000; padding: 4px; text-align: right;">${opt.optionId} (Rs.${(parseFloat(opt.price) || 0).toFixed(2)})</th>`).join("")}
+            ${uniqueOptions.map((opt) => `<th style="border: 1px solid #000; padding: 4px; text-align: right; width: 120px;">${opt.optionId} (Rs.${(parseFloat(opt.price) || 0).toFixed(2)})</th>`).join("")}
             <th style="border: 1px solid #000; padding: 4px; text-align: right; background-color: #ffffe0;">Gross Sale</th>
             <th style="border: 1px solid #000; padding: 4px; text-align: right;">Discount</th>
             <th style="border: 1px solid #000; padding: 4px; text-align: right;">Expire</th>
@@ -425,7 +447,7 @@ const ManualInvoice = () => {
 
   return (
     <div className="container">
-      <h3>Manual Invoice Creation</h3>
+      <h3>Sales Summery Creation</h3>
 
       {/* Available Invoices Section */}
       <div style={{ backgroundColor: "#fff", padding: "20px", borderRadius: "8px", marginBottom: "20px" }}>
@@ -468,7 +490,7 @@ const ManualInvoice = () => {
                       <button className="btn btn-info btn-sm" onClick={() => handleViewBill(bill)} title="View Details">
                         <i className="bi bi-eye"></i>
                       </button>
-                      <button className="btn btn-success btn-sm" onClick={() => handleAddBill(bill)} title="Add to Manual Invoice">
+                      <button className="btn btn-success btn-sm" onClick={() => handleAddBill(bill)} title="Add to Sales Summery">
                         <i className="bi bi-plus-circle"></i>
                       </button>
                     </div>
@@ -495,9 +517,9 @@ const ManualInvoice = () => {
         </div>
       </div>
 
-      {/* Selected Invoices for Manual Invoice Section */}
+      {/* Selected Invoices for Sales Summery Section */}
       <div style={{ backgroundColor: "#fff", padding: "20px", borderRadius: "8px", marginBottom: "20px" }}>
-        <h4>Selected Invoices for Manual Invoice</h4>
+        <h4>Selected Invoices for Sales Summery</h4>
         <div className="row mb-3">
           <div className="col-md-4">
             <label>Custom Date</label>
@@ -533,7 +555,7 @@ const ManualInvoice = () => {
                   <td>{bill.refContact}</td>
                   <td>{bill.createDate}</td>
                   <td>
-                    <button className="btn btn-danger btn-sm" onClick={() => handleRemoveBill(bill.id)} title="Remove from Manual Invoice">
+                    <button className="btn btn-danger btn-sm" onClick={() => handleRemoveBill(bill.id)} title="Remove from Sales Summery">
                       <i className="bi bi-trash"></i>
                     </button>
                   </td>
@@ -549,15 +571,15 @@ const ManualInvoice = () => {
         {selectedBills.length > 0 && (
           <div className="d-flex justifyContent-end">
             <button className="btn btn-primary" onClick={handleSaveManualInvoice}>
-              {editInvoiceId ? "Update Manual Invoice" : "Save Manual Invoice"}
+              {editInvoiceId ? "Update Sales Summery" : "Save Sales Summery"}
             </button>
           </div>
         )}
       </div>
 
-      {/* Manual Invoice History Section */}
+      {/* Sales Summery History Section */}
       <div style={{ backgroundColor: "#fff", padding: "20px", borderRadius: "8px" }}>
-        <h4>Manual Invoice History</h4>
+        <h4>Sales Summery History</h4>
         <table className="table table-striped">
           <thead>
             <tr>
@@ -571,7 +593,14 @@ const ManualInvoice = () => {
           </thead>
           <tbody>
             {manualInvoices.length > 0 ? (
-              manualInvoices.map((invoice) => (
+              // Sort by custom date in descending order (newest first)
+              [...manualInvoices]
+                .sort((a, b) => {
+                  const dateA = new Date(a.customDate || 0);
+                  const dateB = new Date(b.customDate || 0);
+                  return dateB - dateA; // Descending order
+                })
+                .map((invoice) => (
                 <tr key={invoice.id}>
                   <td>{invoice.invoiceId || invoice.id}</td>
                   <td>{invoice.customDate}</td>
@@ -609,19 +638,19 @@ const ManualInvoice = () => {
               ))
             ) : (
               <tr>
-                <td colSpan="6" className="text-center">No manual invoices created yet</td>
+                <td colSpan="6" className="text-center">No Sales Summerys created yet</td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
 
-      {/* Popup Modal for Viewing Bill/Manual Invoice Details */}
+      {/* Popup Modal for Viewing Bill/Sales Summery Details */}
       {selectedBill && !salesSummary && (
         <div className="modal" style={{ display: "block", position: "fixed", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.5)" }}>
           <div className="modal-content" style={{ backgroundColor: "#fff", margin: "5% auto", padding: "20px", width: "80%", maxWidth: "800px", borderRadius: "8px", maxHeight: "80vh", overflowY: "auto" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "2px solid #ddd", paddingBottom: "10px" }}>
-              <h4>{selectedBill.isManual ? `Manual Invoice Details - ${selectedBill.invoiceId || selectedBill.id}` : `Bill Details - ${selectedBill.billNo}`}</h4>
+              <h4>{selectedBill.isManual ? `Sales Summery Details - ${selectedBill.invoiceId || selectedBill.id}` : `Bill Details - ${selectedBill.billNo}`}</h4>
               <button className="btn btn-danger" onClick={handleClosePopup}>Close</button>
             </div>
             <div style={{ marginTop: "20px" }}>
@@ -776,109 +805,204 @@ const ManualInvoice = () => {
 
       {/* Sales Summary Popup */}
       {salesSummary && (
-        <div className="modal" style={{ display: "block", position: "fixed", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.5)" }}>
-          <div className="modal-content" style={{ backgroundColor: "#fff", margin: "20px", padding: "20px", width: "calc(100% - 40px)", height: "calc(100% - 40px)", borderRadius: "8px", overflowY: "auto" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "2px solid #ddd", paddingBottom: "10px" }}>
-              <h4>Sales Summary for Invoice {salesSummary.invoiceId}</h4>
-              <button className="btn btn-danger" onClick={handleClosePopup}>Close</button>
+        <div className="modal" style={{ display: "block", position: "fixed", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.7)" }}>
+          <div className="modal-content" style={{ 
+            backgroundColor: "#f8f9fa", 
+            margin: "20px", 
+            padding: "0", 
+            width: "calc(100% - 40px)", 
+            height: "calc(100% - 40px)", 
+            borderRadius: "12px", 
+            overflowY: "auto",
+            boxShadow: "0 10px 30px rgba(0,0,0,0.3)"
+          }}>
+            <div style={{ 
+              display: "flex", 
+              justifyContent: "space-between", 
+              alignItems: "center", 
+              padding: "15px 20px",
+              background: "linear-gradient(135deg, #4b6cb7 0%, #182848 100%)",
+              color: "#fff",
+              borderRadius: "12px 12px 0 0"
+            }}>
+              <div>
+                <h4 style={{ margin: "0", fontWeight: "600" }}>
+                  <i className="bi bi-file-earmark-spreadsheet me-2"></i>
+                  Sales Summary
+                </h4>
+                <p style={{ margin: "5px 0 0 0", fontSize: "14px", opacity: "0.8" }}>
+                  Invoice: {salesSummary.invoiceId}
+                </p>
+              </div>
+              <button className="btn btn-outline-light" onClick={handleClosePopup}>
+                <i className="bi bi-x-lg"></i>
+              </button>
             </div>
-            <div style={{ marginTop: "20px" }}>
-              <table className="table table-bordered">
-                <thead>
-                  <tr>
-                    <th>Invoice ID</th>
-                    <th>Bill No</th>
-                    <th>Outlet Name</th>
-                    {salesSummary.uniqueOptions.map((opt) => (
-                      <th key={opt.optionId}>{opt.optionId} (Rs.{(parseFloat(opt.price) || 0).toFixed(2)})</th>
-                    ))}
-                    <th style={{ backgroundColor: "#ffffe0" }}>Gross Sale</th>
-                    <th>Discount</th>
-                    <th>Expire</th>
-                    <th style={{ backgroundColor: "#ffffe0" }}>Net Sale</th>
-                    <th>Cash</th>
-                    <th>Cheque</th>
-                    <th>Credit</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {salesSummary.data.map((bill, billIdx) => (
-                    <tr key={bill.billNo}>
-                      <td>{bill.invoiceId}</td>
-                      <td>{bill.billNo}</td>
-                      <td>{bill.outletName}</td>
-                      {salesSummary.uniqueOptions.map((opt, optIdx) => (
-                        <td key={opt.optionId}>
-                          <input
-                            type="number"
-                            className="form-control"
-                            style={{ width: "80px" }}
-                            value={bill.productOptions.find(po => po.optionId === opt.optionId)?.qty || ""}
-                            onChange={(e) => handleSalesQtyChange(billIdx, optIdx, e.target.value)}
-                          />
-                        </td>
-                      ))}
-                      <td style={{ backgroundColor: "#ffffe0" }}>{calculateGrossSale(bill)}</td>
-                      <td>
-                        <input
-                          type="number"
-                          className="form-control"
-                          value={bill.discount || ""}
-                          onChange={(e) => handleSalesFieldChange(billIdx, "discount", e.target.value)}
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="number"
-                          className="form-control"
-                          value={bill.expire || ""}
-                          onChange={(e) => handleSalesFieldChange(billIdx, "expire", e.target.value)}
-                        />
-                      </td>
-                      <td style={{ backgroundColor: "#ffffe0" }}>{calculateNetSale(bill)}</td>
-                      <td>
-                        <input
-                          type="number"
-                          className="form-control"
-                          value={bill.cash || ""}
-                          onChange={(e) => handleSalesFieldChange(billIdx, "cash", e.target.value)}
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="number"
-                          className="form-control"
-                          value={bill.cheque || ""}
-                          onChange={(e) => handleSalesFieldChange(billIdx, "cheque", e.target.value)}
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="number"
-                          className="form-control"
-                          value={bill.credit || ""}
-                          onChange={(e) => handleSalesFieldChange(billIdx, "credit", e.target.value)}
-                        />
-                      </td>
-                    </tr>
-                  ))}
-                  <tr style={{ backgroundColor: "#ffff99" }}>
-                    <td colSpan={3}><strong>Total</strong></td>
-                    {salesSummary.uniqueOptions.map((_, idx) => (
-                      <td key={idx}>{calculateSummarySums().productOptions[idx].toFixed(2)}</td>
-                    ))}
-                    <td>{calculateSummarySums().grossSale.toFixed(2)}</td>
-                    <td>{calculateSummarySums().discount.toFixed(2)}</td>
-                    <td>{calculateSummarySums().expire.toFixed(2)}</td>
-                    <td>{calculateSummarySums().netSale.toFixed(2)}</td>
-                    <td>{calculateSummarySums().cash.toFixed(2)}</td>
-                    <td>{calculateSummarySums().cheque.toFixed(2)}</td>
-                    <td>{calculateSummarySums().credit.toFixed(2)}</td>
-                  </tr>
-                </tbody>
-              </table>
-              <div className="d-flex justify-content-end gap-2">
+            
+            <div style={{ padding: "20px" }}>
+              <div className="card mb-4">
+                <div className="card-body" style={{ overflowX: "auto" }}>
+                  <div style={{ minWidth: "1800px" }}>
+                    <table className="table table-bordered table-hover">
+                      <thead>
+                        <tr style={{ background: "linear-gradient(to right, #f5f7fa, #e4efe9)" }}>
+                          <th style={{ width: "130px", verticalAlign: "middle", fontWeight: "600", borderBottom: "2px solid #dee2e6" }}>Invoice ID</th>
+                          <th style={{ width: "130px", verticalAlign: "middle", fontWeight: "600", borderBottom: "2px solid #dee2e6" }}>Bill No</th>
+                          <th style={{ width: "220px", verticalAlign: "middle", fontWeight: "600", borderBottom: "2px solid #dee2e6" }}>Outlet Name</th>
+                          {salesSummary.uniqueOptions.map((opt) => (
+                            <th key={opt.optionId} style={{ 
+                              width: "150px", 
+                              verticalAlign: "middle", 
+                              fontWeight: "600", 
+                              borderBottom: "2px solid #dee2e6",
+                              background: "linear-gradient(to right, #e4efe9, #d0e7d2)"
+                            }}>
+                              <div>{opt.optionId}</div>
+                              <div style={{ fontSize: "12px", color: "#666" }}>Rs.{(parseFloat(opt.price) || 0).toFixed(2)}</div>
+                            </th>
+                          ))}
+                          <th style={{ 
+                            width: "150px",
+                            backgroundColor: "#fff8e1", 
+                            verticalAlign: "middle", 
+                            fontWeight: "600", 
+                            borderBottom: "2px solid #dee2e6"
+                          }}>
+                            <i className="bi bi-currency-dollar me-1"></i>Gross Sale
+                          </th>
+                          <th style={{ width: "130px", verticalAlign: "middle", fontWeight: "600", borderBottom: "2px solid #dee2e6" }}>
+                            <i className="bi bi-tags me-1"></i>Discount
+                          </th>
+                          <th style={{ width: "130px", verticalAlign: "middle", fontWeight: "600", borderBottom: "2px solid #dee2e6" }}>
+                            <i className="bi bi-calendar-x me-1"></i>Expire
+                          </th>
+                          <th style={{ 
+                            width: "150px",
+                            backgroundColor: "#e3f2fd", 
+                            verticalAlign: "middle", 
+                            fontWeight: "600", 
+                            borderBottom: "2px solid #dee2e6"
+                          }}>
+                            <i className="bi bi-calculator me-1"></i>Net Sale
+                          </th>
+                          <th style={{ width: "130px", verticalAlign: "middle", fontWeight: "600", borderBottom: "2px solid #dee2e6" }}>
+                            <i className="bi bi-cash me-1"></i>Cash
+                          </th>
+                          <th style={{ width: "130px", verticalAlign: "middle", fontWeight: "600", borderBottom: "2px solid #dee2e6" }}>
+                            <i className="bi bi-credit-card me-1"></i>Cheque
+                          </th>
+                          <th style={{ width: "130px", verticalAlign: "middle", fontWeight: "600", borderBottom: "2px solid #dee2e6" }}>
+                            <i className="bi bi-bank me-1"></i>Credit
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {salesSummary.data.map((bill, billIdx) => (
+                          <tr key={bill.billNo} style={{ transition: "all 0.2s ease" }}>
+                            <td style={{ maxWidth: "130px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{bill.invoiceId}</td>
+                            <td style={{ maxWidth: "130px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{bill.billNo}</td>
+                            <td style={{ maxWidth: "220px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {bill.outletName}
+                            </td>
+                            {salesSummary.uniqueOptions.map((opt, optIdx) => (
+                              <td key={opt.optionId} style={{ width: "150px" }}>
+                                <input
+                                  type="number"
+                                  className="form-control"
+                                  style={{ 
+                                    width: "120px",
+                                    padding: "6px",
+                                    border: "1px solid #ced4da",
+                                    borderRadius: "4px"
+                                  }}
+                                  value={bill.productOptions.find(po => po.optionId === opt.optionId)?.qty || ""}
+                                  onChange={(e) => handleSalesQtyChange(billIdx, optIdx, e.target.value)}
+                                />
+                              </td>
+                            ))}
+                            <td style={{ width: "150px", backgroundColor: "#fff8e1", fontWeight: "500" }}>{calculateGrossSale(bill)}</td>
+                            <td style={{ width: "130px" }}>
+                              <input
+                                type="number"
+                                className="form-control"
+                                style={{ borderColor: "#ffcdd2", width: "120px" }}
+                                value={bill.discount || ""}
+                                onChange={(e) => handleSalesFieldChange(billIdx, "discount", e.target.value)}
+                              />
+                            </td>
+                            <td style={{ width: "130px" }}>
+                              <input
+                                type="number"
+                                className="form-control"
+                                style={{ borderColor: "#ffcdd2", width: "120px" }}
+                                value={bill.expire || ""}
+                                onChange={(e) => handleSalesFieldChange(billIdx, "expire", e.target.value)}
+                              />
+                            </td>
+                            <td style={{ width: "150px", backgroundColor: "#e3f2fd", fontWeight: "500" }}>{calculateNetSale(bill)}</td>
+                            <td style={{ width: "130px" }}>
+                              <input
+                                type="number"
+                                className="form-control"
+                                style={{ borderColor: "#c8e6c9", width: "120px" }}
+                                value={bill.cash || ""}
+                                onChange={(e) => handleSalesFieldChange(billIdx, "cash", e.target.value)}
+                              />
+                            </td>
+                            <td style={{ width: "130px" }}>
+                              <input
+                                type="number"
+                                className="form-control"
+                                style={{ borderColor: "#c8e6c9", width: "120px" }}
+                                value={bill.cheque || ""}
+                                onChange={(e) => handleSalesFieldChange(billIdx, "cheque", e.target.value)}
+                              />
+                            </td>
+                            <td style={{ width: "130px" }}>
+                              <input
+                                type="number"
+                                className="form-control"
+                                style={{ borderColor: "#c8e6c9", width: "120px" }}
+                                value={bill.credit || ""}
+                                onChange={(e) => handleSalesFieldChange(billIdx, "credit", e.target.value)}
+                              />
+                            </td>
+                          </tr>
+                        ))}
+                        <tr style={{ 
+                          backgroundColor: "#f1f8e9", 
+                          fontWeight: "bold",
+                          borderTop: "2px solid #43a047"
+                        }}>
+                          <td colSpan={3} style={{ verticalAlign: "middle" }}>
+                            <div style={{ display: "flex", alignItems: "center" }}>
+                              <i className="bi bi-calculator-fill me-2" style={{ color: "#2e7d32" }}></i>
+                              <span>Total</span>
+                            </div>
+                          </td>
+                          {salesSummary.uniqueOptions.map((_, idx) => (
+                            <td key={idx} style={{ width: "150px", color: "#2e7d32" }}>{calculateSummarySums().productOptions[idx].toFixed(2)}</td>
+                          ))}
+                          <td style={{ width: "150px", backgroundColor: "#fff8e1", color: "#ff6f00" }}>{calculateSummarySums().grossSale.toFixed(2)}</td>
+                          <td style={{ width: "130px", color: "#d32f2f" }}>{calculateSummarySums().discount.toFixed(2)}</td>
+                          <td style={{ width: "130px", color: "#d32f2f" }}>{calculateSummarySums().expire.toFixed(2)}</td>
+                          <td style={{ width: "150px", backgroundColor: "#e3f2fd", color: "#1565c0" }}>{calculateSummarySums().netSale.toFixed(2)}</td>
+                          <td style={{ width: "130px", color: "#2e7d32" }}>{calculateSummarySums().cash.toFixed(2)}</td>
+                          <td style={{ width: "130px", color: "#2e7d32" }}>{calculateSummarySums().cheque.toFixed(2)}</td>
+                          <td style={{ width: "130px", color: "#2e7d32" }}>{calculateSummarySums().credit.toFixed(2)}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="d-flex justify-content-end gap-2 mt-4">
+                <button className="btn btn-secondary" onClick={handleClosePopup}>
+                  <i className="bi bi-x-circle me-2"></i>Cancel
+                </button>
                 <button className="btn btn-primary" onClick={handleSaveSalesSummary}>
+                  <i className="bi bi-save me-2"></i>
                   {editSalesSummaryId ? "Update Sales Summary" : "Save Sales Summary"}
                 </button>
               </div>

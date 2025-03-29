@@ -226,7 +226,7 @@ export const menuList = [
 
     {
         id: 6,
-        name: "Manual Invoice",
+        name: "Sales Summery",
         path: "#",
         icon: 'feather-file-text',
         dropdownMenu: [
@@ -280,6 +280,38 @@ export const menuList = [
                 path: "/loadingSheet/UnLoadingList",
                 subdropdownMenu: false
             },
+         
+        ]
+    },
+    {
+        id: 9,
+        name: "Summery of month",
+        path: "#",
+        icon: 'feather-file-text',
+        dropdownMenu: [
+            {
+                id: 1,
+                name: "Summery of month",
+                path: "/summeryofmonth/summeryofmonthList",
+                subdropdownMenu: false
+            },
+           
+         
+        ]
+    },
+    {
+        id: 10,
+        name: "Payment",
+        path: "#",
+        icon: 'feather-file-text',
+        dropdownMenu: [
+            {
+                id: 1,
+                name: "Payment",
+                path: "/payment/paymentList",
+                subdropdownMenu: false
+            },
+           
          
         ]
     },

@@ -12,6 +12,10 @@ const ProcessedBillReview = () => {
   const [currentUnitId, setCurrentUnitId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [savedReviews, setSavedReviews] = useState([]);
+  const [printMode, setPrintMode] = useState(false);
+  const [downloadingUnit, setDownloadingUnit] = useState(null);
+  const [hiddenPrintMode, setHiddenPrintMode] = useState(false);
+  const printModalRef = React.useRef(null);
 
   const productsCollectionRef = collection(db, "Product");
   const processedBillsCollectionRef = collection(db, "ProcessedBills");
@@ -65,24 +69,101 @@ const ProcessedBillReview = () => {
   };
 
   const handleViewUnit = (unit) => {
-    setSelectedUnit(unit);
+    // Check if there's a saved review for this unit
+    const savedReview = savedReviews.find(review => review.unitId === unit.unitId);
+    if (savedReview) {
+      // If there's a saved review, use that for the view
+      setSelectedUnit(savedReview);
+    } else {
+      // Otherwise use the unit data
+      setSelectedUnit(unit);
+    }
+    setPrintMode(false);
   };
 
   const handleClosePopup = () => {
     setSelectedUnit(null);
+    setPrintMode(false);
+  };
+
+  const handlePrintUnit = () => {
+    setPrintMode(true);
+  };
+
+  const handleViewPDF = () => {
+    // Set print mode to true to use the print layout
+    setPrintMode(true);
+    
+    // Small delay to ensure content is loaded before download
+    setTimeout(() => {
+      handleDownloadPDF();
+    }, 300);
+  };
+
+  const triggerPrint = () => {
+    window.print();
+  };
+
+  const handleDownloadPDF = () => {
+    if (printModalRef.current) {
+      const printContent = printModalRef.current.querySelector('.print-content');
+      if (printContent) {
+        const originalContents = document.body.innerHTML;
+        
+        document.body.innerHTML = printContent.innerHTML;
+        
+        window.print();
+        
+        document.body.innerHTML = originalContents;
+        if (downloadingUnit) {
+          setDownloadingUnit(null);
+          setHiddenPrintMode(false);
+        } else {
+          window.location.reload();
+        }
+        return;
+      }
+    }
+    
+    // Fallback if ref isn't available
+    const printContent = document.querySelector('.print-content');
+    const originalContents = document.body.innerHTML;
+    
+    document.body.innerHTML = printContent.innerHTML;
+    
+    window.print();
+    
+    document.body.innerHTML = originalContents;
+    if (downloadingUnit) {
+      setDownloadingUnit(null);
+      setHiddenPrintMode(false);
+    } else {
+      window.location.reload();
+    }
   };
 
   const handleNext = (unit) => {
     const savedReview = savedReviews.find(review => review.unitId === unit.unitId);
-    const initialBills = savedReview ? savedReview.bills : unit.bills.map(bill => ({
+    
+    // If there's a saved review, use it
+    if (savedReview) {
+      setCurrentUnitBills(savedReview.bills);
+      setCurrentUnitId(unit.unitId);
+      setViewingBills(true);
+      return;
+    }
+    
+    // Otherwise initialize with current unit data
+    const initialBills = unit.bills.map(bill => ({
       ...bill,
       products: bill.products.map(product => ({
         ...product,
         unloadingBT: "",
-        saleBT: 0,
-        salesValue: 0,
+        saleBT: parseInt(product.qty) || 0, // Initially set to qty
+        salesValue: (parseInt(product.qty) || 0) * (parseFloat(product.price) || 0)
       })),
     }));
+    
     setCurrentUnitBills(initialBills);
     setCurrentUnitId(unit.unitId);
     setViewingBills(true);
@@ -110,7 +191,10 @@ const ProcessedBillReview = () => {
           if (bIndex === billIndex && pIndex === productIndex) {
             // This is the product being directly edited
             product.unloadingBT = value;
-            totalUnloadingBT += parseInt(value) || 0;
+            const unloadingValue = parseInt(value) || 0;
+            product.saleBT = qty - unloadingValue;
+            product.salesValue = product.saleBT * (parseFloat(product.price) || 0);
+            totalUnloadingBT += unloadingValue;
           } else {
             // For other instances of the same product
             totalUnloadingBT += parseInt(product.unloadingBT) || 0;
@@ -119,16 +203,19 @@ const ProcessedBillReview = () => {
       });
     });
     
-    // Calculate proportions for distribution if unloading is less than total qty
-    const unloadingBT = parseInt(value) || 0;
+    // Check if total unloading exceeds total qty
     if (totalUnloadingBT > totalQty) {
       // If total unloading exceeds total qty, reset the edited field
       newBills[billIndex].products[productIndex].unloadingBT = "";
+      newBills[billIndex].products[productIndex].saleBT = parseInt(newBills[billIndex].products[productIndex].qty) || 0;
+      newBills[billIndex].products[productIndex].salesValue = 
+        newBills[billIndex].products[productIndex].saleBT * (parseFloat(newBills[billIndex].products[productIndex].price) || 0);
       alert("Total unloading bottles cannot exceed total quantity!");
+      setCurrentUnitBills(newBills);
       return;
     }
     
-    // Second pass - update sales values
+    // Second pass - update sales values for all products of this type
     newBills.forEach((bill) => {
       bill.products.forEach((product) => {
         if (product.productId === productId && product.optionId === optionId) {
@@ -308,6 +395,29 @@ const ProcessedBillReview = () => {
     return review ? review.isSaved : false;
   };
 
+  const handleDirectDownload = (unit) => {
+    // Set downloading state for UI feedback
+    setDownloadingUnit(unit.unitId);
+    
+    // Check if there's a saved review for this unit
+    const savedReview = savedReviews.find(review => review.unitId === unit.unitId);
+    if (savedReview) {
+      // If there's a saved review, use that for the download
+      setSelectedUnit(savedReview);
+    } else {
+      // Otherwise use the unit data
+      setSelectedUnit(unit);
+    }
+    
+    // Use hidden print mode for direct downloads
+    setHiddenPrintMode(true);
+    
+    // Small delay to ensure content is loaded before download
+    setTimeout(() => {
+      handleDownloadPDF();
+    }, 500);
+  };
+
   return (
     <div className="container">
       <h3>Processed Bill Review</h3>
@@ -335,13 +445,20 @@ const ProcessedBillReview = () => {
                         className="btn btn-info btn-sm" 
                         onClick={() => handleViewUnit(unit)}
                       >
-                        View
+                        <i className="bi bi-eye"></i> View
                       </button>
                       <button 
                         className="btn btn-primary btn-sm" 
                         onClick={() => handleNext(unit)}
                       >
-                        Next
+                        <i className="bi bi-arrow-right"></i> Next
+                      </button>
+                      <button 
+                        className="btn btn-success btn-sm" 
+                        onClick={() => handleDirectDownload(unit)}
+                        disabled={downloadingUnit === unit.unitId}
+                      >
+                        <i className="bi bi-file-earmark-pdf"></i> {downloadingUnit === unit.unitId ? "Loading..." : "PDF"}
                       </button>
                     </div>
                   </td>
@@ -508,12 +625,22 @@ const ProcessedBillReview = () => {
       )}
 
       {/* Popup Modal for View Unit */}
-      {selectedUnit && (
+      {selectedUnit && !printMode && (
         <div className="modal" style={{ display: "block", position: "fixed", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.5)" }}>
           <div className="modal-content" style={{ backgroundColor: "#fff", margin: "5% auto", padding: "20px", width: "80%", maxWidth: "800px", borderRadius: "8px", maxHeight: "80vh", overflowY: "auto" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "2px solid #ddd", paddingBottom: "10px" }}>
               <h4>Unit Details - {selectedUnit.unitId}</h4>
-              <button className="btn btn-danger" onClick={handleClosePopup}>Close</button>
+              <div className="d-flex gap-2">
+                <button className="btn btn-success" onClick={handlePrintUnit}>
+                  <i className="bi bi-printer"></i> Print
+                </button>
+                <button className="btn btn-primary" onClick={handleViewPDF}>
+                  <i className="bi bi-file-earmark-pdf"></i> PDF
+                </button>
+                <button className="btn btn-danger" onClick={handleClosePopup}>
+                  <i className="bi bi-x-circle"></i> Close
+                </button>
+              </div>
             </div>
             <div style={{ marginTop: "20px" }}>
               <p><strong>Date:</strong> {selectedUnit.date}</p>
@@ -531,7 +658,8 @@ const ProcessedBillReview = () => {
                         <th>Bottles/Case</th>
                         <th>Case</th>
                         <th>Extra Bottles</th>
-                        {selectedUnit.consolidatedProducts[0].unloadingBT !== undefined && (
+                        {(selectedUnit.consolidatedProducts[0].unloadingBT !== undefined || 
+                           selectedUnit.consolidatedProducts[0].saleBT !== undefined) && (
                           <>
                             <th>UnLoading BT</th>
                             <th>Sale BT</th>
@@ -543,7 +671,11 @@ const ProcessedBillReview = () => {
                     <tbody>
                       {/* Group consolidated products by optionId */}
                       {selectedUnit.consolidatedProducts
-                        .sort((a, b) => a.optionId.localeCompare(b.optionId))
+                        .sort((a, b) => {
+                          const numA = parseInt(a.optionId.match(/^\d+/) || [0]);
+                          const numB = parseInt(b.optionId.match(/^\d+/) || [0]);
+                          return numA - numB;
+                        })
                         .reduce((result, product, index, array) => {
                           // Add the current product to the result
                           result.push(
@@ -554,11 +686,11 @@ const ProcessedBillReview = () => {
                               <td>{product.bottlesPerCase || '-'}</td>
                               <td>{product.caseCount || '-'}</td>
                               <td>{product.extraBottles || '-'}</td>
-                              {product.unloadingBT !== undefined && (
+                              {(product.unloadingBT !== undefined || product.saleBT !== undefined) && (
                                 <>
-                                  <td>{product.unloadingBT}</td>
-                                  <td>{product.saleBT}</td>
-                                  <td>{product.salesValue.toFixed(2)}</td>
+                                  <td>{product.unloadingBT || 0}</td>
+                                  <td>{product.saleBT || 0}</td>
+                                  <td>{(product.salesValue || 0).toFixed(2)}</td>
                                 </>
                               )}
                             </tr>
@@ -566,9 +698,9 @@ const ProcessedBillReview = () => {
                           
                           // If the next product has a different optionId, add a separator row
                           if (index < array.length - 1 && product.optionId !== array[index + 1].optionId) {
-                            const colSpan = product.unloadingBT !== undefined ? 9 : 6;
+                            const colSpan = (product.unloadingBT !== undefined || product.saleBT !== undefined) ? 9 : 6;
                             result.push(
-                              <tr key={`separator-${index}`} style={{ height: "20px", backgroundColor: "#f8f9fa" }}>
+                              <tr key={`separator-${index}`} style={{ height: "10px", backgroundColor: "#f8f9fa" }}>
                                 <td colSpan={colSpan}></td>
                               </tr>
                             );
@@ -631,6 +763,309 @@ const ProcessedBillReview = () => {
           </div>
         </div>
       )}
+
+      {/* Print Popup Modal */}
+      {selectedUnit && printMode && (
+        <div className="modal" style={{ display: "block", position: "fixed", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <div className="modal-content" style={{ backgroundColor: "#fff", margin: "5% auto", padding: "20px", width: "90%", maxWidth: "800px", borderRadius: "8px", maxHeight: "80vh", overflowY: "auto" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "2px solid #ddd", paddingBottom: "10px", marginBottom: "20px" }} className="no-print">
+              <h4>Print Unit - {selectedUnit.unitId}</h4>
+              <div className="d-flex gap-2">
+                <button 
+                  className="btn btn-primary" 
+                  onClick={triggerPrint}
+                >
+                  <i className="bi bi-printer"></i> Print
+                </button>
+                <button 
+                  className="btn btn-success" 
+                  onClick={handleDownloadPDF}
+                >
+                  <i className="bi bi-file-earmark-pdf"></i> Download PDF
+                </button>
+                <button className="btn btn-danger" onClick={handleClosePopup}>
+                  <i className="bi bi-x-circle"></i> Close
+                </button>
+              </div>
+            </div>
+            
+            <div className="print-content" style={{ marginTop: "20px" }}>
+              <div style={{ textAlign: "center", marginBottom: "10px" }}>
+                <h2 style={{ margin: "0" }}>Advance Trading</h2>
+                <p style={{ margin: "3px 0" }}>Reg Office: No: 170/A, Nuwaraeliya Rd, Delpitiya, Gampola</p>
+                <p style={{ margin: "2px 0" }}>Tel: 072-7070701</p>
+                <h3 style={{ margin: "8px 0" }}>Unloading Report</h3>
+              </div>
+              
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                <div>
+                  <p><strong>Unit ID:</strong> {selectedUnit.unitId}</p>
+                </div>
+                <div>
+                  <p><strong>Date:</strong> {selectedUnit.date || new Date().toISOString().split('T')[0]}</p>
+                </div>
+              </div>
+              
+              <h5 style={{ borderBottom: "1px solid #000", paddingBottom: "3px", marginBottom: "3px" }}>Consolidated Products</h5>
+              
+              {selectedUnit.consolidatedProducts && (
+                <table className="table table-bordered" style={{ marginBottom: "5px" }}>
+                  <thead>
+                    <tr style={{ backgroundColor: "#f2f2f2" }}>
+                      <th>Option</th>
+                      <th>Product</th>
+                      <th>Qty</th>
+                      <th>BPC</th>
+                      <th>Case</th>
+                      <th>Extra</th>
+                      {(selectedUnit.consolidatedProducts[0].unloadingBT !== undefined || 
+                         selectedUnit.consolidatedProducts[0].saleBT !== undefined) && (
+                        <>
+                          <th>UnLoading</th>
+                          <th>Sale</th>
+                          <th>Value (Rs.)</th>
+                        </>
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedUnit.consolidatedProducts
+                      .sort((a, b) => {
+                        const numA = parseInt(a.optionId.match(/^\d+/) || [0]);
+                        const numB = parseInt(b.optionId.match(/^\d+/) || [0]);
+                        return numA - numB;
+                      })
+                      .reduce((result, product, index, array) => {
+                        // Add the current product to the result
+                        result.push(
+                          <tr key={`product-${index}`} style={{ lineHeight: "1" }}>
+                            <td>{product.optionId}</td>
+                            <td>{product.productName || products.find(p => p.id === product.productId)?.name}</td>
+                            <td>{product.totalQty}</td>
+                            <td>{product.bottlesPerCase || '-'}</td>
+                            <td>{product.caseCount || '-'}</td>
+                            <td>{product.extraBottles || '-'}</td>
+                            {(product.unloadingBT !== undefined || product.saleBT !== undefined) && (
+                              <>
+                                <td>{product.unloadingBT || 0}</td>
+                                <td>{product.saleBT || 0}</td>
+                                <td>{(product.salesValue || 0).toFixed(2)}</td>
+                              </>
+                            )}
+                          </tr>
+                        );
+                        
+                        // If the next product has a different optionId, add a separator row
+                        if (index < array.length - 1 && product.optionId !== array[index + 1].optionId) {
+                          const colSpan = (product.unloadingBT !== undefined || product.saleBT !== undefined) ? 9 : 6;
+                          result.push(
+                            <tr key={`separator-${index}`} style={{ height: "2px", backgroundColor: "#f0f0f0" }} className="separator-row">
+                              <td colSpan={colSpan}></td>
+                            </tr>
+                          );
+                        }
+                        
+                        return result;
+                      }, [])
+                    }
+                  </tbody>
+                </table>
+              )}
+              <br /> <br /> <br />
+              <div style={{ marginTop: "8px", display: "flex", justifyContent: "space-between" }}>
+                <div style={{ width: "30%", borderTop: "0.5px solid #000", textAlign: "center", paddingTop: "2px" }}>
+                  <p style={{ margin: 0 }}>Prepared By</p>
+                </div>
+                <div style={{ width: "30%", borderTop: "0.5px solid #000", textAlign: "center", paddingTop: "2px" }}>
+                  <p style={{ margin: 0 }}>Checked By</p>
+                </div>
+                <div style={{ width: "30%", borderTop: "0.5px solid #000", textAlign: "center", paddingTop: "2px" }}>
+                  <p style={{ margin: 0 }}>Approved By</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Hidden Print Modal for Direct Downloads */}
+      {selectedUnit && hiddenPrintMode && (
+        <div ref={printModalRef} style={{ display: "none" }}>
+          <div className="print-content" style={{ marginTop: "20px" }}>
+            <div style={{ textAlign: "center", marginBottom: "10px" }}>
+              <h2 style={{ margin: "0" }}>Advance Trading</h2>
+              <p style={{ margin: "3px 0" }}>Reg Office: No: 170/A, Nuwaraeliya Rd, Delpitiya, Gampola</p>
+              <p style={{ margin: "2px 0" }}>Tel: 072-7070701</p>
+              <h3 style={{ margin: "8px 0" }}>Unloading Report</h3>
+            </div>
+            
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+              <div>
+                <p><strong>Unit ID:</strong> {selectedUnit.unitId}</p>
+              </div>
+              <div>
+                <p><strong>Date:</strong> {selectedUnit.date || new Date().toISOString().split('T')[0]}</p>
+              </div>
+            </div>
+            
+            <h5 style={{ borderBottom: "1px solid #000", paddingBottom: "3px", marginBottom: "3px" }}>Consolidated Products</h5>
+            
+            {selectedUnit.consolidatedProducts && (
+              <table className="table table-bordered" style={{ marginBottom: "5px" }}>
+                <thead>
+                  <tr style={{ backgroundColor: "#f2f2f2" }}>
+                    <th>Option</th>
+                    <th>Product</th>
+                    <th>Qty</th>
+                    <th>BPC</th>
+                    <th>Case</th>
+                    <th>Extra</th>
+                    {(selectedUnit.consolidatedProducts[0].unloadingBT !== undefined || 
+                       selectedUnit.consolidatedProducts[0].saleBT !== undefined) && (
+                      <>
+                        <th>UnLoading</th>
+                        <th>Sale</th>
+                        <th>Value (Rs.)</th>
+                      </>
+                    )}
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedUnit.consolidatedProducts
+                    .sort((a, b) => {
+                      const numA = parseInt(a.optionId.match(/^\d+/) || [0]);
+                      const numB = parseInt(b.optionId.match(/^\d+/) || [0]);
+                      return numA - numB;
+                    })
+                    .reduce((result, product, index, array) => {
+                      // Add the current product to the result
+                      result.push(
+                        <tr key={`product-${index}`} style={{ lineHeight: "1" }}>
+                          <td>{product.optionId}</td>
+                          <td>{product.productName || products.find(p => p.id === product.productId)?.name}</td>
+                          <td>{product.totalQty}</td>
+                          <td>{product.bottlesPerCase || '-'}</td>
+                          <td>{product.caseCount || '-'}</td>
+                          <td>{product.extraBottles || '-'}</td>
+                          {(product.unloadingBT !== undefined || product.saleBT !== undefined) && (
+                            <>
+                              <td>{product.unloadingBT || 0}</td>
+                              <td>{product.saleBT || 0}</td>
+                              <td>{(product.salesValue || 0).toFixed(2)}</td>
+                            </>
+                          )}
+                        </tr>
+                      );
+                      
+                      // If the next product has a different optionId, add a separator row
+                      if (index < array.length - 1 && product.optionId !== array[index + 1].optionId) {
+                        const colSpan = (product.unloadingBT !== undefined || product.saleBT !== undefined) ? 9 : 6;
+                        result.push(
+                          <tr key={`separator-${index}`} style={{ height: "2px", backgroundColor: "#f0f0f0" }} className="separator-row">
+                            <td colSpan={colSpan}></td>
+                          </tr>
+                        );
+                      }
+                      
+                      return result;
+                    }, [])
+                  }
+                </tbody>
+              </table>
+            )}
+            <br /> <br /> <br />
+            <div style={{ marginTop: "8px", display: "flex", justifyContent: "space-between" }}>
+              <div style={{ width: "30%", borderTop: "0.5px solid #000", textAlign: "center", paddingTop: "2px" }}>
+                <p style={{ margin: 0 }}>Prepared By</p>
+              </div>
+              <div style={{ width: "30%", borderTop: "0.5px solid #000", textAlign: "center", paddingTop: "2px" }}>
+                <p style={{ margin: 0 }}>Checked By</p>
+              </div>
+              <div style={{ width: "30%", borderTop: "0.5px solid #000", textAlign: "center", paddingTop: "2px" }}>
+                <p style={{ margin: 0 }}>Approved By</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style>
+        {`
+          @media print {
+            body * {
+              visibility: hidden;
+            }
+            .print-content, .print-content * {
+              visibility: visible;
+            }
+            .no-print {
+              display: none;
+            }
+            .print-content {
+              position: absolute;
+              left: 0;
+              top: 0;
+              width: 100%;
+              padding: 5px;
+              font-size: 8px;
+            }
+            .print-content h2 {
+              font-size: 14px;
+              margin: 0;
+            }
+            .print-content h3 {
+              font-size: 12px;
+              margin: 5px 0;
+            }
+            .print-content h5 {
+              font-size: 10px;
+              margin: 5px 0 2px;
+              padding-bottom: 3px !important;
+            }
+            .print-content p {
+              margin: 1px 0;
+              font-size: 8px;
+            }
+            @page {
+              size: A4;
+              margin: 5mm 3mm;
+            }
+            table {
+              border-collapse: collapse;
+              width: 100%;
+              margin-bottom: 5px;
+            }
+            table, th, td {
+              border: 0.5px solid black;
+            }
+            th, td {
+              padding: 1px 2px;
+              text-align: left;
+              font-size: 7px;
+              white-space: nowrap;
+            }
+            tr {
+              height: auto;
+              line-height: 1.1;
+            }
+            .print-content .table-bordered {
+              margin-bottom: 5px;
+            }
+            .separator-row {
+              height: 2px !important;
+            }
+            .print-content > div:last-child {
+              margin-top: 10px !important;
+            }
+            .print-content > div:last-child > div {
+              padding-top: 2px !important;
+            }
+            .print-content > div:last-child p {
+              margin: 0;
+            }
+          }
+        `}
+      </style>
     </div>
   );
 };
