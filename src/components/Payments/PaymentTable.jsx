@@ -173,14 +173,320 @@ const PaymentTable = () => {
   };
 
   const handleDownloadPDF = () => {
+    setPrintMode(true);
+    // Create a custom print style for the computer form size
+    const customStyle = document.createElement('style');
+    customStyle.id = 'computer-form-style';
+    customStyle.textContent = `
+      @page {
+        size: 9.5in 11in !important;
+        margin: 0.5in 0.5in !important;
+      }
+      .print-content {
+        width: 8.5in !important;
+        padding: 0.25in !important;
+      }
+      .print-content table {
+        font-size: 12pt !important;
+        width: 100% !important;
+        table-layout: fixed !important;
+      }
+      .print-content table th {
+        background-color: #e0e0e0 !important;
+        color: #000000 !important;
+        font-weight: bold !important;
+        border: 1px solid #999 !important;
+        font-size: 13pt !important;
+        padding: 6px !important;
+      }
+      .print-content h2 {
+        font-size: 18pt !important;
+        margin-bottom: 4px !important;
+        font-weight: bold !important;
+      }
+      .print-content h3 {
+        font-size: 16pt !important;
+        margin-bottom: 6px !important;
+        color: #333 !important;
+      }
+      .print-content p {
+        font-size: 11pt !important;
+        margin: 3px 0 !important;
+      }
+      .print-content th, .print-content td {
+        padding: 6px !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+        font-size: 12pt !important;
+      }
+      .print-content .text-end {
+        font-weight: bold !important;
+      }
+      /* Form page break setup */
+      .form-page {
+        page-break-after: always;
+        position: relative;
+        min-height: 9.5in;
+        max-height: 10in;
+        overflow: hidden;
+        border: 1px dashed transparent;
+        padding: 0.5in;
+      }
+      .form-page:last-child {
+        page-break-after: avoid;
+      }
+      .form-page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.3in;
+        border-bottom: 2px solid #333;
+        padding-bottom: 0.1in;
+      }
+      .form-page-logo {
+        width: 1.5in;
+        height: 0.8in;
+        border: 1px solid #999;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-weight: bold;
+        font-size: 14pt;
+      }
+      .form-page-title {
+        text-align: center;
+        flex-grow: 1;
+      }
+      .form-page-title h2 {
+        margin: 0;
+        font-size: 20pt !important;
+      }
+      .form-page-title p {
+        margin: 3px 0;
+        font-size: 10pt !important;
+      }
+      .form-page-watermark {
+        position: absolute;
+        top: 0.3in;
+        right: 0.5in;
+        font-size: 14pt;
+        font-weight: bold;
+        padding: 5px 10px;
+        border: 2px solid;
+        transform: rotate(-10deg);
+        z-index: 100;
+        background-color: rgba(255, 255, 255, 0.8);
+      }
+      .form-page-footer {
+        position: absolute;
+        bottom: 0.3in;
+        right: 0.5in;
+        font-size: 10pt;
+        color: #555;
+      }
+      .form-divider {
+        display: block;
+        width: 100%;
+        font-size: 10pt;
+        text-align: center;
+        margin: 0.1in 0;
+        border-top: 2px dashed #777;
+        padding-top: 5px;
+        color: #666;
+        position: relative;
+      }
+      /* Pin feed holes indicators */
+      .form-page::before, .form-page::after {
+        content: "";
+        position: absolute;
+        width: 0.25in;
+        top: 0;
+        bottom: 0;
+        background-image: repeating-linear-gradient(0deg, transparent, transparent 0.45in, #aaa 0.45in, #aaa 0.5in);
+      }
+      .form-page::before {
+        left: -0.25in;
+        border-right: 1px dashed #777;
+      }
+      .form-page::after {
+        right: -0.25in;
+        border-left: 1px dashed #777;
+      }
+      /* Pin feed hole circles */
+      .pin-holes-left, .pin-holes-right {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 0.25in;
+        z-index: 2;
+      }
+      .pin-holes-left {
+        left: -0.25in;
+      }
+      .pin-holes-right {
+        right: -0.25in;
+      }
+      .pin-hole {
+        position: absolute;
+        width: 0.125in;
+        height: 0.125in;
+        border-radius: 50%;
+        border: 1px solid #777;
+        background-color: white;
+        left: 50%;
+        transform: translateX(-50%);
+      }
+      .form-page-signatures {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 1in;
+      }
+      .form-page-signature {
+        width: 30%;
+        text-align: center;
+      }
+      .form-page-signature-line {
+        width: 100%;
+        border-top: 1px solid black;
+        margin-bottom: 5px;
+      }
+      .form-page-signature-title {
+        font-size: 11pt;
+      }
+      .table-success {
+        background-color: rgba(209, 231, 221, 0.7) !important;
+      }
+    `;
+    document.head.appendChild(customStyle);
+    
     const printContent = document.querySelector('.print-content');
+    const originalHTML = printContent.innerHTML;
+    
+    // Create a container with three copies (original, duplicate, triplicate)
+    const formContent = document.createElement('div');
+    formContent.className = 'computer-form-container';
+    
+    // Create all three copies
+    const copyTypes = [
+      { type: 'ORIGINAL', color: '#000000' },
+      { type: 'DUPLICATE', color: '#1a5fb4' },
+      { type: 'TRIPLICATE', color: '#a51d2d' }
+    ];
+    
+    copyTypes.forEach((copy, index) => {
+      const copyPage = document.createElement('div');
+      copyPage.className = 'form-page';
+      
+      // Create custom header with logo area
+      const header = document.createElement('div');
+      header.className = 'form-page-header';
+      
+      // Logo placeholder
+      const logo = document.createElement('div');
+      logo.className = 'form-page-logo';
+      logo.textContent = 'PEPSI';
+      
+      // Title and company info
+      const title = document.createElement('div');
+      title.className = 'form-page-title';
+      title.innerHTML = `
+        <h2>Advance Trading</h2>
+        <p>Reg Office: No: 170/A, Nuwaraeliya Rd, Delpitiya, Gampola</p>
+        <p>Tel: 072-7070701</p>
+        <h3>Payment Tracking Report</h3>
+        ${selectedOutlet ? `<p><strong>Outlet: ${selectedOutlet}</strong></p>` : ''}
+      `;
+      
+      header.appendChild(logo);
+      header.appendChild(title);
+      
+      // Add the header to the form page
+      copyPage.appendChild(header);
+      
+      // Add the main content (table)
+      const content = document.createElement('div');
+      content.innerHTML = originalHTML;
+      content.querySelector('.d-none.d-print-block').remove(); // Remove the original header
+      copyPage.appendChild(content);
+      
+      // Add signature section
+      const signatures = document.createElement('div');
+      signatures.className = 'form-page-signatures';
+      
+      const positions = ['Prepared By', 'Checked By', 'Approved By'];
+      positions.forEach(position => {
+        const signature = document.createElement('div');
+        signature.className = 'form-page-signature';
+        signature.innerHTML = `
+          <div class="form-page-signature-line"></div>
+          <div class="form-page-signature-title">${position}</div>
+        `;
+        signatures.appendChild(signature);
+      });
+      
+      copyPage.appendChild(signatures);
+      
+      // Add watermark to each copy
+      const watermark = document.createElement('div');
+      watermark.className = 'form-page-watermark';
+      watermark.textContent = `${copy.type} COPY`;
+      watermark.style.color = copy.color;
+      watermark.style.borderColor = copy.color;
+      copyPage.appendChild(watermark);
+      
+      // Add footer to each copy
+      const footer = document.createElement('div');
+      footer.className = 'form-page-footer';
+      footer.textContent = `Page ${index + 1} of 3 • ${new Date().toLocaleDateString()}`;
+      copyPage.appendChild(footer);
+      
+      // Add pin feed holes
+      const leftHoles = document.createElement('div');
+      leftHoles.className = 'pin-holes-left';
+      const rightHoles = document.createElement('div');
+      rightHoles.className = 'pin-holes-right';
+      
+      // Add 22 pin holes for an 11-inch form (every 0.5 inch)
+      for (let i = 0; i < 22; i++) {
+        const leftHole = document.createElement('div');
+        leftHole.className = 'pin-hole';
+        leftHole.style.top = `${i * 0.5}in`;
+        leftHoles.appendChild(leftHole);
+        
+        const rightHole = document.createElement('div');
+        rightHole.className = 'pin-hole';
+        rightHole.style.top = `${i * 0.5}in`;
+        rightHoles.appendChild(rightHole);
+      }
+      
+      copyPage.appendChild(leftHoles);
+      copyPage.appendChild(rightHoles);
+      
+      // Add divider between copies (except the last one)
+      if (index < copyTypes.length - 1) {
+        const divider = document.createElement('div');
+        divider.className = 'form-divider';
+        divider.innerHTML = '✂️ <span style="background-color: white; padding: 0 8px;">TEAR HERE</span> ✂️';
+        copyPage.appendChild(divider);
+      }
+      
+      formContent.appendChild(copyPage);
+    });
+    
+    // Replace body content with our custom 3-ply form
     const originalContents = document.body.innerHTML;
+    document.body.innerHTML = '';
+    document.body.appendChild(formContent);
     
-    document.body.innerHTML = printContent.innerHTML;
-    
+    // Print the document
     window.print();
     
+    // Restore original content and remove custom styles
     document.body.innerHTML = originalContents;
+    const style = document.getElementById('computer-form-style');
+    if (style) style.remove();
+    setPrintMode(false);
     window.location.reload();
   };
 
@@ -427,6 +733,13 @@ const PaymentTable = () => {
         </div>
       )}
 
+      {/* 3-ply form template for PDF download - hidden by default */}
+      <div className="d-none">
+        <div id="computer-form-template">
+          {/* This content will be used for generating the 3-ply form */}
+        </div>
+      </div>
+
       <style>
         {`
           @media print {
@@ -447,23 +760,24 @@ const PaymentTable = () => {
               padding: 20px;
             }
             @page {
-              size: A4 landscape;
-              margin: 15mm 10mm;
+              size: ${printMode ? '9.5in 11in' : 'A4 landscape'};
+              margin: ${printMode ? '0.5in 0.5in' : '15mm 10mm'};
             }
             .table {
               width: 100% !important;
               border-collapse: collapse;
             }
             .table th, .table td {
-              padding: 8px;
+              padding: ${printMode ? '6px' : '8px'};
               border: 1px solid #ddd;
+              font-size: ${printMode ? '12pt' : 'inherit'};
             }
             .table-dark {
-              background-color: #343a40 !important;
-              color: white !important;
+              background-color: ${printMode ? '#e0e0e0' : '#343a40'} !important;
+              color: ${printMode ? '#000' : 'white'} !important;
             }
             .text-white {
-              color: white !important;
+              color: ${printMode ? '#000' : 'white'} !important;
             }
             .text-end {
               text-align: right !important;
@@ -477,6 +791,52 @@ const PaymentTable = () => {
             .table-success {
               background-color: #d1e7dd !important;
             }
+            /* Computer form specific styles */
+            ${printMode ? `
+            .print-content h2 {
+              font-size: 18pt;
+              font-weight: bold;
+            }
+            .print-content h3 {
+              font-size: 16pt;
+              margin-top: 8px;
+            }
+            .print-content h4 {
+              font-size: 14pt;
+            }
+            .print-content p {
+              font-size: 11pt;
+              margin: 3px 0;
+            }
+            .print-content th {
+              font-size: 13pt;
+              font-weight: bold;
+            }
+            .print-content td {
+              font-size: 12pt;
+            }
+            /* Form structure elements - only for direct print button */
+            .print-content::before {
+              content: "";
+              position: absolute;
+              width: 0.25in;
+              top: 0;
+              bottom: 0;
+              left: -0.25in;
+              border-right: 1px dashed #999;
+              background-image: repeating-linear-gradient(0deg, transparent, transparent 0.45in, #ccc 0.45in, #ccc 0.5in);
+            }
+            .print-content::after {
+              content: "";
+              position: absolute;
+              width: 0.25in;
+              top: 0;
+              bottom: 0;
+              right: -0.25in;
+              border-left: 1px dashed #999;
+              background-image: repeating-linear-gradient(0deg, transparent, transparent 0.45in, #ccc 0.45in, #ccc 0.5in);
+            }
+            ` : ''}
           }
           
           /* Additional styles for non-print view */

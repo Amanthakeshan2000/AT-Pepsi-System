@@ -16,6 +16,7 @@ const BillAdd = () => {
   const [discountOptions, setDiscountOptions] = useState([]);
   const [freeIssueOptions, setFreeIssueOptions] = useState([]);
   const [expireOptions, setExpireOptions] = useState([]);
+  const [percentageDiscount, setPercentageDiscount] = useState("");
   const [products, setProducts] = useState([]);
   const [bills, setBills] = useState([]);
   const [customers, setCustomers] = useState([]);
@@ -131,6 +132,7 @@ const BillAdd = () => {
     setDiscountOptions(bill.discountOptions || []);
     setFreeIssueOptions(bill.freeIssueOptions || []);
     setExpireOptions(bill.expireOptions || []);
+    setPercentageDiscount(bill.percentageDiscount || "");
     
     // Scroll to the top of the page
     window.scrollTo({
@@ -167,6 +169,11 @@ const BillAdd = () => {
     const hasDiscounts = filteredDiscountOptions.length > 0;
     const hasFreeIssues = filteredFreeIssueOptions.length > 0;
     const hasExpires = filteredExpireOptions.length > 0;
+    const hasPercentageDiscount = bill.percentageDiscount && parseFloat(bill.percentageDiscount) > 0;
+
+    const productTotal = calculateProductTotal(bill.productOptions);
+    const percentageDiscountAmount = hasPercentageDiscount ? 
+      calculatePercentageDiscountTotal(productTotal, bill.percentageDiscount) : "0.00";
 
     const printWindow = window.open('', '_blank');
     printWindow.document.write(`
@@ -457,7 +464,7 @@ const BillAdd = () => {
                 <tr>
                   <td style="color: #e74c3c; font-size: 15.5px;"><strong>SUBTOTAL</strong></td>
                    <td style="color: #e74c3c; font-size: 16px;">=</td>
-                  <td style="color: #e74c3c; font-size: 16px;">${calculateProductTotal(bill.productOptions)}</td>
+                  <td style="color: #e74c3c; font-size: 16px;">${productTotal}</td>
                 </tr>
                 ${hasDiscounts ? `
                 <tr>
@@ -480,14 +487,22 @@ const BillAdd = () => {
                   <td>${calculateTotal(filteredExpireOptions)}</td>
                 </tr>
                 ` : ''}
+                ${hasPercentageDiscount ? `
+                <tr>
+                  <td><strong>DISCOUNT (${bill.percentageDiscount}%)</strong></td>
+                  <td>=</td>
+                  <td>${percentageDiscountAmount}</td>
+                </tr>
+                ` : ''}
                 <tr>
                   <td style="color: #e74c3c; font-size: 15.5px;"><strong>TOTAL</strong></td>
                   <td style="color: #e74c3c; font-size: 16px;">=</td>
                   <td style="color: #e74c3c; font-size: 16px;">${(
-                    parseFloat(calculateProductTotal(bill.productOptions)) -
+                    parseFloat(productTotal) -
                     (parseFloat(hasDiscounts ? calculateTotal(filteredDiscountOptions) : 0) +
                      parseFloat(hasFreeIssues ? calculateTotal(filteredFreeIssueOptions) : 0) +
-                     parseFloat(hasExpires ? calculateTotal(filteredExpireOptions) : 0))
+                     parseFloat(hasExpires ? calculateTotal(filteredExpireOptions) : 0) +
+                     parseFloat(percentageDiscountAmount))
                   ).toFixed(2)}</td>
                 </tr>
               </table>
@@ -661,6 +676,24 @@ const BillAdd = () => {
     return options.reduce((sum, option) => sum + ((parseFloat(option.price) || 0) * (parseFloat(option.qty) || 0)), 0).toFixed(2);
   };
 
+  const calculatePercentageDiscountTotal = (total, percentage) => {
+    if (!percentage || isNaN(percentage)) return "0.00";
+    const discountValue = (parseFloat(total) * (parseFloat(percentage) / 100)).toFixed(2);
+    return discountValue;
+  };
+
+  const handlePercentageDiscountChange = (value) => {
+    // Ensure value is between 0 and 100
+    const numValue = parseFloat(value) || 0;
+    if (numValue < 0) {
+      setPercentageDiscount("0");
+    } else if (numValue > 100) {
+      setPercentageDiscount("100");
+    } else {
+      setPercentageDiscount(value);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -678,6 +711,7 @@ const BillAdd = () => {
           discountOptions,
           freeIssueOptions,
           expireOptions,
+          percentageDiscount,
         });
         alert("Bill updated successfully!");
         setEditBill(null);
@@ -694,6 +728,7 @@ const BillAdd = () => {
           discountOptions,
           freeIssueOptions,
           expireOptions,
+          percentageDiscount,
           printStatus: false, // Default print status to false for new bills
           createdAt: serverTimestamp(),
         });
@@ -728,6 +763,7 @@ const BillAdd = () => {
       setDiscountOptions([]);
       setFreeIssueOptions([]);
       setExpireOptions([]);
+      setPercentageDiscount("");
     } catch (error) {
       console.error("Error saving bill:", error.message);
     } finally {
@@ -747,6 +783,7 @@ const BillAdd = () => {
     setDiscountOptions([]);
     setFreeIssueOptions([]);
     setExpireOptions([]);
+    setPercentageDiscount("");
     generateBillNo();
   };
 
@@ -1021,6 +1058,35 @@ const BillAdd = () => {
             </div>
           </>
         )}
+
+        <h5>Percentage Discount</h5>
+        <div className="row mb-3">
+          <div className="col-md-6">
+            <div className="input-group">
+              <input
+                type="number"
+                className="form-control"
+                placeholder="Enter discount percentage"
+                value={percentageDiscount}
+                onChange={(e) => handlePercentageDiscountChange(e.target.value)}
+                min="0"
+                max="100"
+                step="0.01"
+              />
+              <span className="input-group-text">%</span>
+            </div>
+          </div>
+          <div className="col-md-6">
+            {percentageDiscount && !isNaN(percentageDiscount) && (
+              <div className="alert alert-info mb-0">
+                Discount Amount: Rs. {calculatePercentageDiscountTotal(calculateProductTotal(productOptions), percentageDiscount)}
+                <br />
+                <small>(Calculated from product total: Rs. {calculateProductTotal(productOptions)})</small>
+              </div>
+            )}
+          </div>
+        </div>
+
         <br /><br />
         <div style={{ textAlign: "right", marginBottom: "20px" }}>
           {discountOptions.length > 0 && (
@@ -1036,6 +1102,11 @@ const BillAdd = () => {
           {expireOptions.length > 0 && (
             <div style={{ color: "red", fontWeight: "bold" }}>
               Expire Total: Rs. {calculateTotal(expireOptions)}
+            </div>
+          )}
+          {percentageDiscount && !isNaN(percentageDiscount) && parseFloat(percentageDiscount) > 0 && (
+            <div style={{ color: "red", fontWeight: "bold" }}>
+              Percentage Discount ({percentageDiscount}%): Rs. {calculatePercentageDiscountTotal(calculateProductTotal(productOptions), percentageDiscount)}
             </div>
           )}
         </div>
@@ -1177,7 +1248,7 @@ const BillAdd = () => {
       </div>
 
       {/* Popup Modal for View Bill */}
-      ${selectedBill && (
+      {selectedBill && (
         <div className="modal" style={{ display: "block", position: "fixed", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.5)" }}>
           <div className="modal-content" style={{ backgroundColor: "#fff", margin: "5% auto", padding: "20px", width: "80%", maxWidth: "800px", borderRadius: "8px", maxHeight: "80vh", overflowY: "auto" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "2px solid #ddd", paddingBottom: "10px" }}>
@@ -1313,6 +1384,12 @@ const BillAdd = () => {
                 </>
               )}
 
+              {selectedBill.percentageDiscount && parseFloat(selectedBill.percentageDiscount) > 0 && (
+                <div style={{ color: "red", fontWeight: "bold" }}>
+                  Percentage Discount ({selectedBill.percentageDiscount}%): Rs. {calculatePercentageDiscountTotal(calculateProductTotal(selectedBill.productOptions), selectedBill.percentageDiscount)}
+                </div>
+              )}
+
               <div style={{ textAlign: "right", marginTop: "20px" }}>
                 <div style={{ color: "red", fontWeight: "bold" }}>
                   Product Options Total: Rs. {calculateProductTotal(selectedBill.productOptions)}
@@ -1340,7 +1417,8 @@ const BillAdd = () => {
                      (parseFloat(selectedBill.freeIssueOptions?.filter(option => option.case && option.case.trim() !== '').length > 0 ? 
                       calculateTotal(selectedBill.freeIssueOptions.filter(option => option.case && option.case.trim() !== '')) : 0)) +
                      (parseFloat(selectedBill.expireOptions?.filter(option => option.case && option.case.trim() !== '').length > 0 ? 
-                      calculateTotal(selectedBill.expireOptions.filter(option => option.case && option.case.trim() !== '')) : 0)))
+                      calculateTotal(selectedBill.expireOptions.filter(option => option.case && option.case.trim() !== '')) : 0)) +
+                     (parseFloat(selectedBill.percentageDiscount ? calculatePercentageDiscountTotal(calculateProductTotal(selectedBill.productOptions), selectedBill.percentageDiscount) : 0)))
                   ).toFixed(2)}
                 </div>
                 <div style={{ display: "flex", justifyContent: "center", marginTop: "10px" }}>
