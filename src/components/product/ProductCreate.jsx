@@ -223,7 +223,7 @@ const ProductCreate = () => {
                   </div>
                   <div className="col-md-2">
                     <div className="mb-1">
-                      <small className="text-muted">DB Price</small>
+                      <small className="text-muted">DB Price(Rs.)</small>
                     </div>
                     <input 
                       type="number" 
@@ -235,7 +235,7 @@ const ProductCreate = () => {
                   </div>
                   <div className="col-md-2">
                     <div className="mb-1">
-                      <small className="text-muted">Retail Price</small>
+                      <small className="text-muted">Retail Price(Rs.)</small>
                     </div>
                     <input 
                       type="number" 
@@ -247,7 +247,7 @@ const ProductCreate = () => {
                   </div>
                   <div className="col-md-2">
                     <div className="mb-1">
-                      <small className="text-muted">Margin</small>
+                      <small className="text-muted">Margin(Rs.)</small>
                     </div>
                     <input 
                       type="number" 

@@ -27,14 +27,22 @@ const StockTable = () => {
 
         optionsSnapshot.docs.forEach((doc) => {
           const productData = doc.data();
+          const productId = doc.id;
           if (productData.productOptions) {
             productData.productOptions.forEach((option) => {
               if (!optionsMap.has(option.name)) {
                 optionsMap.set(option.name, { name: option.name, products: {} });
               }
+              
+              const dbPrice = option.dbPrice || 0;
+              
               optionsMap.get(option.name).products[productData.name] = {
-                price: option.price,
-                qty: Number(option.qty), // Convert to number to prevent string concatenation
+                productId: productId,
+                dbPrice: dbPrice,
+                price: option.retailPrice || option.price || 0,
+                qty: Number(option.stock || option.qty || 0),
+                minStock: Number(option.minStock || 0),
+                isLowStock: (Number(option.stock || 0) < Number(option.minStock || 5))
               };
             });
           }
@@ -78,15 +86,17 @@ const StockTable = () => {
 
   const calculateCasesAndBottles = (totalQty, optionName) => {
     const bottlesPerCase = bottleAssignments[optionName] || 0;
-    if (bottlesPerCase <= 0) return "N/A"; // If no assignment or invalid, return N/A
+    if (bottlesPerCase <= 0) return { cases: 0, bottles: 0 }; // If no assignment or invalid, return zeros
 
     const cases = Math.floor(totalQty / bottlesPerCase);
     const extraBottles = totalQty % bottlesPerCase;
-    return `${cases}/${extraBottles}`;
+    return { cases, bottles: extraBottles };
   };
 
   let grandTotalPrice = 0;
   let grandTotalQty = 0;
+  let grandTotalCases = 0;
+  let grandTotalBottles = 0;
 
   return (
     <div style={{ padding: "20px", fontFamily: "Arial, sans-serif" }}>
@@ -346,18 +356,24 @@ const StockTable = () => {
               {productOptions.map((option) => {
                 let totalPrice = 0;
                 let totalQty = 0;
+                let totalCases = 0;
+                let totalBottles = 0;
 
                 selectedProducts.forEach((product) => {
                   if (option.products[product]) {
-                    totalPrice += option.products[product].price * option.products[product].qty;
+                    totalPrice += option.products[product].dbPrice * option.products[product].qty;
                     totalQty += Number(option.products[product].qty);
                   }
                 });
 
+                const casesAndBottles = calculateCasesAndBottles(totalQty, option.name);
+                totalCases = casesAndBottles.cases;
+                totalBottles = casesAndBottles.bottles;
+
                 grandTotalPrice += totalPrice;
                 grandTotalQty += totalQty;
-
-                const casesAndBottles = calculateCasesAndBottles(totalQty, option.name);
+                grandTotalCases += totalCases;
+                grandTotalBottles += totalBottles;
 
                 return (
                   <tr key={option.name}>
@@ -366,9 +382,14 @@ const StockTable = () => {
                       <td key={`${option.name}-${product}`} className="table-cell product-column">
                         {option.products[product] ? (
                           <div className="product-details">
-                            • <span>Unit Price:</span> Rs.{option.products[product].price} <br />
-                            • <span>Qty:</span> {option.products[product].qty.toLocaleString()} <br />
-                            • <span>Total:</span> Rs.{(option.products[product].price * option.products[product].qty).toLocaleString()}
+                            • <span>Unit Price (DB):</span> <span style={{ color: "#0d6efd", fontWeight: "bold" }}>Rs.{option.products[product].dbPrice.toLocaleString()}</span> <br />
+                            • <span style={{ 
+                                color: option.products[product].isLowStock ? "#dc3545" : "#198754",
+                                fontWeight: "bold" 
+                              }}>
+                                Current Stock:
+                              </span> {option.products[product].qty.toLocaleString()} <br />
+                            • <span>Total:</span> Rs.{(option.products[product].dbPrice * option.products[product].qty).toLocaleString()}
                           </div>
                         ) : (
                           <span style={{ fontStyle: "italic", color: "gray" }}>N/A</span>
@@ -377,10 +398,13 @@ const StockTable = () => {
                     ))}
                     <td className="table-cell total-column">
                       • <span>Total Price:</span> Rs.{totalPrice.toLocaleString()} <br />
-                      • <span>Total Qty:</span> {totalQty.toLocaleString()}
+                      • <span>Total Stock:</span> {totalQty.toLocaleString()}
                     </td>
                     <td className="table-cell cases-column">
-                      {casesAndBottles}
+                      <div>
+                        • <span>Cases:</span> {totalCases.toLocaleString()} <br />
+                        • <span>Bottles:</span> {totalBottles.toLocaleString()}
+                      </div>
                     </td>
                   </tr>
                 );
@@ -391,10 +415,13 @@ const StockTable = () => {
                 <td colSpan={selectedProducts.length + 1} className="final-total">Grand Total</td>
                 <td className="final-total">
                   • <span>Total Price:</span> Rs.{grandTotalPrice.toLocaleString()} <br />
-                  • <span>Total Qty:</span> {grandTotalQty.toLocaleString()}
+                  • <span>Total Stock:</span> {grandTotalQty.toLocaleString()}
                 </td>
                 <td className="final-total">
-                  {calculateCasesAndBottles(grandTotalQty, "grandTotal")}
+                  <div>
+                    • <span>Total Cases:</span> {grandTotalCases.toLocaleString()} <br />
+                    • <span>Total Bottles:</span> {grandTotalBottles.toLocaleString()}
+                  </div>
                 </td>
               </tr>
             </tbody>

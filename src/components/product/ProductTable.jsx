@@ -194,9 +194,9 @@ const ProductTable = () => {
               <thead>
                 <tr style={{ backgroundColor: "#53a6ff", color: "#ffffff", fontWeight: "bold" }}>
                   <th style={{ padding: "10px", textAlign: "left", color: "#ffffff !important" }}>Name</th>
-                  <th style={{ padding: "10px", textAlign: "left", color: "#ffffff !important" }}>DB Price</th>
-                  <th style={{ padding: "10px", textAlign: "left", color: "#ffffff !important" }}>Retail Price</th>
-                  <th style={{ padding: "10px", textAlign: "left", color: "#ffffff !important" }}>Margin</th>
+                  <th style={{ padding: "10px", textAlign: "left", color: "#ffffff !important" }}>DB Price(Rs.)</th>
+                  <th style={{ padding: "10px", textAlign: "left", color: "#ffffff !important" }}>Retail Price(Rs.)</th>
+                  <th style={{ padding: "10px", textAlign: "left", color: "#ffffff !important" }}>Margin(Rs.)</th>
                   <th style={{ padding: "10px", textAlign: "left", color: "#ffffff !important" }}>Stock</th>
                 </tr>
               </thead>
@@ -356,9 +356,9 @@ const ProductTable = () => {
                 <thead>
                   <tr style={{ backgroundColor: "#f8f9fa" }}>
                     <th style={{ padding: "8px", textAlign: "left" }}>Option Name</th>
-                    <th style={{ padding: "8px", textAlign: "left" }}>DB Price</th>
-                    <th style={{ padding: "8px", textAlign: "left" }}>Retail Price</th>
-                    <th style={{ padding: "8px", textAlign: "left" }}>Margin</th>
+                    <th style={{ padding: "8px", textAlign: "left" }}>DB Price(Rs.)</th>
+                    <th style={{ padding: "8px", textAlign: "left" }}>Retail Price(Rs.)</th>
+                    <th style={{ padding: "8px", textAlign: "left" }}>Margin(Rs.)</th>
                     <th style={{ padding: "8px", textAlign: "left" }}>Stock</th>
                     <th style={{ padding: "8px", textAlign: "left" }}>New Stock</th>
                     <th style={{ padding: "8px", textAlign: "left" }}>Action</th>

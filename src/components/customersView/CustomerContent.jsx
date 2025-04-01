@@ -610,14 +610,36 @@ const BillAdd = () => {
   const handleProductChange = (index, selectedOption) => {
     const product = products.find((p) => p.id === selectedOption.value);
     const newOptions = [...productOptions];
-    newOptions[index] = {
-      ...newOptions[index],
-      productId: product.id,
-      price: newOptions[index].optionId ? 
-        product.options.find(opt => opt.name === newOptions[index].optionId)?.retailPrice || "" : "",
-      currentQty: newOptions[index].optionId ? 
-        product.options.find(opt => opt.name === newOptions[index].optionId)?.stock || "0" : "0",
-    };
+    
+    if (product && newOptions[index].optionId) {
+      // Find the matching option in the product
+      const productOption = product.options.find(opt => opt.name === newOptions[index].optionId);
+      
+      if (productOption) {
+        // Use database values for price and stock
+        newOptions[index] = {
+          ...newOptions[index],
+          productId: product.id,
+          price: productOption.retailPrice || "",
+          currentQty: productOption.stock || "0",
+        };
+      } else {
+        newOptions[index] = {
+          ...newOptions[index],
+          productId: product.id,
+          price: "",
+          currentQty: "0",
+        };
+      }
+    } else {
+      newOptions[index] = {
+        ...newOptions[index],
+        productId: product.id,
+        price: "",
+        currentQty: "0",
+      };
+    }
+    
     setProductOptions(newOptions);
   };
 
@@ -625,12 +647,13 @@ const BillAdd = () => {
     const newOptions = [...productOptions];
     newOptions[index].optionId = selectedOption.value;
     
-    // If product is already selected, update price and stock
+    // If product is already selected, update price and stock from DB
     if (newOptions[index].productId) {
       const selectedProduct = products.find(p => p.id === newOptions[index].productId);
       if (selectedProduct) {
         const option = selectedProduct.options.find(opt => opt.name === selectedOption.value);
         if (option) {
+          // Use database values
           newOptions[index].price = option.retailPrice || "";
           newOptions[index].currentQty = option.stock || "0";
         }
@@ -643,6 +666,12 @@ const BillAdd = () => {
   const handleQtyChange = (index, value) => {
     const newOptions = [...productOptions];
     newOptions[index].qty = value;
+    
+    // Recalculate total - not needed but added for clarity
+    const price = parseFloat(newOptions[index].price) || 0;
+    const qty = parseFloat(value) || 0;
+    // Row total is calculated in the render
+    
     setProductOptions(newOptions);
   };
 
@@ -1058,7 +1087,7 @@ const BillAdd = () => {
                   width: "15%",
                   minWidth: "150px"
                 }}>
-                  <div className="form-label text-muted">Retail Price</div>
+                  <div className="form-label text-muted">Unit Price (DB)</div>
                 </div>
                 <div style={{ 
                   width: "15%",
@@ -1070,7 +1099,13 @@ const BillAdd = () => {
                   width: "15%",
                   minWidth: "120px"
                 }}>
-                  <div className="form-label text-muted">Current Stock</div>
+                  <div className="form-label text-muted fw-bold" style={{ color: "#0d6efd" }}>Current Stock</div>
+                </div>
+                <div style={{ 
+                  width: "15%",
+                  minWidth: "120px"
+                }}>
+                  <div className="form-label text-muted">Total</div>
                 </div>
                 <div style={{ 
                   width: "10%",
@@ -1079,7 +1114,17 @@ const BillAdd = () => {
                   <div className="form-label text-muted">Action</div>
                 </div>
               </div>
-              {productOptions.map((option, index) => (
+              {productOptions.map((option, index) => {
+                // Get the product object 
+                const product = products.find(p => p.id === option.productId);
+                // Get the actual product option to extract price and stock
+                const productOption = product?.options.find(opt => opt.name === option.optionId);
+                // Calculate row total
+                const rowTotal = ((parseFloat(option.price) || 0) * (parseFloat(option.qty) || 0)).toFixed(2);
+                // Determine if stock is low
+                const isLowStock = productOption && parseInt(productOption.stock || 0) < parseInt(option.qty || 0);
+
+                return (
                 <div key={index} className="d-flex gap-3 mb-3" style={{ 
                   width: "100%",
                   minWidth: "900px"
@@ -1204,7 +1249,23 @@ const BillAdd = () => {
                       className="form-control" 
                       value={option.currentQty || "0"} 
                       disabled 
-                      style={{ backgroundColor: "#f8f9fa" }}
+                      style={{ 
+                        backgroundColor: "#f8f9fa",
+                        fontWeight: "bold",
+                        color: isLowStock ? "#dc3545" : "#198754"
+                      }}
+                    />
+                  </div>
+                  <div style={{ 
+                    width: "15%",
+                    minWidth: "120px"
+                  }}>
+                    <input 
+                      type="text" 
+                      className="form-control" 
+                      value={`Rs: ${rowTotal}`} 
+                      disabled 
+                      style={{ backgroundColor: "#f8f9fa", fontWeight: "bold" }}
                     />
                   </div>
                   <div style={{ 
@@ -1224,8 +1285,35 @@ const BillAdd = () => {
                     </button>
                   </div>
                 </div>
-              ))}
+              )})}
             </div>
+            {productOptions.length > 0 && (
+              <div className="row mt-3">
+                <div className="col-12">
+                  <div className="alert alert-info d-flex align-items-center justify-content-between">
+                    <div className="d-flex align-items-center">
+                      <i className="bi bi-calculator me-2" style={{ fontSize: "1.5rem" }}></i>
+                      <span className="fw-bold">Summary</span>
+                    </div>
+                    <div className="d-flex flex-column align-items-end">
+                      <div className="d-flex align-items-center">
+                        <span className="me-2">Total Amount:</span>
+                        <span className="fw-bold" style={{ 
+                          fontSize: "1.25rem",
+                          color: "#0d6efd",
+                          textShadow: "1px 1px 2px rgba(0,0,0,0.1)"
+                        }}>
+                          Rs. {calculateProductTotal(productOptions)}
+                        </span>
+                      </div>
+                      <small className="text-muted">
+                        {productOptions.length} items selected
+                      </small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -1268,7 +1356,7 @@ const BillAdd = () => {
                           onChange={(e) => handleDiscountChange(index, "perCaseRate", e.target.value)}
                         />
                       </td>
-                      <td>{option.total}</td>
+                      <td><strong>Rs: {option.total || "0.00"}</strong></td>
                       <td>
                         <button 
                           type="button" 
@@ -1282,6 +1370,33 @@ const BillAdd = () => {
                   ))}
                 </tbody>
               </table>
+            )}
+            {discountOptions.length > 0 && (
+              <div className="row mt-3">
+                <div className="col-12">
+                  <div className="alert alert-success d-flex align-items-center justify-content-between">
+                    <div className="d-flex align-items-center">
+                      <i className="bi bi-tag-fill me-2" style={{ fontSize: "1.5rem" }}></i>
+                      <span className="fw-bold">Discount Summary</span>
+                    </div>
+                    <div className="d-flex flex-column align-items-end">
+                      <div className="d-flex align-items-center">
+                        <span className="me-2">Total Discount:</span>
+                        <span className="fw-bold" style={{ 
+                          fontSize: "1.25rem",
+                          color: "#198754",
+                          textShadow: "1px 1px 2px rgba(0,0,0,0.1)"
+                        }}>
+                          Rs. {calculateTotal(discountOptions)}
+                        </span>
+                      </div>
+                      <small className="text-muted">
+                        {discountOptions.length} discount items applied
+                      </small>
+                    </div>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
         </div>
@@ -1325,7 +1440,7 @@ const BillAdd = () => {
                           onChange={(e) => handleFreeIssueChange(index, "perCaseRate", e.target.value)}
                         />
                       </td>
-                      <td>{option.total}</td>
+                      <td><strong>Rs: {option.total || "0.00"}</strong></td>
                       <td>
                         <button 
                           type="button" 
@@ -1339,6 +1454,33 @@ const BillAdd = () => {
                   ))}
                 </tbody>
               </table>
+            )}
+            {freeIssueOptions.length > 0 && (
+              <div className="row mt-3">
+                <div className="col-12">
+                  <div className="alert alert-info d-flex align-items-center justify-content-between">
+                    <div className="d-flex align-items-center">
+                      <i className="bi bi-gift-fill me-2" style={{ fontSize: "1.5rem" }}></i>
+                      <span className="fw-bold">Free Issue Summary</span>
+                    </div>
+                    <div className="d-flex flex-column align-items-end">
+                      <div className="d-flex align-items-center">
+                        <span className="me-2">Total Free Issue:</span>
+                        <span className="fw-bold" style={{ 
+                          fontSize: "1.25rem",
+                          color: "#0dcaf0",
+                          textShadow: "1px 1px 2px rgba(0,0,0,0.1)"
+                        }}>
+                          Rs. {calculateTotal(freeIssueOptions)}
+                        </span>
+                      </div>
+                      <small className="text-muted">
+                        {freeIssueOptions.length} free items applied
+                      </small>
+                    </div>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
         </div>
@@ -1382,7 +1524,7 @@ const BillAdd = () => {
                           onChange={(e) => handleExpireChange(index, "perCaseRate", e.target.value)}
                         />
                       </td>
-                      <td>{option.total}</td>
+                      <td><strong>Rs: {option.total || "0.00"}</strong></td>
                       <td>
                         <button 
                           type="button" 
@@ -1396,6 +1538,33 @@ const BillAdd = () => {
                   ))}
                 </tbody>
               </table>
+            )}
+            {expireOptions.length > 0 && (
+              <div className="row mt-3">
+                <div className="col-12">
+                  <div className="alert alert-warning d-flex align-items-center justify-content-between">
+                    <div className="d-flex align-items-center">
+                      <i className="bi bi-exclamation-triangle-fill me-2" style={{ fontSize: "1.5rem" }}></i>
+                      <span className="fw-bold">Expire Summary</span>
+                    </div>
+                    <div className="d-flex flex-column align-items-end">
+                      <div className="d-flex align-items-center">
+                        <span className="me-2">Total Expire:</span>
+                        <span className="fw-bold" style={{ 
+                          fontSize: "1.25rem",
+                          color: "#664d03",
+                          textShadow: "1px 1px 2px rgba(0,0,0,0.1)"
+                        }}>
+                          Rs. {calculateTotal(expireOptions)}
+                        </span>
+                      </div>
+                      <small className="text-muted">
+                        {expireOptions.length} expire items applied
+                      </small>
+                    </div>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
         </div>
@@ -1429,6 +1598,81 @@ const BillAdd = () => {
                     <small>(Calculated from product total: Rs. {calculateProductTotal(productOptions)})</small>
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Bill Summary Section */}
+        <div className="card shadow-sm mb-4">
+          <div className="card-header bg-danger text-white">
+            <h5 className="mb-0 text-white">Bill Summary</h5>
+          </div>
+          <div className="card-body">
+            <div className="row">
+              <div className="col-md-6 offset-md-6">
+                <div className="table-responsive">
+                  <table className="table table-borderless">
+                    <tbody>
+                      <tr>
+                        <td className="text-end fw-bold fs-5">Product Total:</td>
+                        <td className="text-end fw-bold" style={{ width: "150px", color: "#0d6efd",fontSize: "1.25rem" }}>
+                          Rs. {calculateProductTotal(productOptions)}
+                        </td>
+                      </tr>
+                      
+                      {discountOptions.length > 0 && (
+                        <tr>
+                          <td className="text-end fw-bold">Discount Total:</td>
+                          <td className="text-end fw-bold" style={{ color: "#198754" }}>
+                            - Rs. {calculateTotal(discountOptions)}
+                          </td>
+                        </tr>
+                      )}
+                      
+                      {freeIssueOptions.length > 0 && (
+                        <tr>
+                          <td className="text-end fw-bold">Free Issue Total:</td>
+                          <td className="text-end fw-bold" style={{ color: "#0dcaf0" }}>
+                            - Rs. {calculateTotal(freeIssueOptions)}
+                          </td>
+                        </tr>
+                      )}
+                      
+                      {expireOptions.length > 0 && (
+                        <tr>
+                          <td className="text-end fw-bold">Expire Total:</td>
+                          <td className="text-end fw-bold" style={{ color: "#664d03" }}>
+                            - Rs. {calculateTotal(expireOptions)}
+                          </td>
+                        </tr>
+                      )}
+                      
+                      {percentageDiscount && parseFloat(percentageDiscount) > 0 && (
+                        <tr>
+                          <td className="text-end fw-bold">Percentage Discount ({percentageDiscount}%):</td>
+                          <td className="text-end fw-bold" style={{ color: "#6c757d" }}>
+                            - Rs. {calculatePercentageDiscountTotal(calculateProductTotal(productOptions), percentageDiscount)}
+                          </td>
+                        </tr>
+                      )}
+                      
+                      <tr style={{ borderTop: "1px solid #dee2e6" }}>
+                        <td className="text-end fw-bold fs-5">Final Total:</td>
+                        <td className="text-end fw-bold fs-5" style={{ color: "#dc3545" }}>
+                          Rs. {(
+                            parseFloat(calculateProductTotal(productOptions)) - 
+                            (parseFloat(calculateTotal(discountOptions)) + 
+                             parseFloat(calculateTotal(freeIssueOptions)) + 
+                             parseFloat(calculateTotal(expireOptions)) + 
+                             parseFloat(percentageDiscount ? calculatePercentageDiscountTotal(calculateProductTotal(productOptions), percentageDiscount) : 0)
+                            )
+                          ).toFixed(2)}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
@@ -1589,6 +1833,7 @@ const BillAdd = () => {
                   </div>
                 </div>
                 
+                {/* Product Options Section */}
                 <h6 className="fw-bold mt-4">Product Options</h6>
                 <div className="table-responsive">
                   <table className="table table-bordered">
@@ -1596,100 +1841,262 @@ const BillAdd = () => {
                       <tr>
                         <th>Product</th>
                         <th>Option</th>
-                        <th>Price</th>
+                        <th>Unit Price (DB)</th>
                         <th>Quantity</th>
+                        <th style={{ backgroundColor: "#e9ecef", color: "#0d6efd", fontWeight: "bold" }}>Current Stock</th>
                         <th>Total</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {selectedBill.productOptions.map((option, index) => (
-                        <tr key={index}>
-                          <td>{products.find(p => p.id === option.productId)?.name || 'N/A'}</td>
-                          <td>{option.optionId}</td>
-                          <td>Rs. {option.price}</td>
-                          <td>{option.qty}</td>
-                          <td>Rs. {((parseFloat(option.price) || 0) * (parseFloat(option.qty) || 0)).toFixed(2)}</td>
+                      {selectedBill.productOptions && selectedBill.productOptions.length > 0 ? (
+                        selectedBill.productOptions.map((option, index) => {
+                          // Find the product from the products array
+                          const product = products.find(p => p.id === option.productId);
+                          // Find the specific product option to get real-time current stock
+                          const productOption = product?.options.find(opt => opt.name === option.optionId);
+                          // Calculate the total for this row
+                          const rowTotal = ((parseFloat(option.price) || 0) * (parseFloat(option.qty) || 0)).toFixed(2);
+                          // Check if stock is low
+                          const isLowStock = productOption && parseInt(productOption.stock || 0) < parseInt(option.qty || 0);
+                          
+                          return (
+                            <tr key={index}>
+                              <td>{product?.name || 'N/A'}</td>
+                              <td>{option.optionId}</td>
+                              <td>Rs. {option.price}</td>
+                              <td>{option.qty}</td>
+                              <td style={{ 
+                                backgroundColor: "#f8f9fa", 
+                                fontWeight: "bold",
+                                color: isLowStock ? "#dc3545" : "#198754"
+                              }}>
+                                {productOption?.stock || "0"}
+                              </td>
+                              <td className="fw-bold">Rs. {rowTotal}</td>
+                            </tr>
+                          );
+                        })
+                      ) : (
+                        <tr>
+                          <td colSpan="6" className="text-center">No product options found</td>
                         </tr>
-                      ))}
+                      )}
                     </tbody>
                     <tfoot>
                       <tr className="table-primary">
-                        <td colSpan="4" className="text-end fw-bold">Product Total</td>
-                        <td className="fw-bold">Rs. {calculateProductTotal(selectedBill.productOptions)}</td>
+                        <td colSpan="5" className="text-end fw-bold">Product Total</td>
+                        <td className="fw-bold">Rs. {selectedBill.productOptions ? calculateProductTotal(selectedBill.productOptions) : "0.00"}</td>
                       </tr>
                     </tfoot>
                   </table>
                 </div>
                 
-                {selectedBill.discountOptions && selectedBill.discountOptions.length > 0 && (
-                  <>
-                    <h6 className="fw-bold mt-4">Discount Options</h6>
+                {/* Discount Options Section */}
+                <h6 className="fw-bold mt-4">Discount Options</h6>
+                <div className="table-responsive">
+                  <table className="table table-bordered">
+                    <thead className="table-light">
+                      <tr>
+                        <th>Name</th>
+                        <th>Case</th>
+                        <th>Per Case Rate</th>
+                        <th>Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedBill.discountOptions && selectedBill.discountOptions.length > 0 ? (
+                        selectedBill.discountOptions.map((option, index) => (
+                          <tr key={index}>
+                            <td>{option.name}</td>
+                            <td>{option.case}</td>
+                            <td>{option.perCaseRate}</td>
+                            <td>Rs. {option.total || "0.00"}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="4" className="text-center">No discount options applied</td>
+                        </tr>
+                      )}
+                    </tbody>
+                    <tfoot>
+                      <tr className="table-success">
+                        <td colSpan="3" className="text-end fw-bold">Discount Total</td>
+                        <td className="fw-bold">Rs. {selectedBill.discountOptions ? calculateTotal(selectedBill.discountOptions) : "0.00"}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+                
+                {/* Free Issue Options Section */}
+                <h6 className="fw-bold mt-4">Free Issue Options</h6>
+                <div className="table-responsive">
+                  <table className="table table-bordered">
+                    <thead className="table-light">
+                      <tr>
+                        <th>Name</th>
+                        <th>Case</th>
+                        <th>Per Case Rate</th>
+                        <th>Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedBill.freeIssueOptions && selectedBill.freeIssueOptions.length > 0 ? (
+                        selectedBill.freeIssueOptions.map((option, index) => (
+                          <tr key={index}>
+                            <td>{option.name}</td>
+                            <td>{option.case}</td>
+                            <td>{option.perCaseRate}</td>
+                            <td>Rs. {option.total || "0.00"}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="4" className="text-center">No free issue options applied</td>
+                        </tr>
+                      )}
+                    </tbody>
+                    <tfoot>
+                      <tr className="table-info">
+                        <td colSpan="3" className="text-end fw-bold">Free Issue Total</td>
+                        <td className="fw-bold">Rs. {selectedBill.freeIssueOptions ? calculateTotal(selectedBill.freeIssueOptions) : "0.00"}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+                
+                {/* Expire Options Section */}
+                <h6 className="fw-bold mt-4">Expire Options</h6>
+                <div className="table-responsive">
+                  <table className="table table-bordered">
+                    <thead className="table-light">
+                      <tr>
+                        <th>Name</th>
+                        <th>Case</th>
+                        <th>Per Case Rate</th>
+                        <th>Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedBill.expireOptions && selectedBill.expireOptions.length > 0 ? (
+                        selectedBill.expireOptions.map((option, index) => (
+                          <tr key={index}>
+                            <td>{option.name}</td>
+                            <td>{option.case}</td>
+                            <td>{option.perCaseRate}</td>
+                            <td>Rs. {option.total || "0.00"}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="4" className="text-center">No expire options applied</td>
+                        </tr>
+                      )}
+                    </tbody>
+                    <tfoot>
+                      <tr className="table-warning">
+                        <td colSpan="3" className="text-end fw-bold">Expire Total</td>
+                        <td className="fw-bold">Rs. {selectedBill.expireOptions ? calculateTotal(selectedBill.expireOptions) : "0.00"}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+                
+                {/* Percentage Discount Section */}
+                <div className="card mt-4">
+                  <div className="card-header bg-secondary text-white">
+                    <h6 className="mb-0">Percentage Discount</h6>
+                  </div>
+                  <div className="card-body">
+                    <div className="row">
+                      <div className="col-6">
+                        <p className="mb-0"><strong>Discount Percentage:</strong></p>
+                      </div>
+                      <div className="col-6 text-end">
+                        <p className="mb-0">{selectedBill.percentageDiscount || "0"}%</p>
+                      </div>
+                    </div>
+                    {selectedBill.percentageDiscount && parseFloat(selectedBill.percentageDiscount) > 0 && (
+                      <div className="row mt-2">
+                        <div className="col-6">
+                          <p className="mb-0"><strong>Discount Amount:</strong></p>
+                        </div>
+                        <div className="col-6 text-end">
+                          <p className="mb-0">Rs. {calculatePercentageDiscountTotal(calculateProductTotal(selectedBill.productOptions), selectedBill.percentageDiscount)}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Bill Summary Section */}
+                <div className="card mt-4 border-danger">
+                  <div className="card-header bg-danger text-white">
+                    <h6 className="mb-0">Bill Summary</h6>
+                  </div>
+                  <div className="card-body">
                     <div className="table-responsive">
-                      <table className="table table-bordered">
-                        <thead className="table-light">
-                          <tr>
-                            <th>Name</th>
-                            <th>Case</th>
-                            <th>Per Case Rate</th>
-                            <th>Total</th>
-                          </tr>
-                        </thead>
+                      <table className="table table-borderless">
                         <tbody>
-                          {selectedBill.discountOptions.map((option, index) => (
-                            <tr key={index}>
-                              <td>{option.name}</td>
-                              <td>{option.case}</td>
-                              <td>{option.perCaseRate}</td>
-                              <td>Rs. {option.total}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                        <tfoot>
-                          <tr className="table-success">
-                            <td colSpan="3" className="text-end fw-bold">Discount Total</td>
-                            <td className="fw-bold">Rs. {calculateTotal(selectedBill.discountOptions)}</td>
+                          <tr>
+                            <td className="text-end fw-bold">Product Total:</td>
+                            <td className="text-end fw-bold" style={{ width: "150px", color: "#0d6efd" }}>
+                              Rs. {calculateProductTotal(selectedBill.productOptions)}
+                            </td>
                           </tr>
-                        </tfoot>
+                          
+                          {selectedBill.discountOptions && selectedBill.discountOptions.length > 0 && (
+                            <tr>
+                              <td className="text-end fw-bold">Discount Total:</td>
+                              <td className="text-end fw-bold" style={{ color: "#198754" }}>
+                                - Rs. {calculateTotal(selectedBill.discountOptions)}
+                              </td>
+                            </tr>
+                          )}
+                          
+                          {selectedBill.freeIssueOptions && selectedBill.freeIssueOptions.length > 0 && (
+                            <tr>
+                              <td className="text-end fw-bold">Free Issue Total:</td>
+                              <td className="text-end fw-bold" style={{ color: "#0dcaf0" }}>
+                                - Rs. {calculateTotal(selectedBill.freeIssueOptions)}
+                              </td>
+                            </tr>
+                          )}
+                          
+                          {selectedBill.expireOptions && selectedBill.expireOptions.length > 0 && (
+                            <tr>
+                              <td className="text-end fw-bold">Expire Total:</td>
+                              <td className="text-end fw-bold" style={{ color: "#664d03" }}>
+                                - Rs. {calculateTotal(selectedBill.expireOptions)}
+                              </td>
+                            </tr>
+                          )}
+                          
+                          {selectedBill.percentageDiscount && parseFloat(selectedBill.percentageDiscount) > 0 && (
+                            <tr>
+                              <td className="text-end fw-bold">Percentage Discount ({selectedBill.percentageDiscount}%):</td>
+                              <td className="text-end fw-bold" style={{ color: "#6c757d" }}>
+                                - Rs. {calculatePercentageDiscountTotal(calculateProductTotal(selectedBill.productOptions), selectedBill.percentageDiscount)}
+                              </td>
+                            </tr>
+                          )}
+                          
+                          <tr style={{ borderTop: "1px solid #dee2e6" }}>
+                            <td className="text-end fw-bold fs-5">Final Total:</td>
+                            <td className="text-end fw-bold fs-5" style={{ color: "#dc3545" }}>
+                              Rs. {(
+                                parseFloat(calculateProductTotal(selectedBill.productOptions)) - 
+                                (parseFloat(selectedBill.discountOptions ? calculateTotal(selectedBill.discountOptions) : 0) + 
+                                 parseFloat(selectedBill.freeIssueOptions ? calculateTotal(selectedBill.freeIssueOptions) : 0) + 
+                                 parseFloat(selectedBill.expireOptions ? calculateTotal(selectedBill.expireOptions) : 0) + 
+                                 parseFloat(selectedBill.percentageDiscount ? calculatePercentageDiscountTotal(calculateProductTotal(selectedBill.productOptions), selectedBill.percentageDiscount) : 0)
+                                )
+                              ).toFixed(2)}
+                            </td>
+                          </tr>
+                        </tbody>
                       </table>
                     </div>
-                  </>
-                )}
-                
-                {selectedBill.percentageDiscount && parseFloat(selectedBill.percentageDiscount) > 0 && (
-                  <div className="alert alert-info mt-3">
-                    <strong>Percentage Discount:</strong> {selectedBill.percentageDiscount}% 
-                    (Rs. {calculatePercentageDiscountTotal(calculateProductTotal(selectedBill.productOptions), selectedBill.percentageDiscount)})
-                  </div>
-                )}
-                
-                <div className="alert alert-primary mt-4">
-                  <div className="row">
-                    <div className="col-6 fw-bold">Product Total:</div>
-                    <div className="col-6 text-end">Rs. {calculateProductTotal(selectedBill.productOptions)}</div>
-                  </div>
-                  
-                  {selectedBill.discountOptions && selectedBill.discountOptions.length > 0 && (
-                    <div className="row">
-                      <div className="col-6 fw-bold">Discount Total:</div>
-                      <div className="col-6 text-end">- Rs. {calculateTotal(selectedBill.discountOptions)}</div>
-                    </div>
-                  )}
-                  
-                  {selectedBill.percentageDiscount && parseFloat(selectedBill.percentageDiscount) > 0 && (
-                    <div className="row">
-                      <div className="col-6 fw-bold">Percentage Discount ({selectedBill.percentageDiscount}%):</div>
-                      <div className="col-6 text-end">- Rs. {calculatePercentageDiscountTotal(calculateProductTotal(selectedBill.productOptions), selectedBill.percentageDiscount)}</div>
-                    </div>
-                  )}
-                  
-                  <div className="row mt-2">
-                    <div className="col-6 fw-bold fs-5">Final Total:</div>
-                    <div className="col-6 text-end fs-5">Rs. {
-                      (parseFloat(calculateProductTotal(selectedBill.productOptions)) - 
-                      (parseFloat(selectedBill.discountOptions ? calculateTotal(selectedBill.discountOptions) : 0) + 
-                        parseFloat(selectedBill.percentageDiscount ? calculatePercentageDiscountTotal(calculateProductTotal(selectedBill.productOptions), selectedBill.percentageDiscount) : 0)
-                      )).toFixed(2)
-                    }</div>
                   </div>
                 </div>
               </div>
