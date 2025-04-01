@@ -20,6 +20,8 @@ const ManualInvoice = () => {
   const [salesSummary, setSalesSummary] = useState(null);
   const [salesSummaries, setSalesSummaries] = useState([]);
   const [editSalesSummaryId, setEditSalesSummaryId] = useState(null);
+  const [showPrintPreview, setShowPrintPreview] = useState(false);
+  const [previewContent, setPreviewContent] = useState(null);
 
   const billsCollectionRef = collection(db, "Bill");
   const manualBillsCollectionRef = collection(db, "ManualBill");
@@ -321,127 +323,217 @@ const ManualInvoice = () => {
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   const handlePrintSalesSummary = async (invoice) => {
-    const existingSummary = salesSummaries.find((summary) => summary.invoiceId === (invoice.invoiceId || invoice.id));
-    if (!existingSummary) {
-      alert("No sales summary exists for this invoice. Create one first.");
-      return;
-    }
-
-    let uniqueOptions = [...new Map(existingSummary.data.flatMap((bill) => bill.productOptions).map((opt) => [opt.optionId, { optionId: opt.optionId, price: parseFloat(opt.price) || 0 }])).values()];
-    
-    // Sort uniqueOptions by the numeric value at the beginning of optionId
-    uniqueOptions = uniqueOptions.sort((a, b) => {
-      const numA = parseInt(a.optionId.match(/^\d+/) || [0]);
-      const numB = parseInt(b.optionId.match(/^\d+/) || [0]);
-      return numA - numB;
-    });
-
-    const tempDiv = document.createElement("div");
-    tempDiv.style.position = "absolute";
-    tempDiv.style.left = "-9999px";
-    tempDiv.style.width = "1123px";
-    tempDiv.style.padding = "10mm";
-    tempDiv.style.backgroundColor = "#fff";
-    tempDiv.style.fontFamily = "Arial, sans-serif";
-    document.body.appendChild(tempDiv);
-
-    tempDiv.innerHTML = `
-      <div style="margin-bottom: 10mm;">
-        <h2 style="font-size: 16px; margin: 0;">Sales Summary for Invoice ${invoice.invoiceId || invoice.id}</h2>
-        <p style="font-size: 12px; margin: 2px 0;"><strong>Custom Date:</strong> ${invoice.customDate}</p>
-        <p style="font-size: 12px; margin: 2px 0;"><strong>Driver:</strong> ${invoice.driver}</p>
-        <p style="font-size: 12px; margin: 2px 0;"><strong>Route:</strong> ${invoice.route}</p>
-      </div>
-      <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
-        <thead>
-          <tr style="background-color: #f2f2f2;">
-            <th style="border: 1px solid #000; padding: 4px; text-align: left;">Invoice ID</th>
-            <th style="border: 1px solid #000; padding: 4px; text-align: left;">Bill No</th>
-            <th style="border: 1px solid #000; padding: 4px; text-align: left;">Outlet Name</th>
-            ${uniqueOptions.map((opt) => `<th style="border: 1px solid #000; padding: 4px; text-align: right; width: 120px;">${opt.optionId} (Rs.${(parseFloat(opt.price) || 0).toFixed(2)})</th>`).join("")}
-            <th style="border: 1px solid #000; padding: 4px; text-align: right; background-color: #ffffe0;">Gross Sale</th>
-            <th style="border: 1px solid #000; padding: 4px; text-align: right;">Discount</th>
-            <th style="border: 1px solid #000; padding: 4px; text-align: right;">Expire</th>
-            <th style="border: 1px solid #000; padding: 4px; text-align: right; background-color: #ffffe0;">Net Sale</th>
-            <th style="border: 1px solid #000; padding: 4px; text-align: right;">Cash</th>
-            <th style="border: 1px solid #000; padding: 4px; text-align: right;">Cheque</th>
-            <th style="border: 1px solid #000; padding: 4px; text-align: right;">Credit</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${existingSummary.data.map((bill) => `
-            <tr>
-              <td style="border: 1px solid #000; padding: 4px; text-align: left;">${bill.invoiceId}</td>
-              <td style="border: 1px solid #000; padding: 4px; text-align: left;">${bill.billNo}</td>
-              <td style="border: 1px solid #000; padding: 4px; text-align: left;">${bill.outletName}</td>
-              ${uniqueOptions.map((opt) => {
-                const productOption = bill.productOptions.find(po => po.optionId === opt.optionId);
-                const qty = productOption ? (productOption.qty || 0) : 0;
-                return `<td style="border: 1px solid #000; padding: 4px; text-align: right;">${qty}</td>`;
-              }).join("")}
-              <td style="border: 1px solid #000; padding: 4px; text-align: right; background-color: #ffffe0;">${calculateGrossSale(bill)}</td>
-              <td style="border: 1px solid #000; padding: 4px; text-align: right;">${bill.discount || 0}</td>
-              <td style="border: 1px solid #000; padding: 4px; text-align: right;">${bill.expire || 0}</td>
-              <td style="border: 1px solid #000; padding: 4px; text-align: right; background-color: #ffffe0;">${calculateNetSale(bill)}</td>
-              <td style="border: 1px solid #000; padding: 4px; text-align: right;">${bill.cash || 0}</td>
-              <td style="border: 1px solid #000; padding: 4px; text-align: right;">${bill.cheque || 0}</td>
-              <td style="border: 1px solid #000; padding: 4px; text-align: right;">${bill.credit || 0}</td>
-            </tr>
-          `).join("")}
-          <tr style="background-color: #ffff99; font-weight: bold;">
-            <td style="border: 1px solid #000; padding: 4px; text-align: left;" colspan="3">Total</td>
-            ${uniqueOptions.map((_, idx) => `<td style="border: 1px solid #000; padding: 4px; text-align: right;">${calculateSummarySums().productOptions[idx].toFixed(2)}</td>`).join("")}
-            <td style="border: 1px solid #000; padding: 4px; text-align: right;">${calculateSummarySums().grossSale.toFixed(2)}</td>
-            <td style="border: 1px solid #000; padding: 4px; text-align: right;">${calculateSummarySums().discount.toFixed(2)}</td>
-            <td style="border: 1px solid #000; padding: 4px; text-align: right;">${calculateSummarySums().expire.toFixed(2)}</td>
-            <td style="border: 1px solid #000; padding: 4px; text-align: right;">${calculateSummarySums().netSale.toFixed(2)}</td>
-            <td style="border: 1px solid #000; padding: 4px; text-align: right;">${calculateSummarySums().cash.toFixed(2)}</td>
-            <td style="border: 1px solid #000; padding: 4px; text-align: right;">${calculateSummarySums().cheque.toFixed(2)}</td>
-            <td style="border: 1px solid #000; padding: 4px; text-align: right;">${calculateSummarySums().credit.toFixed(2)}</td>
-          </tr>
-        </tbody>
-      </table>
-    `;
-
     try {
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      const existingSummary = salesSummaries.find((summary) => summary.invoiceId === (invoice.invoiceId || invoice.id));
+      if (!existingSummary) {
+        alert("No sales summary exists for this invoice. Create one first.");
+        return;
+      }
+
+      let uniqueOptions = [...new Map(existingSummary.data.flatMap((bill) => bill.productOptions).map((opt) => [opt.optionId, { optionId: opt.optionId, price: parseFloat(opt.price) || 0 }])).values()];
+      
+      // Sort uniqueOptions by the numeric value at the beginning of optionId
+      uniqueOptions = uniqueOptions.sort((a, b) => {
+        const numA = parseInt(a.optionId.match(/^\d+/) || [0]);
+        const numB = parseInt(b.optionId.match(/^\d+/) || [0]);
+        return numA - numB;
+      });
+
+      // Calculate totals before creating the temporary div
+      const sums = {
+        productOptions: uniqueOptions.map(() => 0),
+        grossSale: 0,
+        discount: 0,
+        expire: 0,
+        netSale: 0,
+        cash: 0,
+        cheque: 0,
+        credit: 0
+      };
+
+      existingSummary.data.forEach((bill) => {
+        bill.productOptions.forEach((opt, idx) => {
+          const optionIndex = uniqueOptions.findIndex(uo => uo.optionId === opt.optionId);
+          if (optionIndex !== -1) {
+            sums.productOptions[optionIndex] += parseFloat(opt.qty) || 0;
+          }
+        });
+        sums.grossSale += parseFloat(calculateGrossSale(bill)) || 0;
+        sums.discount += parseFloat(bill.discount) || 0;
+        sums.expire += parseFloat(bill.expire) || 0;
+        sums.netSale += parseFloat(calculateNetSale(bill)) || 0;
+        sums.cash += parseFloat(bill.cash) || 0;
+        sums.cheque += parseFloat(bill.cheque) || 0;
+        sums.credit += parseFloat(bill.credit) || 0;
+      });
+
+      // Generate the HTML content for preview
+      const previewHtml = `
+        <div style="margin-bottom: 5mm; text-align: center;">
+          <h2 style="font-size: 14px; margin: 0; font-weight: bold;">Sales Summary for Invoice ${invoice.invoiceId || invoice.id}</h2>
+          <p style="font-size: 10px; margin: 1mm 0;"><strong>Custom Date:</strong> ${invoice.customDate} | <strong>Driver:</strong> ${invoice.driver} | <strong>Route:</strong> ${invoice.route}</p>
+        </div>
+        <table style="width: 100%; border-collapse: collapse; font-size: 8px;">
+          <thead>
+            <tr style="background-color: #f2f2f2;">
+              <th style="border: 1px solid #000; padding: 2px; text-align: left; width: 60px;">Invoice ID</th>
+              <th style="border: 1px solid #000; padding: 2px; text-align: left; width: 60px;">Bill No</th>
+              <th style="border: 1px solid #000; padding: 2px; text-align: left; width: 100px;">Outlet Name</th>
+              ${uniqueOptions.map((opt) => `
+                <th style="border: 1px solid #000; padding: 2px; text-align: right; width: 50px; font-size: 7px;">
+                  ${opt.optionId}<br/>
+                  <span style="color: #666;">Rs.${(parseFloat(opt.price) || 0).toFixed(2)}</span>
+                </th>
+              `).join("")}
+              <th style="border: 1px solid #000; padding: 2px; text-align: right; width: 60px; background-color: #ffffe0;">Gross Sale</th>
+              <th style="border: 1px solid #000; padding: 2px; text-align: right; width: 50px;">Discount</th>
+              <th style="border: 1px solid #000; padding: 2px; text-align: right; width: 50px;">Expire</th>
+              <th style="border: 1px solid #000; padding: 2px; text-align: right; width: 60px; background-color: #ffffe0;">Net Sale</th>
+              <th style="border: 1px solid #000; padding: 2px; text-align: right; width: 50px;">Cash</th>
+              <th style="border: 1px solid #000; padding: 2px; text-align: right; width: 50px;">Cheque</th>
+              <th style="border: 1px solid #000; padding: 2px; text-align: right; width: 50px;">Credit</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${existingSummary.data.map((bill) => `
+              <tr>
+                <td style="border: 1px solid #000; padding: 2px; text-align: left; font-size: 7px;">${bill.invoiceId}</td>
+                <td style="border: 1px solid #000; padding: 2px; text-align: left; font-size: 7px;">${bill.billNo}</td>
+                <td style="border: 1px solid #000; padding: 2px; text-align: left; font-size: 7px;">${bill.outletName}</td>
+                ${uniqueOptions.map((opt) => {
+                  const productOption = bill.productOptions.find(po => po.optionId === opt.optionId);
+                  const qty = productOption ? (productOption.qty || 0) : 0;
+                  return `<td style="border: 1px solid #000; padding: 2px; text-align: right; font-size: 7px;">${qty}</td>`;
+                }).join("")}
+                <td style="border: 1px solid #000; padding: 2px; text-align: right; background-color: #ffffe0; font-size: 7px;">${calculateGrossSale(bill)}</td>
+                <td style="border: 1px solid #000; padding: 2px; text-align: right; font-size: 7px;">${bill.discount || 0}</td>
+                <td style="border: 1px solid #000; padding: 2px; text-align: right; font-size: 7px;">${bill.expire || 0}</td>
+                <td style="border: 1px solid #000; padding: 2px; text-align: right; background-color: #ffffe0; font-size: 7px;">${calculateNetSale(bill)}</td>
+                <td style="border: 1px solid #000; padding: 2px; text-align: right; font-size: 7px;">${bill.cash || 0}</td>
+                <td style="border: 1px solid #000; padding: 2px; text-align: right; font-size: 7px;">${bill.cheque || 0}</td>
+                <td style="border: 1px solid #000; padding: 2px; text-align: right; font-size: 7px;">${bill.credit || 0}</td>
+              </tr>
+            `).join("")}
+            <tr style="background-color: #ffff99; font-weight: bold;">
+              <td style="border: 1px solid #000; padding: 2px; text-align: left; font-size: 7px;" colspan="3">Total</td>
+              ${sums.productOptions.map(sum => `
+                <td style="border: 1px solid #000; padding: 2px; text-align: right; font-size: 7px;">${sum.toFixed(2)}</td>
+              `).join("")}
+              <td style="border: 1px solid #000; padding: 2px; text-align: right; background-color: #ffffe0; font-size: 7px;">${sums.grossSale.toFixed(2)}</td>
+              <td style="border: 1px solid #000; padding: 2px; text-align: right; font-size: 7px;">${sums.discount.toFixed(2)}</td>
+              <td style="border: 1px solid #000; padding: 2px; text-align: right; font-size: 7px;">${sums.expire.toFixed(2)}</td>
+              <td style="border: 1px solid #000; padding: 2px; text-align: right; background-color: #ffffe0; font-size: 7px;">${sums.netSale.toFixed(2)}</td>
+              <td style="border: 1px solid #000; padding: 2px; text-align: right; font-size: 7px;">${sums.cash.toFixed(2)}</td>
+              <td style="border: 1px solid #000; padding: 2px; text-align: right; font-size: 7px;">${sums.cheque.toFixed(2)}</td>
+              <td style="border: 1px solid #000; padding: 2px; text-align: right; font-size: 7px;">${sums.credit.toFixed(2)}</td>
+            </tr>
+          </tbody>
+        </table>
+      `;
+
+      // Store the preview content and show the preview modal
+      setPreviewContent({
+        html: previewHtml,
+        invoice: invoice,
+        sums: sums
+      });
+      setShowPrintPreview(true);
+
+    } catch (error) {
+      console.error("Error preparing print preview:", error);
+      alert("Failed to prepare print preview. Please try again. Error: " + error.message);
+    }
+  };
+
+  const handleConfirmPrint = async () => {
+    try {
+      // Create a temporary div for the print content
+      const tempDiv = document.createElement("div");
+      tempDiv.style.position = "absolute";
+      tempDiv.style.left = "-9999px";
+      tempDiv.style.width = "297mm"; // A4 landscape width
+      tempDiv.style.padding = "5mm";
+      tempDiv.style.backgroundColor = "#fff";
+      tempDiv.style.fontFamily = "Arial, sans-serif";
+      document.body.appendChild(tempDiv);
+
+      // Set the content
+      tempDiv.innerHTML = previewContent.html;
+
+      // Wait for the content to be rendered
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Create canvas from the temporary div with improved settings
       const canvas = await html2canvas(tempDiv, {
         scale: 2,
         useCORS: true,
-        logging: false,
-      });
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF({
-        orientation: "landscape",
-        unit: "mm",
-        format: "a4",
+        logging: true,
+        backgroundColor: '#ffffff',
+        windowWidth: 297 * 3.78, // Convert mm to pixels (1mm = 3.78px)
+        windowHeight: 210 * 3.78,
+        onclone: (clonedDoc) => {
+          const clonedDiv = clonedDoc.querySelector('div');
+          if (clonedDiv) {
+            clonedDiv.style.width = '297mm';
+            clonedDiv.style.height = '210mm';
+            clonedDiv.style.position = 'absolute';
+            clonedDiv.style.left = '0';
+            clonedDiv.style.top = '0';
+          }
+        }
       });
 
-      const pageWidth = 297;
-      const pageHeight = 210;
-      const margin = 10;
+      // Create PDF with improved settings
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4',
+        compress: true
+      });
+
+      // Calculate dimensions
+      const pageWidth = 297; // A4 landscape width in mm
+      const pageHeight = 210; // A4 landscape height in mm
+      const margin = 5;
       const imgWidth = pageWidth - 2 * margin;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
+      // Add the image to the PDF with improved quality
+      const imgData = canvas.toDataURL('image/jpeg', 1.0);
+      pdf.addImage(imgData, 'JPEG', margin, margin, imgWidth, imgHeight);
+
+      // Handle multiple pages if needed
       let heightLeft = imgHeight;
       let position = 0;
-
-      pdf.addImage(imgData, "PNG", margin, margin, imgWidth, imgHeight);
-      heightLeft -= (pageHeight - 2 * margin);
 
       while (heightLeft > 0) {
         position -= (pageHeight - 2 * margin);
         pdf.addPage();
-        pdf.addImage(imgData, "PNG", margin, position, imgWidth, imgHeight);
+        pdf.addImage(imgData, 'JPEG', margin, position, imgWidth, imgHeight);
         heightLeft -= (pageHeight - 2 * margin);
       }
 
-      pdf.save(`Sales_Summary_${invoice.invoiceId || invoice.id}.pdf`);
+      // Save the PDF with a unique filename
+      const filename = `Sales_Summary_${previewContent.invoice.invoiceId || previewContent.invoice.id}_${new Date().getTime()}.pdf`;
+      pdf.save(filename);
+
+      // Clean up
+      document.body.removeChild(tempDiv);
+      
+      // Close preview modal
+      setShowPrintPreview(false);
+      setPreviewContent(null);
+      
+      // Show success message
+      alert("PDF generated successfully!");
     } catch (error) {
       console.error("Error generating PDF:", error);
-      alert("Failed to generate PDF. Please try again.");
-    } finally {
-      document.body.removeChild(tempDiv);
+      alert("Failed to generate PDF. Please try again. Error: " + error.message);
+      // Clean up in case of error
+      const tempDiv = document.querySelector('div[style*="position: absolute"]');
+      if (tempDiv) {
+        document.body.removeChild(tempDiv);
+      }
     }
   };
 
@@ -623,7 +715,12 @@ const ManualInvoice = () => {
                           <button className="btn btn-warning btn-sm" onClick={() => handleEditSalesSummary(invoice)} title="Edit Sales Summary">
                             <i className="bi bi-pencil-square"></i>
                           </button>
-                          <button className="btn btn-success btn-sm" onClick={() => handlePrintSalesSummary(invoice)} title="Download PDF">
+                          <button 
+                            className="btn btn-success btn-sm" 
+                            onClick={() => handlePrintSalesSummary(invoice)} 
+                            title="Download PDF"
+                            style={{ cursor: 'pointer' }}
+                          >
                             <i className="bi bi-printer"></i>
                           </button>
                         </>
@@ -1006,6 +1103,57 @@ const ManualInvoice = () => {
                   {editSalesSummaryId ? "Update Sales Summary" : "Save Sales Summary"}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Print Preview Modal */}
+      {showPrintPreview && previewContent && (
+        <div className="modal" style={{ display: "block", position: "fixed", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.7)" }}>
+          <div className="modal-content" style={{ 
+            backgroundColor: "#fff", 
+            margin: "20px", 
+            padding: "20px", 
+            width: "calc(100% - 40px)", 
+            height: "calc(100% - 40px)", 
+            borderRadius: "12px", 
+            overflowY: "auto",
+            boxShadow: "0 10px 30px rgba(0,0,0,0.3)"
+          }}>
+            <div style={{ 
+              display: "flex", 
+              justifyContent: "space-between", 
+              alignItems: "center", 
+              marginBottom: "20px",
+              paddingBottom: "10px",
+              borderBottom: "2px solid #eee"
+            }}>
+              <h4 style={{ margin: "0" }}>
+                <i className="bi bi-printer me-2"></i>
+                Print Preview
+              </h4>
+              <button className="btn btn-outline-secondary" onClick={() => setShowPrintPreview(false)}>
+                <i className="bi bi-x-lg"></i>
+              </button>
+            </div>
+            
+            <div style={{ 
+              backgroundColor: "#fff", 
+              padding: "20px", 
+              borderRadius: "8px",
+              boxShadow: "0 2px 10px rgba(0,0,0,0.1)"
+            }}>
+              <div dangerouslySetInnerHTML={{ __html: previewContent.html }} />
+            </div>
+
+            <div className="d-flex justify-content-end gap-2 mt-4">
+              <button className="btn btn-secondary" onClick={() => setShowPrintPreview(false)}>
+                <i className="bi bi-x-circle me-2"></i>Cancel
+              </button>
+              <button className="btn btn-primary" onClick={handleConfirmPrint}>
+                <i className="bi bi-download me-2"></i>Download PDF
+              </button>
             </div>
           </div>
         </div>
