@@ -11,9 +11,10 @@ const ProductCreate = () => {
   const [categories, setCategories] = useState([]);
   const [productOptions, setProductOptions] = useState([]);
   const [optionName, setOptionName] = useState("");
-  const [optionPrice, setOptionPrice] = useState("");
-  const [optionQty, setOptionQty] = useState("");
-  const [optionMargin, setOptionMargin] = useState(""); // Add state for margin price
+  const [optionDBPrice, setOptionDBPrice] = useState("");
+  const [optionRetailPrice, setOptionRetailPrice] = useState("");
+  const [optionMargin, setOptionMargin] = useState("");
+  const [optionStock, setOptionStock] = useState("");
   const [imageBase64, setImageBase64] = useState(""); // Store image as Base64
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
@@ -79,26 +80,44 @@ const ProductCreate = () => {
 
   // Add a new product option
   const addProductOption = () => {
-    if (optionName && optionPrice && optionQty) {
+    if (optionName && optionDBPrice && optionRetailPrice && optionStock) {
       setProductOptions([
         ...productOptions, 
         { 
           name: optionName, 
-          price: parseFloat(optionPrice), 
-          qty: parseFloat(optionQty),
-          margin: parseFloat(optionMargin) || 0 // Add margin with default 0 if empty
+          dbPrice: parseFloat(optionDBPrice),
+          retailPrice: parseFloat(optionRetailPrice),
+          margin: parseFloat(optionRetailPrice) - parseFloat(optionDBPrice),
+          stock: parseFloat(optionStock)
         }
       ]);
       setOptionName("");
-      setOptionPrice("");
-      setOptionQty("");
-      setOptionMargin(""); // Reset margin field
+      setOptionDBPrice("");
+      setOptionRetailPrice("");
+      setOptionMargin("");
+      setOptionStock("");
     }
   };
 
   // Remove a product option
   const removeProductOption = (index) => {
     setProductOptions(productOptions.filter((_, i) => i !== index));
+  };
+
+  // Add handler for retail price changes
+  const handleRetailPriceChange = (value) => {
+    setOptionRetailPrice(value);
+    if (optionDBPrice && value) {
+      setOptionMargin((parseFloat(value) - parseFloat(optionDBPrice)).toFixed(2));
+    }
+  };
+
+  // Add handler for DB price changes
+  const handleDBPriceChange = (value) => {
+    setOptionDBPrice(value);
+    if (optionRetailPrice && value) {
+      setOptionMargin((parseFloat(optionRetailPrice) - parseFloat(value)).toFixed(2));
+    }
   };
 
   // Handle form submission
@@ -108,25 +127,32 @@ const ProductCreate = () => {
     setMessage("");
 
     try {
-      // Removed price from validation since it's no longer in the form
       if (!name || !categoryId) {
         throw new Error("Product name and category are required.");
       }
 
-      // Add product to Firestore (price is omitted)
+      // Map productOptions to include all fields
+      const mappedProductOptions = productOptions.map(option => ({
+        name: option.name,
+        dbPrice: option.dbPrice,
+        retailPrice: option.retailPrice,
+        margin: option.margin,
+        stock: option.stock,
+        price: option.retailPrice // Keep this for compatibility with existing code
+      }));
+
       await addDoc(productsCollectionRef, {
         name,
         description,
         categoryId,
         createdAt: serverTimestamp(),
-        productOptions,
-        imageBase64, // Save image as Base64 string
+        productOptions: mappedProductOptions,
+        imageBase64,
       });
 
       setMessage("Product created successfully!");
       setName("");
       setDescription("");
-      setPrice(""); // Still resetting price even though it's not used
       setCategoryId(null);
       setImageBase64("");
       setProductOptions([]);
@@ -182,17 +208,81 @@ const ProductCreate = () => {
               {/* Product Options */}
               <div className="mb-3">
                 <label className="form-label">Product Options</label>
-                <div className="d-flex gap-2 mb-2">
-                  <input type="text" className="form-control" placeholder="Option Name" value={optionName} onChange={(e) => setOptionName(e.target.value)} />
-                  <input type="number" className="form-control" placeholder="Price" value={optionPrice} onChange={(e) => setOptionPrice(e.target.value)} />
-                  <input type="number" className="form-control" placeholder="Option Qty" value={optionQty} onChange={(e) => setOptionQty(e.target.value)} />
-                  <input type="number" className="form-control" placeholder="Margin" value={optionMargin} onChange={(e) => setOptionMargin(e.target.value)} />
-                  <button type="button" className="btn btn-primary" onClick={addProductOption}>Add</button>
+                <div className="row mb-2">
+                  <div className="col-md-2">
+                    <div className="mb-1">
+                      <small className="text-muted">Option Name</small>
+                    </div>
+                    <input 
+                      type="text" 
+                      className="form-control" 
+                      placeholder="Option Name" 
+                      value={optionName} 
+                      onChange={(e) => setOptionName(e.target.value)} 
+                    />
+                  </div>
+                  <div className="col-md-2">
+                    <div className="mb-1">
+                      <small className="text-muted">DB Price</small>
+                    </div>
+                    <input 
+                      type="number" 
+                      className="form-control" 
+                      placeholder="DB Price" 
+                      value={optionDBPrice} 
+                      onChange={(e) => handleDBPriceChange(e.target.value)} 
+                    />
+                  </div>
+                  <div className="col-md-2">
+                    <div className="mb-1">
+                      <small className="text-muted">Retail Price</small>
+                    </div>
+                    <input 
+                      type="number" 
+                      className="form-control" 
+                      placeholder="Retail Price" 
+                      value={optionRetailPrice} 
+                      onChange={(e) => handleRetailPriceChange(e.target.value)} 
+                    />
+                  </div>
+                  <div className="col-md-2">
+                    <div className="mb-1">
+                      <small className="text-muted">Margin</small>
+                    </div>
+                    <input 
+                      type="number" 
+                      className="form-control" 
+                      placeholder="Margin" 
+                      value={optionMargin} 
+                      disabled 
+                    />
+                  </div>
+                  <div className="col-md-2">
+                    <div className="mb-1">
+                      <small className="text-muted">Stock</small>
+                    </div>
+                    <input 
+                      type="number" 
+                      className="form-control" 
+                      placeholder="Stock" 
+                      value={optionStock} 
+                      onChange={(e) => setOptionStock(e.target.value)} 
+                    />
+                  </div>
+                  <div className="col-md-2 d-flex align-items-end">
+                    <button type="button" className="btn btn-primary w-100" onClick={addProductOption}>Add Option</button>
+                  </div>
                 </div>
-                <ul className="list-group">
+                <ul className="list-group mt-2">
                   {productOptions.map((option, index) => (
                     <li key={index} className="list-group-item d-flex justify-content-between align-items-center">
-                      {option.name} - Rs.{option.price.toFixed(2)} - Qty: {option.qty} - Margin: Rs.{option.margin.toFixed(2)}
+                      <div className="d-flex gap-3">
+                        <span><strong>Name:</strong> {option.name}</span>
+                        <span><strong>DB Price:</strong> Rs.{option.dbPrice.toFixed(2)}</span>
+                        <span><strong>Retail Price:</strong> Rs.{option.retailPrice.toFixed(2)}</span>
+                        <span><strong>Margin:</strong> Rs.{option.margin.toFixed(2)}</span>
+                        <span><strong>Stock:</strong> {option.stock}</span>
+                      </div>
                       <button type="button" className="btn btn-sm btn-danger" onClick={() => removeProductOption(index)}>Remove</button>
                     </li>
                   ))}

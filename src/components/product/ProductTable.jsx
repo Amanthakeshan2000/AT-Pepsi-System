@@ -92,18 +92,28 @@ const ProductTable = () => {
   const handleSave = async () => {
     if (editData) {
       try {
+        // Update stock values before saving
+        const updatedOptions = editedOptions.map(option => {
+          const newStock = option.newStock === "" ? 0 : parseFloat(option.newStock);
+          return {
+            ...option,
+            stock: (parseFloat(option.stock) || 0) + newStock,
+            newStock: "" // Reset to empty string after updating
+          };
+        });
+
         const productRef = doc(db, "Product", editData.id);
         await updateDoc(productRef, {
           name: editedName,
           description: editedDescription,
-          productOptions: editedOptions,
+          productOptions: updatedOptions,
         });
 
         // Update UI
         setProductTableData((prevData) =>
           prevData.map((item) =>
             item.id === editData.id
-              ? { ...item, name: editedName, description: editedDescription, productOptions: editedOptions }
+              ? { ...item, name: editedName, description: editedDescription, productOptions: updatedOptions }
               : item
           )
         );
@@ -118,7 +128,14 @@ const ProductTable = () => {
 
   // Add a new product option
   const addProductOption = () => {
-    setEditedOptions([...editedOptions, { name: "", price: "", qty: "", margin: "" }]);
+    setEditedOptions([...editedOptions, { 
+      name: "", 
+      dbPrice: "", 
+      retailPrice: "", 
+      margin: "", 
+      stock: 0,
+      newStock: "" // Set as empty string by default
+    }]);
   };
 
   // Remove a product option
@@ -162,10 +179,11 @@ const ProductTable = () => {
         }
     
         return (
-          <div style={{ overflowX: "auto" }}>
+          <div style={{ overflowX: "auto", maxWidth: "100%" }}>
             <table
               style={{
                 width: "100%",
+                minWidth: "800px", // Minimum width for better mobile display
                 borderCollapse: "collapse",
                 backgroundColor: "#f9f9f9",
                 borderRadius: "8px",
@@ -173,15 +191,15 @@ const ProductTable = () => {
                 boxShadow: "0 2px 5px rgba(0, 0, 0, 0.1)",
               }}
             >
-           <thead>
-              <tr style={{ backgroundColor: "#53a6ff", color: "#ffffff", fontWeight: "bold" }}>
-                <th style={{ padding: "10px", textAlign: "left", color: "#ffffff !important" }}>Name</th>
-                <th style={{ padding: "10px", textAlign: "left", color: "#ffffff !important" }}>Price (Rs.)</th>
-                <th style={{ padding: "10px", textAlign: "left", color: "#ffffff !important" }}>Quantity</th>
-                <th style={{ padding: "10px", textAlign: "left", color: "#ffffff !important" }}>Margin (Rs.)</th>
-              </tr>
-            </thead>
-
+              <thead>
+                <tr style={{ backgroundColor: "#53a6ff", color: "#ffffff", fontWeight: "bold" }}>
+                  <th style={{ padding: "10px", textAlign: "left", color: "#ffffff !important" }}>Name</th>
+                  <th style={{ padding: "10px", textAlign: "left", color: "#ffffff !important" }}>DB Price</th>
+                  <th style={{ padding: "10px", textAlign: "left", color: "#ffffff !important" }}>Retail Price</th>
+                  <th style={{ padding: "10px", textAlign: "left", color: "#ffffff !important" }}>Margin</th>
+                  <th style={{ padding: "10px", textAlign: "left", color: "#ffffff !important" }}>Stock</th>
+                </tr>
+              </thead>
               <tbody>
                 {options.map((option, index) => (
                   <tr
@@ -195,31 +213,18 @@ const ProductTable = () => {
                       (e.currentTarget.style.backgroundColor = index % 2 === 0 ? "#ffffff" : "#f1f1f1")
                     }
                   >
-                    <td style={{ padding: "10px", borderBottom: "1px solid #ddd",color:"red" }}>{option.name}</td>
-                    <td style={{ padding: "10px", borderBottom: "1px solid #ddd", fontWeight: "bold",color:"blue" }}>
-                      Rs.{option.price}
+                    <td style={{ padding: "10px", borderBottom: "1px solid #ddd", color: "red" }}>{option.name}</td>
+                    <td style={{ padding: "10px", borderBottom: "1px solid #ddd", fontWeight: "bold", color: "blue" }}>
+                      Rs.{option.dbPrice?.toFixed(2) || "0.00"}
                     </td>
-                    <td
-                      style={{
-                        padding: "10px",
-                        borderBottom: "1px solid #ddd",
-                        textAlign: "left",
-                        color: "#28a745",
-                        fontWeight: "bold",
-                      }}
-                    >
-                      {option.qty}
+                    <td style={{ padding: "10px", borderBottom: "1px solid #ddd", fontWeight: "bold", color: "green" }}>
+                      Rs.{option.retailPrice?.toFixed(2) || "0.00"}
                     </td>
-                    <td
-                      style={{
-                        padding: "10px",
-                        borderBottom: "1px solid #ddd",
-                        textAlign: "left",
-                        color: "#ff9800",
-                        fontWeight: "bold",
-                      }}
-                    >
-                      Rs.{option.margin || 0}
+                    <td style={{ padding: "10px", borderBottom: "1px solid #ddd", fontWeight: "bold", color: "#ff9800" }}>
+                      Rs.{option.margin?.toFixed(2) || "0.00"}
+                    </td>
+                    <td style={{ padding: "10px", borderBottom: "1px solid #ddd", fontWeight: "bold", color: "#28a745" }}>
+                      {option.stock || "0"}
                     </td>
                   </tr>
                 ))}
@@ -290,185 +295,212 @@ const ProductTable = () => {
       )}
 
       {isPopupOpen && (
-    <div
-    style={{
-      position: "fixed",
-      top: 0,
-      left: 0,
-      width: "100vw",
-      height: "100vh",
-      background: "rgba(0, 0, 0, 0.5)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      zIndex: 1000,
-    }}
-  >
-    <div
-      style={{
-        background: "#fff",
-        padding: "20px",
-        borderRadius: "10px",
-        boxShadow: "0px 5px 15px rgba(0, 0, 0, 0.2)",
-        width: "600px",
-        maxWidth: "90%",
-      }}
-    >
-      <h3 style={{ textAlign: "center", marginBottom: "15px", color: "#333" }}>
-        Edit Product
-      </h3>
-      
-      <label style={{ fontWeight: "bold", display: "block", marginBottom: "5px" }}>Name:</label>
-      <input
-        type="text"
-        value={editedName}
-        onChange={(e) => setEditedName(e.target.value)}
-        style={{
-          width: "100%",
-          padding: "8px",
-          marginBottom: "10px",
-          borderRadius: "5px",
-          border: "1px solid #ccc",
-        }}
-      />
-  
-      <label style={{ fontWeight: "bold", display: "block", marginBottom: "5px" }}>Description:</label>
-      <textarea
-        value={editedDescription}
-        onChange={(e) => setEditedDescription(e.target.value)}
-        rows={4}
-        style={{
-          width: "100%",
-          padding: "8px",
-          borderRadius: "5px",
-          border: "1px solid #ccc",
-          resize: "none",
-        }}
-      ></textarea>
-  
-      <h5 style={{ marginTop: "15px", color: "#333" }}>Product Options</h5>
-  
-      {editedOptions.map((option, index) => (
-        <div key={index} style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
-          <input
-            type="text"
-            value={option.name}
-            onChange={(e) => handleOptionChange(index, "name", e.target.value)}
-            placeholder="Option Name"
-            style={{
-              flex: 1,
-              padding: "8px",
-              borderRadius: "5px",
-              border: "1px solid #ccc",
-            }}
-          />
-          <input
-            type="number"
-            value={option.price}
-            onChange={(e) => handleOptionChange(index, "price", e.target.value)}
-            placeholder="Price"
-            style={{
-              width: "100px",
-              padding: "8px",
-              borderRadius: "5px",
-              border: "1px solid #ccc",
-            }}
-          />
-          <input
-            type="number"
-            value={option.qty}
-            onChange={(e) => handleOptionChange(index, "qty", e.target.value)}
-            placeholder="Qty"
-            style={{
-              width: "100px",
-              padding: "8px",
-              borderRadius: "5px",
-              border: "1px solid #ccc",
-            }}
-          />
-          <input
-            type="number"
-            value={option.margin}
-            onChange={(e) => handleOptionChange(index, "margin", e.target.value)}
-            placeholder="Margin"
-            style={{
-              width: "100px",
-              padding: "8px",
-              borderRadius: "5px",
-              border: "1px solid #ccc",
-            }}
-          />
-          <button
-            onClick={() => removeProductOption(index)}
-            style={{
-              background: "#ff4d4d",
-              color: "#fff",
-              border: "none",
-              padding: "8px 12px",
-              borderRadius: "5px",
-              cursor: "pointer",
-              transition: "0.3s",
-            }}
-          >
-            ✖
-          </button>
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100vw",
+          height: "100vh",
+          background: "rgba(0, 0, 0, 0.5)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 1000,
+        }}>
+          <div style={{
+            background: "#fff",
+            padding: "20px",
+            borderRadius: "10px",
+            boxShadow: "0px 5px 15px rgba(0, 0, 0, 0.2)",
+            width: "800px",
+            maxWidth: "90%",
+            maxHeight: "90vh",
+            overflowY: "auto"
+          }}>
+            <h3 style={{ textAlign: "center", marginBottom: "15px", color: "#333" }}>
+              Edit Product
+            </h3>
+            
+            <label style={{ fontWeight: "bold", display: "block", marginBottom: "5px" }}>Name:</label>
+            <input
+              type="text"
+              value={editedName}
+              onChange={(e) => setEditedName(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "8px",
+                marginBottom: "10px",
+                borderRadius: "5px",
+                border: "1px solid #ccc",
+              }}
+            />
+    
+            <label style={{ fontWeight: "bold", display: "block", marginBottom: "5px" }}>Description:</label>
+            <textarea
+              value={editedDescription}
+              onChange={(e) => setEditedDescription(e.target.value)}
+              rows={4}
+              style={{
+                width: "100%",
+                padding: "8px",
+                borderRadius: "5px",
+                border: "1px solid #ccc",
+                resize: "none",
+              }}
+            ></textarea>
+    
+            <h5 style={{ marginTop: "15px", color: "#333" }}>Product Options</h5>
+    
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", minWidth: "700px", borderCollapse: "collapse", marginBottom: "10px" }}>
+                <thead>
+                  <tr style={{ backgroundColor: "#f8f9fa" }}>
+                    <th style={{ padding: "8px", textAlign: "left" }}>Option Name</th>
+                    <th style={{ padding: "8px", textAlign: "left" }}>DB Price</th>
+                    <th style={{ padding: "8px", textAlign: "left" }}>Retail Price</th>
+                    <th style={{ padding: "8px", textAlign: "left" }}>Margin</th>
+                    <th style={{ padding: "8px", textAlign: "left" }}>Stock</th>
+                    <th style={{ padding: "8px", textAlign: "left" }}>New Stock</th>
+                    <th style={{ padding: "8px", textAlign: "left" }}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {editedOptions.map((option, index) => (
+                    <tr key={index}>
+                      <td style={{ padding: "8px" }}>
+                        <input
+                          type="text"
+                          value={option.name}
+                          onChange={(e) => handleOptionChange(index, "name", e.target.value)}
+                          style={{ width: "100%", padding: "4px", borderRadius: "4px", border: "1px solid #ddd" }}
+                        />
+                      </td>
+                      <td style={{ padding: "8px" }}>
+                        <input
+                          type="number"
+                          value={option.dbPrice}
+                          onChange={(e) => {
+                            const dbPrice = parseFloat(e.target.value) || 0;
+                            handleOptionChange(index, "dbPrice", dbPrice);
+                            if (option.retailPrice) {
+                              handleOptionChange(index, "margin", option.retailPrice - dbPrice);
+                            }
+                          }}
+                          style={{ width: "100%", padding: "4px", borderRadius: "4px", border: "1px solid #ddd" }}
+                        />
+                      </td>
+                      <td style={{ padding: "8px" }}>
+                        <input
+                          type="number"
+                          value={option.retailPrice}
+                          onChange={(e) => {
+                            const retailPrice = parseFloat(e.target.value) || 0;
+                            handleOptionChange(index, "retailPrice", retailPrice);
+                            if (option.dbPrice) {
+                              handleOptionChange(index, "margin", retailPrice - option.dbPrice);
+                            }
+                          }}
+                          style={{ width: "100%", padding: "4px", borderRadius: "4px", border: "1px solid #ddd" }}
+                        />
+                      </td>
+                      <td style={{ padding: "8px" }}>
+                        <input
+                          type="number"
+                          value={option.margin}
+                          disabled
+                          style={{ width: "100%", padding: "4px", borderRadius: "4px", border: "1px solid #ddd", backgroundColor: "#f8f9fa" }}
+                        />
+                      </td>
+                      <td style={{ padding: "8px" }}>
+                        <input
+                          type="number"
+                          value={option.stock}
+                          disabled
+                          style={{ width: "100%", padding: "4px", borderRadius: "4px", border: "1px solid #ddd", backgroundColor: "#f8f9fa" }}
+                        />
+                      </td>
+                      <td style={{ padding: "8px" }}>
+                        <input
+                          type="number"
+                          value={option.newStock === undefined ? "" : option.newStock}
+                          onChange={(e) => {
+                            const newStock = e.target.value === "" ? "" : parseFloat(e.target.value);
+                            handleOptionChange(index, "newStock", newStock);
+                          }}
+                          style={{ width: "100%", padding: "4px", borderRadius: "4px", border: "1px solid #ddd" }}
+                        />
+                      </td>
+                      <td style={{ padding: "8px" }}>
+                        <button
+                          onClick={() => removeProductOption(index)}
+                          style={{
+                            background: "#ff4d4d",
+                            color: "#fff",
+                            border: "none",
+                            padding: "4px 8px",
+                            borderRadius: "4px",
+                            cursor: "pointer",
+                          }}
+                        >
+                          ✖
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+    
+            <button
+              onClick={addProductOption}
+              style={{
+                display: "block",
+                width: "100%",
+                padding: "8px",
+                marginTop: "10px",
+                background: "#28a745",
+                color: "#fff",
+                border: "none",
+                borderRadius: "5px",
+                cursor: "pointer",
+              }}
+            >
+              + Add Option
+            </button>
+    
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: "20px" }}>
+              <button
+                onClick={handleSave}
+                style={{
+                  flex: 1,
+                  background: "#007bff",
+                  color: "#fff",
+                  border: "none",
+                  padding: "10px",
+                  borderRadius: "5px",
+                  cursor: "pointer",
+                  marginRight: "5px",
+                }}
+              >
+                Save
+              </button>
+              <button
+                onClick={closePopup}
+                style={{
+                  flex: 1,
+                  background: "#6c757d",
+                  color: "#fff",
+                  border: "none",
+                  padding: "10px",
+                  borderRadius: "5px",
+                  cursor: "pointer",
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </div>
-      ))}
-  
-      <button
-        onClick={addProductOption}
-        style={{
-          display: "block",
-          width: "100%",
-          padding: "8px",
-          marginTop: "10px",
-          background: "#28a745",
-          color: "#fff",
-          border: "none",
-          borderRadius: "5px",
-          cursor: "pointer",
-          transition: "0.3s",
-        }}
-      >
-        + Add Option
-      </button>
-  
-      <div style={{ display: "flex", justifyContent: "space-between", marginTop: "20px" }}>
-        <button
-          onClick={handleSave}
-          style={{
-            flex: 1,
-            background: "#007bff",
-            color: "#fff",
-            border: "none",
-            padding: "10px",
-            borderRadius: "5px",
-            cursor: "pointer",
-            transition: "0.3s",
-            marginRight: "5px",
-          }}
-        >
-          Save
-        </button>
-        <button
-          onClick={closePopup}
-          style={{
-            flex: 1,
-            background: "#6c757d",
-            color: "#fff",
-            border: "none",
-            padding: "10px",
-            borderRadius: "5px",
-            cursor: "pointer",
-            transition: "0.3s",
-          }}
-        >
-          Close
-        </button>
-      </div>
-    </div>
-  </div>
-  
       )}
     </div>
   );
