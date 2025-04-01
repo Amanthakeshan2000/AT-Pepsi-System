@@ -1,0 +1,124 @@
+.loading-table-container {
+  width: 100%;
+  overflow-x: auto;
+  margin: 20px 0;
+}
+
+.loading-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.loading-table th,
+.loading-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+.loading-table th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  color: #333;
+}
+
+.loading-table tr:hover {
+  background-color: #f5f5f5;
+}
+
+.radio-group {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.radio-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.radio-option:hover {
+  background-color: #f0f0f0;
+}
+
+.large-radio {
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: #007bff;
+}
+
+.radio-option label {
+  font-size: 16px;
+  cursor: pointer;
+  user-select: none;
+  color: #333;
+  font-weight: 500;
+}
+
+/* Custom styling for the radio button */
+.large-radio[type="radio"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 24px;
+  height: 24px;
+  border: 2px solid #007bff;
+  border-radius: 50%;
+  outline: none;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+  background-color: white;
+}
+
+.large-radio[type="radio"]:checked {
+  background-color: #007bff;
+  border-color: #007bff;
+}
+
+.large-radio[type="radio"]:checked::before {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background-color: white;
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.large-radio[type="radio"]:hover {
+  background-color: #e9ecef;
+  border-color: #0056b3;
+}
+
+.large-radio[type="radio"]:checked:hover {
+  background-color: #0056b3;
+  border-color: #0056b3;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .radio-group {
+    gap: 15px;
+  }
+  
+  .radio-option label {
+    font-size: 14px;
+  }
+  
+  .large-radio[type="radio"] {
+    width: 20px;
+    height: 20px;
+  }
+} 

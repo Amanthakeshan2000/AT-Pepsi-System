@@ -371,7 +371,11 @@ const ManualInvoice = () => {
       const previewHtml = `
         <div style="margin-bottom: 5mm; text-align: center;">
           <h2 style="font-size: 14px; margin: 0; font-weight: bold;">Sales Summary for Invoice ${invoice.invoiceId || invoice.id}</h2>
-          <p style="font-size: 10px; margin: 1mm 0;"><strong>Custom Date:</strong> ${invoice.customDate} | <strong>Driver:</strong> ${invoice.driver} | <strong>Route:</strong> ${invoice.route}</p>
+          <p style="font-size: 10px; margin: 1mm 0;">
+            <strong>Custom Date:</strong> ${invoice.customDate} | 
+            <strong>Driver:</strong> ${invoice.driver || 'N/A'} | 
+            <strong>Route:</strong> ${invoice.route || 'N/A'}
+          </p>
         </div>
         <table style="width: 100%; border-collapse: collapse; font-size: 8px;">
           <thead>
@@ -945,7 +949,7 @@ const ManualInvoice = () => {
                         <tr style={{ background: "linear-gradient(to right, #f5f7fa, #e4efe9)" }}>
                           <th style={{ width: "130px", verticalAlign: "middle", fontWeight: "600", borderBottom: "2px solid #dee2e6" }}>Invoice ID</th>
                           <th style={{ width: "130px", verticalAlign: "middle", fontWeight: "600", borderBottom: "2px solid #dee2e6" }}>Bill No</th>
-                          <th style={{ width: "220px", verticalAlign: "middle", fontWeight: "600", borderBottom: "2px solid #dee2e6" }}>Outlet Name</th>
+                          <th style={{ width: "220px", verticalAlign: "middle", fontWeight: "600", borderBottom: "2px solid #dee2e6" }}>Outlet Names</th>
                           {salesSummary.uniqueOptions.map((opt) => (
                             <th key={opt.optionId} style={{ 
                               width: "150px", 
