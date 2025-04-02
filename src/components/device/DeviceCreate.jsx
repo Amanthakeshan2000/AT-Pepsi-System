@@ -324,11 +324,11 @@ const ManualInvoice = () => {
 
   const handlePrintSalesSummary = async (invoice) => {
     try {
-      const existingSummary = salesSummaries.find((summary) => summary.invoiceId === (invoice.invoiceId || invoice.id));
-      if (!existingSummary) {
-        alert("No sales summary exists for this invoice. Create one first.");
-        return;
-      }
+    const existingSummary = salesSummaries.find((summary) => summary.invoiceId === (invoice.invoiceId || invoice.id));
+    if (!existingSummary) {
+      alert("No sales summary exists for this invoice. Create one first.");
+      return;
+    }
 
       let uniqueOptions = [...new Map(existingSummary.data.flatMap((bill) => bill.productOptions).map((opt) => [opt.optionId, { optionId: opt.optionId, price: parseFloat(opt.price) || 0 }])).values()];
       
@@ -370,70 +370,70 @@ const ManualInvoice = () => {
       // Generate the HTML content for preview
       const previewHtml = `
         <div style="margin-bottom: 5mm; text-align: center;">
-          <h2 style="font-size: 14px; margin: 0; font-weight: bold;">Sales Summary for Invoice ${invoice.invoiceId || invoice.id}</h2>
-          <p style="font-size: 10px; margin: 1mm 0;">
-            <strong>Custom Date:</strong> ${invoice.customDate} | 
-            <strong>Driver:</strong> ${invoice.driver || 'N/A'} | 
-            <strong>Route:</strong> ${invoice.route || 'N/A'}
+          <h2 style="font-size: 24px; margin: 0; font-weight: bold; color: #000000;">Sales Summary for Invoice ${invoice.invoiceId || invoice.id}</h2>
+          <p style="font-size: 16px; margin: 3mm 0; color: #000000;">
+            <strong style="color: #000000;">Custom Date:</strong> ${invoice.customDate} | 
+            <strong style="color: #000000;">Driver:</strong> ${invoice.driver || 'N/A'} | 
+            <strong style="color: #000000;">Route:</strong> ${invoice.route || 'N/A'}
           </p>
-        </div>
-        <table style="width: 100%; border-collapse: collapse; font-size: 8px;">
-          <thead>
-            <tr style="background-color: #f2f2f2;">
-              <th style="border: 1px solid #000; padding: 2px; text-align: left; width: 60px;">Invoice ID</th>
-              <th style="border: 1px solid #000; padding: 2px; text-align: left; width: 60px;">Bill No</th>
-              <th style="border: 1px solid #000; padding: 2px; text-align: left; width: 100px;">Outlet Name</th>
+      </div>
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+        <thead>
+          <tr style="background-color: #f2f2f2;">
+              <th style="border: 0.5px solid #000000; padding: 5px; text-align: left; width: 60px; color: #000000; font-weight: bold;">Invoice ID</th>
+              <th style="border: 0.5px solid #000000; padding: 5px; text-align: left; width: 60px; color: #000000; font-weight: bold;">Bill No</th>
+              <th style="border: 0.5px solid #000000; padding: 5px; text-align: left; width: 100px; color: #000000; font-weight: bold;">Outlet Name</th>
               ${uniqueOptions.map((opt) => `
-                <th style="border: 1px solid #000; padding: 2px; text-align: right; width: 50px; font-size: 7px;">
+                <th style="border: 0.5px solid #000000; padding: 5px; text-align: right; width: 50px; font-size: 13px; color: #000000; font-weight: bold;">
                   ${opt.optionId}<br/>
-                  <span style="color: #666;">Rs.${(parseFloat(opt.price) || 0).toFixed(2)}</span>
+                  <span style="color: #000000;">Rs.${(parseFloat(opt.price) || 0).toFixed(2)}</span>
                 </th>
               `).join("")}
-              <th style="border: 1px solid #000; padding: 2px; text-align: right; width: 60px; background-color: #ffffe0;">Gross Sale</th>
-              <th style="border: 1px solid #000; padding: 2px; text-align: right; width: 50px;">Discount</th>
-              <th style="border: 1px solid #000; padding: 2px; text-align: right; width: 50px;">Expire</th>
-              <th style="border: 1px solid #000; padding: 2px; text-align: right; width: 60px; background-color: #ffffe0;">Net Sale</th>
-              <th style="border: 1px solid #000; padding: 2px; text-align: right; width: 50px;">Cash</th>
-              <th style="border: 1px solid #000; padding: 2px; text-align: right; width: 50px;">Cheque</th>
-              <th style="border: 1px solid #000; padding: 2px; text-align: right; width: 50px;">Credit</th>
+              <th style="border: 0.5px solid #000000; padding: 5px; text-align: right; width: 60px; background-color: #ffffe0; color: #000000; font-weight: bold;">Gross Sale</th>
+              <th style="border: 0.5px solid #000000; padding: 5px; text-align: right; width: 50px; color: #000000; font-weight: bold;">Discount</th>
+              <th style="border: 0.5px solid #000000; padding: 5px; text-align: right; width: 50px; color: #000000; font-weight: bold;">Expire</th>
+              <th style="border: 0.5px solid #000000; padding: 5px; text-align: right; width: 60px; background-color: #ffffe0; color: #000000; font-weight: bold;">Net Sale</th>
+              <th style="border: 0.5px solid #000000; padding: 5px; text-align: right; width: 50px; color: #000000; font-weight: bold;">Cash</th>
+              <th style="border: 0.5px solid #000000; padding: 5px; text-align: right; width: 50px; color: #000000; font-weight: bold;">Cheque</th>
+              <th style="border: 0.5px solid #000000; padding: 5px; text-align: right; width: 50px; color: #000000; font-weight: bold;">Credit</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${existingSummary.data.map((bill) => `
+            <tr>
+                <td style="border: 0.5px solid #000000; padding: 5px; text-align: left; font-size: 13px; color: #000000;">${bill.invoiceId}</td>
+                <td style="border: 0.5px solid #000000; padding: 5px; text-align: left; font-size: 13px; color: #000000;">${bill.billNo}</td>
+                <td style="border: 0.5px solid #000000; padding: 5px; text-align: left; font-size: 13px; color: #000000;">${bill.outletName}</td>
+              ${uniqueOptions.map((opt) => {
+                const productOption = bill.productOptions.find(po => po.optionId === opt.optionId);
+                const qty = productOption ? (productOption.qty || 0) : 0;
+                  return `<td style="border: 0.5px solid #000000; padding: 5px; text-align: right; font-size: 13px; color: #000000;">${qty}</td>`;
+              }).join("")}
+                <td style="border: 0.5px solid #000000; padding: 5px; text-align: right; background-color: #ffffe0; font-size: 13px; color: #000000; font-weight: bold;">${calculateGrossSale(bill)}</td>
+                <td style="border: 0.5px solid #000000; padding: 5px; text-align: right; font-size: 13px; color: #000000;">${bill.discount || 0}</td>
+                <td style="border: 0.5px solid #000000; padding: 5px; text-align: right; font-size: 13px; color: #000000;">${bill.expire || 0}</td>
+                <td style="border: 0.5px solid #000000; padding: 5px; text-align: right; background-color: #ffffe0; font-size: 13px; color: #000000; font-weight: bold;">${calculateNetSale(bill)}</td>
+                <td style="border: 0.5px solid #000000; padding: 5px; text-align: right; font-size: 13px; color: #000000;">${bill.cash || 0}</td>
+                <td style="border: 0.5px solid #000000; padding: 5px; text-align: right; font-size: 13px; color: #000000;">${bill.cheque || 0}</td>
+                <td style="border: 0.5px solid #000000; padding: 5px; text-align: right; font-size: 13px; color: #000000;">${bill.credit || 0}</td>
             </tr>
-          </thead>
-          <tbody>
-            ${existingSummary.data.map((bill) => `
-              <tr>
-                <td style="border: 1px solid #000; padding: 2px; text-align: left; font-size: 7px;">${bill.invoiceId}</td>
-                <td style="border: 1px solid #000; padding: 2px; text-align: left; font-size: 7px;">${bill.billNo}</td>
-                <td style="border: 1px solid #000; padding: 2px; text-align: left; font-size: 7px;">${bill.outletName}</td>
-                ${uniqueOptions.map((opt) => {
-                  const productOption = bill.productOptions.find(po => po.optionId === opt.optionId);
-                  const qty = productOption ? (productOption.qty || 0) : 0;
-                  return `<td style="border: 1px solid #000; padding: 2px; text-align: right; font-size: 7px;">${qty}</td>`;
-                }).join("")}
-                <td style="border: 1px solid #000; padding: 2px; text-align: right; background-color: #ffffe0; font-size: 7px;">${calculateGrossSale(bill)}</td>
-                <td style="border: 1px solid #000; padding: 2px; text-align: right; font-size: 7px;">${bill.discount || 0}</td>
-                <td style="border: 1px solid #000; padding: 2px; text-align: right; font-size: 7px;">${bill.expire || 0}</td>
-                <td style="border: 1px solid #000; padding: 2px; text-align: right; background-color: #ffffe0; font-size: 7px;">${calculateNetSale(bill)}</td>
-                <td style="border: 1px solid #000; padding: 2px; text-align: right; font-size: 7px;">${bill.cash || 0}</td>
-                <td style="border: 1px solid #000; padding: 2px; text-align: right; font-size: 7px;">${bill.cheque || 0}</td>
-                <td style="border: 1px solid #000; padding: 2px; text-align: right; font-size: 7px;">${bill.credit || 0}</td>
-              </tr>
-            `).join("")}
-            <tr style="background-color: #ffff99; font-weight: bold;">
-              <td style="border: 1px solid #000; padding: 2px; text-align: left; font-size: 7px;" colspan="3">Total</td>
+          `).join("")}
+          <tr style="background-color: #ffff99; font-weight: bold;">
+              <td style="border: 0.5px solid #000000; padding: 5px; text-align: left; font-size: 14px; color: #000000; font-weight: bold;" colspan="3">Total</td>
               ${sums.productOptions.map(sum => `
-                <td style="border: 1px solid #000; padding: 2px; text-align: right; font-size: 7px;">${sum.toFixed(2)}</td>
+                <td style="border: 0.5px solid #000000; padding: 5px; text-align: right; font-size: 14px; color: #000000; font-weight: bold;">${sum.toFixed(2)}</td>
               `).join("")}
-              <td style="border: 1px solid #000; padding: 2px; text-align: right; background-color: #ffffe0; font-size: 7px;">${sums.grossSale.toFixed(2)}</td>
-              <td style="border: 1px solid #000; padding: 2px; text-align: right; font-size: 7px;">${sums.discount.toFixed(2)}</td>
-              <td style="border: 1px solid #000; padding: 2px; text-align: right; font-size: 7px;">${sums.expire.toFixed(2)}</td>
-              <td style="border: 1px solid #000; padding: 2px; text-align: right; background-color: #ffffe0; font-size: 7px;">${sums.netSale.toFixed(2)}</td>
-              <td style="border: 1px solid #000; padding: 2px; text-align: right; font-size: 7px;">${sums.cash.toFixed(2)}</td>
-              <td style="border: 1px solid #000; padding: 2px; text-align: right; font-size: 7px;">${sums.cheque.toFixed(2)}</td>
-              <td style="border: 1px solid #000; padding: 2px; text-align: right; font-size: 7px;">${sums.credit.toFixed(2)}</td>
-            </tr>
-          </tbody>
-        </table>
-      `;
+              <td style="border: 0.5px solid #000000; padding: 5px; text-align: right; background-color: #ffffe0; font-size: 14px; color: #000000; font-weight: bold;">${sums.grossSale.toFixed(2)}</td>
+              <td style="border: 0.5px solid #000000; padding: 5px; text-align: right; font-size: 14px; color: #000000; font-weight: bold;">${sums.discount.toFixed(2)}</td>
+              <td style="border: 0.5px solid #000000; padding: 5px; text-align: right; font-size: 14px; color: #000000; font-weight: bold;">${sums.expire.toFixed(2)}</td>
+              <td style="border: 0.5px solid #000000; padding: 5px; text-align: right; background-color: #ffffe0; font-size: 14px; color: #000000; font-weight: bold;">${sums.netSale.toFixed(2)}</td>
+              <td style="border: 0.5px solid #000000; padding: 5px; text-align: right; font-size: 14px; color: #000000; font-weight: bold;">${sums.cash.toFixed(2)}</td>
+              <td style="border: 0.5px solid #000000; padding: 5px; text-align: right; font-size: 14px; color: #000000; font-weight: bold;">${sums.cheque.toFixed(2)}</td>
+              <td style="border: 0.5px solid #000000; padding: 5px; text-align: right; font-size: 14px; color: #000000; font-weight: bold;">${sums.credit.toFixed(2)}</td>
+          </tr>
+        </tbody>
+      </table>
+    `;
 
       // Store the preview content and show the preview modal
       setPreviewContent({
@@ -451,75 +451,275 @@ const ManualInvoice = () => {
 
   const handleConfirmPrint = async () => {
     try {
-      // Create a temporary div for the print content
+      // Create a temporary div for the print content with better styling
       const tempDiv = document.createElement("div");
       tempDiv.style.position = "absolute";
       tempDiv.style.left = "-9999px";
       tempDiv.style.width = "297mm"; // A4 landscape width
-      tempDiv.style.padding = "5mm";
       tempDiv.style.backgroundColor = "#fff";
       tempDiv.style.fontFamily = "Arial, sans-serif";
+      tempDiv.style.padding = "10mm"; // Increased padding for better margins
+      
+      // Add special styles to ensure text is rendered with high quality
+      const styleElement = document.createElement("style");
+      styleElement.textContent = `
+        * {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+          color-adjust: exact !important;
+        }
+        table {
+          font-size: 14px !important;
+        }
+        table, th, td {
+          border: 0.5px solid #000000 !important;
+        }
+        th, td {
+          padding: 5px !important;
+          color: #000000 !important;
+          font-weight: normal !important;
+          font-size: 13px !important;
+        }
+        th {
+          font-weight: bold !important;
+        }
+        h2 {
+          font-size: 24px !important;
+        }
+        p {
+          font-size: 16px !important;
+        }
+        
+        /* Add a print media query to ensure consistent appearance */
+        @media print {
+          body {
+            margin: 0;
+            padding: 0;
+            background: #fff;
+          }
+          table {
+            font-size: 14px !important;
+            width: 100% !important;
+            border-collapse: collapse !important;
+          }
+          table, th, td {
+            border: 0.5px solid #000000 !important;
+          }
+          th, td {
+            padding: 5px !important;
+            color: #000000 !important;
+            font-weight: normal !important;
+            font-size: 13px !important;
+          }
+          th {
+            font-weight: bold !important;
+          }
+          h2 {
+            font-size: 24px !important;
+            margin: 0 !important;
+            font-weight: bold !important;
+            color: #000000 !important;
+          }
+          p {
+            font-size: 16px !important;
+            margin: 3mm 0 !important;
+            color: #000000 !important;
+          }
+          strong {
+            color: #000000 !important;
+            font-weight: bold !important;
+          }
+          tr[style*="background-color: #ffff99"] td {
+            background-color: #ffff99 !important;
+            font-weight: bold !important;
+          }
+          td[style*="background-color: #ffffe0"] {
+            background-color: #ffffe0 !important;
+          }
+        }
+      `;
+      tempDiv.appendChild(styleElement);
+      
       document.body.appendChild(tempDiv);
 
       // Set the content
-      tempDiv.innerHTML = previewContent.html;
+      tempDiv.innerHTML += previewContent.html;
 
-      // Wait for the content to be rendered
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Wait for the content to be fully rendered
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // Create canvas from the temporary div with improved settings
+      // Improved canvas settings for higher quality
       const canvas = await html2canvas(tempDiv, {
-        scale: 2,
+        scale: 3, // Higher scale for better quality
         useCORS: true,
-        logging: true,
+        logging: false,
         backgroundColor: '#ffffff',
-        windowWidth: 297 * 3.78, // Convert mm to pixels (1mm = 3.78px)
-        windowHeight: 210 * 3.78,
+        allowTaint: true,
+        letterRendering: true,
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: 297 * 4, // Wider viewport for better rendering
+        windowHeight: 210 * 4,
         onclone: (clonedDoc) => {
           const clonedDiv = clonedDoc.querySelector('div');
           if (clonedDiv) {
-            clonedDiv.style.width = '297mm';
-            clonedDiv.style.height = '210mm';
+            clonedDiv.style.width = '100%';
+            clonedDiv.style.height = 'auto';
             clonedDiv.style.position = 'absolute';
             clonedDiv.style.left = '0';
             clonedDiv.style.top = '0';
+            
+            // Ensure all text is dark black and larger in the cloned document
+            const allElements = clonedDiv.querySelectorAll('*');
+            allElements.forEach(el => {
+              if (el.tagName !== 'STYLE') {
+                el.style.color = '#000000';
+                
+                // Increase font sizes in the cloned document
+                if (el.tagName === 'H2') {
+                  el.style.fontSize = '24px';
+                } else if (el.tagName === 'P') {
+                  el.style.fontSize = '16px';
+                } else if (el.tagName === 'TH' || el.tagName === 'TD') {
+                  el.style.border = '0.5px solid #000000';
+                  el.style.padding = '5px';
+                  el.style.fontSize = el.tagName === 'TH' ? '14px' : '13px';
+                }
+              }
+            });
           }
         }
       });
 
-      // Create PDF with improved settings
+      // Option 1: Generate PDF file for download
       const pdf = new jsPDF({
         orientation: 'landscape',
         unit: 'mm',
         format: 'a4',
-        compress: true
+        compress: false, // No compression for better quality
+        precision: 16 // Higher precision
       });
 
       // Calculate dimensions
       const pageWidth = 297; // A4 landscape width in mm
       const pageHeight = 210; // A4 landscape height in mm
-      const margin = 5;
+      const margin = 10; // Increased margin
       const imgWidth = pageWidth - 2 * margin;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
       // Add the image to the PDF with improved quality
-      const imgData = canvas.toDataURL('image/jpeg', 1.0);
-      pdf.addImage(imgData, 'JPEG', margin, margin, imgWidth, imgHeight);
+      const imgData = canvas.toDataURL('image/png', 1.0); // Use PNG for better quality
+      pdf.addImage(imgData, 'PNG', margin, margin, imgWidth, imgHeight, '', 'FAST');
 
-      // Handle multiple pages if needed
-      let heightLeft = imgHeight;
-      let position = 0;
-
-      while (heightLeft > 0) {
-        position -= (pageHeight - 2 * margin);
-        pdf.addPage();
-        pdf.addImage(imgData, 'JPEG', margin, position, imgWidth, imgHeight);
-        heightLeft -= (pageHeight - 2 * margin);
+      // Handle multiple pages if needed (improved calculation)
+      if (imgHeight > pageHeight - 2 * margin) {
+        let heightLeft = imgHeight - (pageHeight - 2 * margin);
+        let position = -(pageHeight - 2 * margin);
+        
+        while (heightLeft > 0) {
+          pdf.addPage();
+          pdf.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight, '', 'FAST');
+          heightLeft -= (pageHeight - 2 * margin);
+          position -= (pageHeight - 2 * margin);
+        }
       }
 
       // Save the PDF with a unique filename
       const filename = `Sales_Summary_${previewContent.invoice.invoiceId || previewContent.invoice.id}_${new Date().getTime()}.pdf`;
       pdf.save(filename);
+
+      // Option 2: Also provide an option to open the print dialog for browser printing
+      // This gives the user both PDF download and standard print option
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Print Sales Summary</title>
+            <style>
+              body {
+                margin: 0;
+                padding: 10mm;
+                font-family: Arial, sans-serif;
+                background-color: white;
+              }
+              @page {
+                size: landscape;
+                margin: 10mm;
+              }
+              * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+              }
+              table {
+                font-size: 14px !important;
+                width: 100% !important;
+                border-collapse: collapse !important;
+              }
+              table, th, td {
+                border: 0.5px solid #000000 !important;
+              }
+              th, td {
+                padding: 5px !important;
+                color: #000000 !important;
+                font-weight: normal !important;
+                font-size: 13px !important;
+              }
+              th {
+                font-weight: bold !important;
+              }
+              h2 {
+                font-size: 24px !important;
+                margin: 0 !important;
+                font-weight: bold !important;
+                color: #000000 !important;
+              }
+              p {
+                font-size: 16px !important;
+                margin: 3mm 0 !important;
+                color: #000000 !important;
+              }
+              strong {
+                color: #000000 !important;
+                font-weight: bold !important;
+              }
+              .container {
+                width: 100%;
+                max-width: 100%;
+              }
+              @media print {
+                .no-print {
+                  display: none;
+                }
+              }
+            </style>
+          </head>
+          <body>
+            <div class="no-print" style="padding: 10px; margin-bottom: 20px; background-color: #f5f5f5; border-radius: 5px; text-align: center;">
+              <button onclick="window.print()" style="padding: 10px 20px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; margin-right: 10px;">
+                <span style="margin-right: 5px;">🖨️</span> Print Page
+              </button>
+              <button onclick="window.close()" style="padding: 10px 20px; background-color: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">
+                <span style="margin-right: 5px;">✖️</span> Close
+              </button>
+            </div>
+            <div class="container">
+              ${previewContent.html}
+            </div>
+            <script>
+              // Auto-trigger print dialog after a short delay
+              setTimeout(() => {
+                // Uncomment the line below to automatically open the print dialog
+                // window.print();
+              }, 1000);
+            </script>
+          </body>
+          </html>
+        `);
+        printWindow.document.close();
+      }
 
       // Clean up
       document.body.removeChild(tempDiv);
@@ -529,7 +729,7 @@ const ManualInvoice = () => {
       setPreviewContent(null);
       
       // Show success message
-      alert("PDF generated successfully!");
+      alert("PDF generated successfully! A print-friendly page has also been opened.");
     } catch (error) {
       console.error("Error generating PDF:", error);
       alert("Failed to generate PDF. Please try again. Error: " + error.message);
@@ -934,7 +1134,7 @@ const ManualInvoice = () => {
                 <p style={{ margin: "5px 0 0 0", fontSize: "14px", opacity: "0.8" }}>
                   Invoice: {salesSummary.invoiceId}
                 </p>
-              </div>
+            </div>
               <button className="btn btn-outline-light" onClick={handleClosePopup}>
                 <i className="bi bi-x-lg"></i>
               </button>
@@ -945,12 +1145,12 @@ const ManualInvoice = () => {
                 <div className="card-body" style={{ overflowX: "auto" }}>
                   <div style={{ minWidth: "1800px" }}>
                     <table className="table table-bordered table-hover">
-                      <thead>
+                <thead>
                         <tr style={{ background: "linear-gradient(to right, #f5f7fa, #e4efe9)" }}>
                           <th style={{ width: "130px", verticalAlign: "middle", fontWeight: "600", borderBottom: "2px solid #dee2e6" }}>Invoice ID</th>
                           <th style={{ width: "130px", verticalAlign: "middle", fontWeight: "600", borderBottom: "2px solid #dee2e6" }}>Bill No</th>
                           <th style={{ width: "220px", verticalAlign: "middle", fontWeight: "600", borderBottom: "2px solid #dee2e6" }}>Outlet Names</th>
-                          {salesSummary.uniqueOptions.map((opt) => (
+                    {salesSummary.uniqueOptions.map((opt) => (
                             <th key={opt.optionId} style={{ 
                               width: "150px", 
                               verticalAlign: "middle", 
@@ -995,81 +1195,81 @@ const ManualInvoice = () => {
                           <th style={{ width: "130px", verticalAlign: "middle", fontWeight: "600", borderBottom: "2px solid #dee2e6" }}>
                             <i className="bi bi-bank me-1"></i>Credit
                           </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {salesSummary.data.map((bill, billIdx) => (
+                  </tr>
+                </thead>
+                <tbody>
+                  {salesSummary.data.map((bill, billIdx) => (
                           <tr key={bill.billNo} style={{ transition: "all 0.2s ease" }}>
                             <td style={{ maxWidth: "130px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{bill.invoiceId}</td>
                             <td style={{ maxWidth: "130px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{bill.billNo}</td>
                             <td style={{ maxWidth: "220px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                               {bill.outletName}
                             </td>
-                            {salesSummary.uniqueOptions.map((opt, optIdx) => (
+                      {salesSummary.uniqueOptions.map((opt, optIdx) => (
                               <td key={opt.optionId} style={{ width: "150px" }}>
-                                <input
-                                  type="number"
-                                  className="form-control"
+                          <input
+                            type="number"
+                            className="form-control"
                                   style={{ 
                                     width: "120px",
                                     padding: "6px",
                                     border: "1px solid #ced4da",
                                     borderRadius: "4px"
                                   }}
-                                  value={bill.productOptions.find(po => po.optionId === opt.optionId)?.qty || ""}
-                                  onChange={(e) => handleSalesQtyChange(billIdx, optIdx, e.target.value)}
-                                />
-                              </td>
-                            ))}
+                            value={bill.productOptions.find(po => po.optionId === opt.optionId)?.qty || ""}
+                            onChange={(e) => handleSalesQtyChange(billIdx, optIdx, e.target.value)}
+                          />
+                        </td>
+                      ))}
                             <td style={{ width: "150px", backgroundColor: "#fff8e1", fontWeight: "500" }}>{calculateGrossSale(bill)}</td>
                             <td style={{ width: "130px" }}>
-                              <input
-                                type="number"
-                                className="form-control"
+                        <input
+                          type="number"
+                          className="form-control"
                                 style={{ borderColor: "#ffcdd2", width: "120px" }}
-                                value={bill.discount || ""}
-                                onChange={(e) => handleSalesFieldChange(billIdx, "discount", e.target.value)}
-                              />
-                            </td>
+                          value={bill.discount || ""}
+                          onChange={(e) => handleSalesFieldChange(billIdx, "discount", e.target.value)}
+                        />
+                      </td>
                             <td style={{ width: "130px" }}>
-                              <input
-                                type="number"
-                                className="form-control"
+                        <input
+                          type="number"
+                          className="form-control"
                                 style={{ borderColor: "#ffcdd2", width: "120px" }}
-                                value={bill.expire || ""}
-                                onChange={(e) => handleSalesFieldChange(billIdx, "expire", e.target.value)}
-                              />
-                            </td>
+                          value={bill.expire || ""}
+                          onChange={(e) => handleSalesFieldChange(billIdx, "expire", e.target.value)}
+                        />
+                      </td>
                             <td style={{ width: "150px", backgroundColor: "#e3f2fd", fontWeight: "500" }}>{calculateNetSale(bill)}</td>
                             <td style={{ width: "130px" }}>
-                              <input
-                                type="number"
-                                className="form-control"
+                        <input
+                          type="number"
+                          className="form-control"
                                 style={{ borderColor: "#c8e6c9", width: "120px" }}
-                                value={bill.cash || ""}
-                                onChange={(e) => handleSalesFieldChange(billIdx, "cash", e.target.value)}
-                              />
-                            </td>
+                          value={bill.cash || ""}
+                          onChange={(e) => handleSalesFieldChange(billIdx, "cash", e.target.value)}
+                        />
+                      </td>
                             <td style={{ width: "130px" }}>
-                              <input
-                                type="number"
-                                className="form-control"
+                        <input
+                          type="number"
+                          className="form-control"
                                 style={{ borderColor: "#c8e6c9", width: "120px" }}
-                                value={bill.cheque || ""}
-                                onChange={(e) => handleSalesFieldChange(billIdx, "cheque", e.target.value)}
-                              />
-                            </td>
+                          value={bill.cheque || ""}
+                          onChange={(e) => handleSalesFieldChange(billIdx, "cheque", e.target.value)}
+                        />
+                      </td>
                             <td style={{ width: "130px" }}>
-                              <input
-                                type="number"
-                                className="form-control"
+                        <input
+                          type="number"
+                          className="form-control"
                                 style={{ borderColor: "#c8e6c9", width: "120px" }}
-                                value={bill.credit || ""}
-                                onChange={(e) => handleSalesFieldChange(billIdx, "credit", e.target.value)}
-                              />
-                            </td>
-                          </tr>
-                        ))}
+                          value={bill.credit || ""}
+                          onChange={(e) => handleSalesFieldChange(billIdx, "credit", e.target.value)}
+                        />
+                      </td>
+                    </tr>
+                  ))}
                         <tr style={{ 
                           backgroundColor: "#f1f8e9", 
                           fontWeight: "bold",
@@ -1081,7 +1281,7 @@ const ManualInvoice = () => {
                               <span>Total</span>
                             </div>
                           </td>
-                          {salesSummary.uniqueOptions.map((_, idx) => (
+                    {salesSummary.uniqueOptions.map((_, idx) => (
                             <td key={idx} style={{ width: "150px", color: "#2e7d32" }}>{calculateSummarySums().productOptions[idx].toFixed(2)}</td>
                           ))}
                           <td style={{ width: "150px", backgroundColor: "#fff8e1", color: "#ff6f00" }}>{calculateSummarySums().grossSale.toFixed(2)}</td>
@@ -1091,9 +1291,9 @@ const ManualInvoice = () => {
                           <td style={{ width: "130px", color: "#2e7d32" }}>{calculateSummarySums().cash.toFixed(2)}</td>
                           <td style={{ width: "130px", color: "#2e7d32" }}>{calculateSummarySums().cheque.toFixed(2)}</td>
                           <td style={{ width: "130px", color: "#2e7d32" }}>{calculateSummarySums().credit.toFixed(2)}</td>
-                        </tr>
-                      </tbody>
-                    </table>
+                  </tr>
+                </tbody>
+              </table>
                   </div>
                 </div>
               </div>
