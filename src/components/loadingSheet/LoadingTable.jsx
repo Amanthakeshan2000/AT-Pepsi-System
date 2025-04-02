@@ -18,6 +18,8 @@ const BillManagement = () => {
   const [isPrinting, setIsPrinting] = useState(false);
   const [driverName, setDriverName] = useState("");
   const [route, setRoute] = useState("");
+  const [creatorFilter, setCreatorFilter] = useState("");
+  const [creators, setCreators] = useState([]);
 
   const billsCollectionRef = collection(db, "Bill");
   const productsCollectionRef = collection(db, "Product");
@@ -37,6 +39,10 @@ const BillManagement = () => {
         ...doc.data(),
       }));
       setBills(billList);
+      
+      // Extract unique creators from bills
+      const uniqueCreators = [...new Set(billList.map(bill => bill.createdBy || "Unknown"))];
+      setCreators(uniqueCreators);
     } catch (error) {
       console.error("Error fetching bills:", error.message);
     }
@@ -273,11 +279,17 @@ const BillManagement = () => {
     return options.reduce((sum, option) => sum + (parseFloat(option.total) || 0), 0).toFixed(2);
   };
 
+  const handleCreatorFilterChange = (e) => {
+    setCreatorFilter(e.target.value);
+    setCurrentPage(1); // Reset to first page when changing filters
+  };
+
   const filteredBills = bills.filter(bill => 
-    bill.billNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (bill.billNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
     bill.outletName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     bill.salesRef.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    bill.refContact.toLowerCase().includes(searchTerm.toLowerCase())
+    bill.refContact.toLowerCase().includes(searchTerm.toLowerCase())) &&
+    (creatorFilter === "" || (bill.createdBy || "Unknown") === creatorFilter)
   );
 
   const indexOfLastBill = currentPage * itemsPerPage;
@@ -313,7 +325,20 @@ const BillManagement = () => {
       {/* Available Bills Section */}
       <div style={{ backgroundColor: "white", padding: "20px", borderRadius: "8px", marginBottom: "20px" }}>
         <h4>Available Bills</h4>
-        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "15px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "15px" }}>
+          <div style={{ width: "250px" }}>
+            <select 
+              className="form-select" 
+              value={creatorFilter} 
+              onChange={handleCreatorFilterChange}
+              aria-label="Filter by creator"
+            >
+              <option value="">All Creators</option>
+              {creators.map((creator, index) => (
+                <option key={index} value={creator}>{creator}</option>
+              ))}
+            </select>
+          </div>
           <div style={{ position: "relative", width: "300px" }}>
             <input 
               type="text" 
