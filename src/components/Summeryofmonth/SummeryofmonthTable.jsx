@@ -325,8 +325,10 @@ const SummeryofmonthTable = () => {
               border-collapse: collapse;
             }
             .table th, .table td {
-              padding: 8px;
-              border: 1px solid #ddd;
+              padding: 12px;
+              border: 1px solid #000;
+              font-size: 14px;
+              font-weight: bold;
             }
             .table-dark {
               background-color: #343a40 !important;
@@ -343,6 +345,30 @@ const SummeryofmonthTable = () => {
             }
             .d-print-flex {
               display: flex !important;
+            }
+            h2 {
+              font-size: 24px !important;
+              font-weight: bold !important;
+            }
+            h3 {
+              font-size: 20px !important;
+              font-weight: bold !important;
+            }
+            p {
+              font-size: 14px !important;
+            }
+            .table-dark th {
+              color: white !important;
+              font-size: 14px !important;
+              font-weight: bold !important;
+            }
+            .table-dark td {
+              font-size: 14px !important;
+              font-weight: bold !important;
+            }
+            .table tfoot th {
+              font-size: 16px !important;
+              font-weight: bold !important;
             }
           }
           

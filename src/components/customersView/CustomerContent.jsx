@@ -242,177 +242,154 @@ const BillAdd = () => {
         <head>
           <title>Invoice - ${bill.billNo}</title>
           <style>
-            body { 
-              font-family: Arial, sans-serif; 
-              margin: 5px; 
-              font-size: 10px; 
-              line-height: 1.2; 
-              background-color: #f9f9f9;
-            }
-            .invoice-container { 
-              max-width: 700px; 
-              margin: 0 auto; 
-              border: 1px solid #333; 
-              padding: 5px; 
-            }
-            .header { 
-              text-align: center; 
-              padding: 2px; 
-            }
-            .header .company { 
-              display: flex; 
-              justify-content: space-between; 
-              align-items: center; 
-              margin-bottom: 5px; 
-            }
-            .company-title { 
-              font-size: 30px; 
-              font-weight: bold; 
-              color: rgb(0, 0, 0); 
-            }
-            .company-pepsi { 
-              font-size: 15px; 
-              font-weight: bold; 
-              color: rgb(112, 112, 112); 
-            }
-            .company-details { 
-              font-size: 13px; 
-              font-weight: bold; 
-              color: #333; 
-              margin-top: -1px; 
-              margin-bottom: 5px; 
-              text-align: center;
-            }
-            .details table { 
-              width: 100%; 
-              
-              border: none; 
-            }
-            .details td { 
-              padding: 2px; 
-              font-size: 11px; 
-              vertical-align: top; 
-            }
-            .details td:first-child { 
-              width: 20%; /* Adjusted width for label */
-              font-weight: bold; 
-            }
-            .details td:nth-child(2) { 
-              width: 38%; /* Adjusted width for value */
-            }
-            .details td:nth-child(3) { 
-              width: 30%; /* Adjusted width for label */
-              font-weight: bold; 
-              text-align: right; 
-            }
-            .details td:nth-child(4) { 
-              width: 22%; /* Adjusted width for value */
-            }
-            .payment-options { 
-              width: 50%; 
-              margin-left: auto; /* Right-align */
-              margin-top: 5px; 
-              display: flex; 
-              justify-content: space-around; 
-              border: 1px solid #ddd; 
-              padding: 2px; 
-            }
-            .payment-option { 
-              width: 33%; 
-              text-align: center; 
-            }
-            .discounts { 
-              display: flex; 
-              justify-content: space-between; 
-              margin: 5px 0; 
-              gap: 5px; 
-            }
-            .discounts table { 
-              width: 32%; 
-              border-collapse: collapse; 
-              border: 1px solid #ddd; 
-            }
-            .discounts th, .discounts td { 
-              padding: 2px; 
-              text-align: left; 
-              border: none; 
-            }
-            .discounts th { 
-              font-weight: bold; 
-              background-color: #f1f1f1; 
-            }
-            .discounts .total-row td { 
-              font-weight: bold; 
-            }
-            table { 
-              width: 100%; 
-              border-collapse: collapse; 
-              margin-top: 5px; 
-            }
-            th, td { 
-              padding: 2px; 
-              text-align: left; 
-              font-size: 10px; 
-            }
-            .total-section table { 
-              width: 50%; 
-              border-collapse: collapse; 
-              margin-top: 5px; 
-              margin-left: auto; /* Right-align the table */
-              border: none; 
-            }
-            .total-section td { 
-              padding: 2px; 
-              text-align: right; 
-              font-size: 10px; 
-              font-weight: bold; 
-            }
-            .total-section .total-row td { 
-              color: #e74c3c; 
-            }
-            .products-table { 
-              width: 70%; /* Smaller width */
-              margin: 0 auto; /* Center-align */
-              border: 1px solid #ddd; 
-            }
-            .products-table thead { 
-              border-bottom: 1px solid #ddd; 
-            }
-            .products-table th { 
-              border: none; 
-              background-color: #fff; 
-              padding: 5px; /* Increased padding for taller rows */
-            }
-            .products-table td { 
-              border: none; 
-              padding: 5px; /* Increased padding for taller rows */
-            }
-            .signature { 
-              border-top: 1px dashed #000; 
-              margin-top: 5px; 
-              text-align: center; 
-              font-size: 8px; 
-            }
-            .footer { 
-              text-align: center; 
-              margin-top: 5px; 
-              font-size: 8px; 
-              color: #777; 
-            }
             @media print {
-              @page { size: A4; margin: 5mm; }
+              @page { 
+                size: A4; 
+                margin: 0;
+                padding: 0;
+              }
               .no-print { display: none; }
+              body { 
+                font-family: Arial, sans-serif !important;
+                font-size: 14px !important;
+                line-height: 1.5 !important;
+                margin: 0;
+                padding: 0;
+              }
+              .invoice-container { 
+                max-width: 100%; 
+                margin: 0; 
+                border: 1px solid #333; 
+                padding: 10px; 
+              }
+              .header { 
+                text-align: center; 
+                padding: 5px; 
+              }
+              .header .company { 
+                display: flex; 
+                justify-content: space-between; 
+                align-items: center; 
+                margin-bottom: 10px; 
+              }
+              .company-title { 
+                font-size: 36px !important; 
+                font-weight: bold; 
+                color: rgb(0, 0, 0); 
+              }
+              .company-pepsi { 
+                font-size: 18px !important; 
+                font-weight: bold; 
+                color: rgb(112, 112, 112); 
+              }
+              .company-details { 
+                font-size: 16px !important; 
+                font-weight: bold; 
+                color: #333; 
+                margin-top: -1px; 
+                margin-bottom: 10px; 
+                text-align: center;
+              }
+              .details td { 
+                padding: 3px; 
+                font-size: 14px !important; 
+                vertical-align: top; 
+              }
+              .payment-options { 
+                width: 50%; 
+                margin-left: auto; 
+                margin-top: 10px; 
+                display: flex; 
+                justify-content: space-around; 
+                border: 1px solid #ddd; 
+                padding: 5px; 
+                font-size: 14px !important;
+              }
+              .discounts table { 
+                width: 32%; 
+                border-collapse: collapse; 
+                border: 1px solid #ddd; 
+                font-size: 14px !important;
+              }
+              .discounts th, .discounts td { 
+                padding: 3px; 
+                text-align: left; 
+                border: none; 
+                font-size: 14px !important;
+              }
+              table { 
+                width: 100%; 
+                border-collapse: collapse; 
+                margin-top: 10px; 
+                font-size: 14px !important;
+              }
+              th, td { 
+                padding: 3px; 
+                text-align: left; 
+                font-size: 14px !important;
+              }
+              .total-section table { 
+                width: 50%; 
+                border-collapse: collapse; 
+                margin-top: 10px; 
+                margin-left: auto; 
+                border: none; 
+                font-size: 14px !important;
+              }
+              .total-section td { 
+                padding: 3px; 
+                text-align: right; 
+                font-size: 14px !important;
+                font-weight: bold; 
+              }
+              .products-table { 
+                width: 70%; 
+                margin: 0 auto; 
+                border: 1px solid #ddd; 
+                font-size: 14px !important;
+              }
+              .products-table th { 
+                border: none; 
+                background-color: #fff; 
+                padding: 8px; 
+                font-size: 14px !important;
+              }
+              .products-table td { 
+                border: none; 
+                padding: 8px; 
+                font-size: 14px !important;
+              }
+              .signature { 
+                border-top: 1px dashed #000; 
+                margin-top: 10px; 
+                text-align: center; 
+                font-size: 12px !important;
+              }
+              .footer { 
+                text-align: center; 
+                margin-top: 10px; 
+                font-size: 12px !important; 
+                color: #777; 
+              }
+              .total-section .total-row td { 
+                color: #e74c3c; 
+                font-size: 16px !important;
+              }
+              .total-section tr:last-child td { 
+                font-size: 18px !important;
+                font-weight: bold;
+              }
             }
           </style>
         </head>
         <body>
-          <div class="invoice-container">
+          <div class="invoice-container" style="margin-top: 20px; margin-left: 5px; margin-right: 5px;">
             <div class="header">
               <div class="company">
                 <div class="company-title"></div>
                 <div class="company-pepsi">pepsi</div>
               </div>
-              <div class="company-title">Advance Trading</div>
+              <div class="company-title" style="font-weight: normal;">Advance Trading</div>
               <p class="company-details">Reg Office: No: 170/A, Nuwaraeliya Rd, Delpitiya, Gampola<br>Tel: 072-7070701</p>
             </div>
             <div class="details">
