@@ -72,8 +72,13 @@ const ProcessedBillReview = () => {
     // Check if there's a saved review for this unit
     const savedReview = savedReviews.find(review => review.unitId === unit.unitId);
     if (savedReview) {
-      // If there's a saved review, use that for the view
-      setSelectedUnit(savedReview);
+      // If there's a saved review, use that for the view but ensure driver and route info
+      const reviewWithDriverInfo = {
+        ...savedReview,
+        driverName: savedReview.driverName || unit.driverName || 'N/A',
+        route: savedReview.route || unit.route || 'N/A'
+      };
+      setSelectedUnit(reviewWithDriverInfo);
     } else {
       // Otherwise use the unit data
       setSelectedUnit(unit);
@@ -208,7 +213,7 @@ const ProcessedBillReview = () => {
       // If total unloading exceeds total qty, reset the edited field
       newBills[billIndex].products[productIndex].unloadingBT = "";
       newBills[billIndex].products[productIndex].saleBT = parseInt(newBills[billIndex].products[productIndex].qty) || 0;
-      newBills[billIndex].products[productIndex].salesValue = 
+    newBills[billIndex].products[productIndex].salesValue = 
         newBills[billIndex].products[productIndex].saleBT * (parseFloat(newBills[billIndex].products[productIndex].price) || 0);
       alert("Total unloading bottles cannot exceed total quantity!");
       setCurrentUnitBills(newBills);
@@ -402,8 +407,13 @@ const ProcessedBillReview = () => {
     // Check if there's a saved review for this unit
     const savedReview = savedReviews.find(review => review.unitId === unit.unitId);
     if (savedReview) {
-      // If there's a saved review, use that for the download
-      setSelectedUnit(savedReview);
+      // If there's a saved review, use that for the download but ensure driver and route info
+      const reviewWithDriverInfo = {
+        ...savedReview,
+        driverName: savedReview.driverName || unit.driverName || 'N/A',
+        route: savedReview.route || unit.route || 'N/A'
+      };
+      setSelectedUnit(reviewWithDriverInfo);
     } else {
       // Otherwise use the unit data
       setSelectedUnit(unit);
@@ -497,7 +507,7 @@ const ProcessedBillReview = () => {
           <div className="mb-3">
             <h5>Added Bills:</h5>
             <div className="d-flex flex-wrap gap-2">
-              {currentUnitBills.map((item, billIndex) => (
+          {currentUnitBills.map((item, billIndex) => (
                 <div key={billIndex} className="card" style={{ width: "18rem" }}>
                   <div className="card-body">
                     <h6 className="card-title">{item.billNo}</h6>
@@ -511,20 +521,20 @@ const ProcessedBillReview = () => {
           {/* Consolidated products table */}
           <div>
             <h5>Review Products</h5>
-            <table className="table table-bordered">
-              <thead>
-                <tr>
-                  <th>Product Name</th>
-                  <th>Qty (BT)</th>
-                  <th>Bottles per Case</th>
-                  <th>Case</th>
-                  <th>Extra Bottles</th>
-                  <th>UnLoading BT</th>
-                  <th>Sale BT</th>
-                  <th>Sales Value (Rs.)</th>
-                </tr>
-              </thead>
-              <tbody>
+              <table className="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Product Name</th>
+                    <th>Qty (BT)</th>
+                    <th>Bottles per Case</th>
+                    <th>Case</th>
+                    <th>Extra Bottles</th>
+                    <th>UnLoading BT</th>
+                    <th>Sale BT</th>
+                    <th>Sales Value (Rs.)</th>
+                  </tr>
+                </thead>
+                <tbody>
                 {/* Group products by their optionId first */}
                 {Object.entries(
                   // Group by optionId
@@ -580,16 +590,16 @@ const ProcessedBillReview = () => {
                         <td>{firstInstance.bottlesPerCase || '-'}</td>
                         <td>{firstInstance.bottlesPerCase ? Math.floor(totalQty / firstInstance.bottlesPerCase) : '-'}</td>
                         <td>{firstInstance.bottlesPerCase ? totalQty % firstInstance.bottlesPerCase : '-'}</td>
-                        <td>
-                          <input
-                            type="number"
-                            className="form-control"
+                      <td>
+                        <input
+                          type="number"
+                          className="form-control"
                             value={firstInstance.unloadingBT}
                             onChange={(e) => handleUnloadingBTChange(billIndex, entryProductIndex, e.target.value)}
-                            min="0"
-                            style={{ width: "100px" }}
-                          />
-                        </td>
+                          min="0"
+                          style={{ width: "100px" }}
+                        />
+                      </td>
                         <td>{totalSaleBT}</td>
                         <td>{totalSalesValue.toFixed(2)}</td>
                       </tr>
@@ -602,17 +612,17 @@ const ProcessedBillReview = () => {
                       ...optionRows,
                       <tr key={`separator-${optionId}`} style={{ height: "20px", backgroundColor: "#f8f9fa" }}>
                         <td colSpan="8"></td>
-                      </tr>
+                    </tr>
                     ];
                   }
                   
                   return optionRows;
                 })}
-              </tbody>
-            </table>
+                </tbody>
+              </table>
             <div style={{ textAlign: "right", marginTop: "10px" }}>
               {/* Group products by optionId and calculate totals */}
-              {Object.entries(
+              {/* {Object.entries(
                 currentUnitBills.flatMap(bill => 
                   bill.products.map(product => ({
                     optionId: product.optionId,
@@ -639,7 +649,7 @@ const ProcessedBillReview = () => {
                     {optionId} - Total Sales Value (Rs.): {totals.salesValue.toFixed(2)}
                   </p>
                 </div>
-              ))}
+              ))} */}
               
               {/* Grand Total */}
               <div style={{ marginTop: "10px", borderTop: "1px solid #ddd", paddingTop: "5px" }}>
@@ -702,9 +712,8 @@ const ProcessedBillReview = () => {
                         <th>Option</th>
                         <th>Product Name</th>
                         <th>Qty (BT)</th>
-                        <th>Bottles/Case</th>
                         <th>Case</th>
-                        <th>Extra Bottles</th>
+                        <th>Extra</th>
                         {(selectedUnit.consolidatedProducts[0].unloadingBT !== undefined || 
                            selectedUnit.consolidatedProducts[0].saleBT !== undefined) && (
                           <>
@@ -730,7 +739,6 @@ const ProcessedBillReview = () => {
                               <td>{product.optionId}</td>
                               <td>{product.productName || products.find(p => p.id === product.productId)?.name}</td>
                               <td>{product.totalQty}</td>
-                              <td>{product.bottlesPerCase || '-'}</td>
                               <td>{product.caseCount || '-'}</td>
                               <td>{product.extraBottles || '-'}</td>
                               {(product.unloadingBT !== undefined || product.saleBT !== undefined) && (
@@ -750,22 +758,22 @@ const ProcessedBillReview = () => {
                             const totalSaleBT = currentOptionProducts.reduce((sum, p) => sum + (parseInt(p.saleBT) || 0), 0);
                             const totalSalesValue = currentOptionProducts.reduce((sum, p) => sum + (parseFloat(p.salesValue) || 0), 0);
                             
-                            const colSpan = (product.unloadingBT !== undefined || product.saleBT !== undefined) ? 9 : 6;
+                            const colSpan = (product.unloadingBT !== undefined || product.saleBT !== undefined) ? 8 : 5;
                             result.push(
                               <tr key={`total-${product.optionId}`} style={{ backgroundColor: "#f8f9fa", fontWeight: "bold" }}>
-                                <td colSpan={colSpan - 2} style={{ textAlign: "right" }}>Total for {product.optionId}:</td>
-                                <td style={{ color: "red" }}>{totalSaleBT}</td>
-                                <td style={{ color: "red" }}>{totalSalesValue.toFixed(2)}</td>
+                                <td colSpan={colSpan - 2} style={{ textAlign: "right", color: "#000000", fontWeight: "bold", border: "2px solid #000000" }}>Total for {product.optionId}:</td>
+                                <td style={{ color: "#000000", fontWeight: "bold", border: "2px solid #000000" }}>{totalSaleBT}</td>
+                                <td style={{ color: "#000000", fontWeight: "bold", border: "2px solid #000000" }}>{totalSalesValue.toFixed(2)}</td>
                               </tr>
                             );
                           }
                           
                           // Add separator row if not the last product and next has different optionId
                           if (index < array.length - 1 && product.optionId !== array[index + 1].optionId) {
-                            const colSpan = (product.unloadingBT !== undefined || product.saleBT !== undefined) ? 9 : 6;
+                            const colSpan = (product.unloadingBT !== undefined || product.saleBT !== undefined) ? 8 : 5;
                             result.push(
                               <tr key={`separator-${index}`} style={{ height: "10px", backgroundColor: "#f8f9fa" }}>
-                                <td colSpan={colSpan}></td>
+                                <td colSpan={colSpan} style={{ border: "2px solid #000000" }}></td>
                               </tr>
                             );
                           }
@@ -778,7 +786,7 @@ const ProcessedBillReview = () => {
                   {(selectedUnit.consolidatedProducts[0].unloadingBT !== undefined || 
                     selectedUnit.consolidatedProducts[0].saleBT !== undefined) && (
                     <div style={{ textAlign: "right", marginTop: "10px" }}>
-                      {Object.entries(
+                      {/* {Object.entries(
                         selectedUnit.consolidatedProducts.reduce((acc, product) => {
                           if (!acc[product.optionId]) {
                             acc[product.optionId] = [];
@@ -795,7 +803,7 @@ const ProcessedBillReview = () => {
                             {optionId} - Total Sales Value (Rs.): {products.reduce((sum, product) => sum + (parseFloat(product.salesValue) || 0), 0).toFixed(2)}
                           </p>
                         </div>
-                      ))}
+                      ))} */}
                       
                       {/* Grand Total */}
                       <div style={{ marginTop: "10px", borderTop: "1px solid #ddd", paddingTop: "5px" }}>
@@ -827,33 +835,33 @@ const ProcessedBillReview = () => {
                 // Only show individual bill products if consolidated view isn't available
                 <div>
                   <h5>Bill Details</h5>
-                  {selectedUnit.bills.map((bill, idx) => (
-                    <div key={idx} className="mb-3">
-                      <h6>Bill: {bill.billNo} - {bill.outletName}</h6>
-                      <table className="table table-bordered">
-                        <thead>
-                          <tr>
-                            <th>Name</th>
-                            <th>Qty (BT)</th>
-                            <th>Bottles/Case</th>
-                            <th>Case</th>
-                            <th>Extra Bottles</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {bill.products.map((product, pIdx) => (
-                            <tr key={pIdx}>
-                              <td>{products.find(p => p.id === product.productId)?.name} - {product.optionId}</td>
-                              <td>{product.qty}</td>
-                              <td>{product.bottlesPerCase || '-'}</td>
-                              <td>{product.bottlesPerCase ? product.caseCount : '-'}</td>
-                              <td>{product.bottlesPerCase ? product.extraBottles : '-'}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  ))}
+              {selectedUnit.bills.map((bill, idx) => (
+                <div key={idx} className="mb-3">
+                  <h6>Bill: {bill.billNo} - {bill.outletName}</h6>
+                  <table className="table table-bordered">
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Qty (BT)</th>
+                        <th>Bottles/Case</th>
+                        <th>Case</th>
+                        <th>Extra Bottles</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {bill.products.map((product, pIdx) => (
+                        <tr key={pIdx}>
+                          <td>{products.find(p => p.id === product.productId)?.name} - {product.optionId}</td>
+                          <td>{product.qty}</td>
+                          <td>{product.bottlesPerCase || '-'}</td>
+                          <td>{product.bottlesPerCase ? product.caseCount : '-'}</td>
+                          <td>{product.bottlesPerCase ? product.extraBottles : '-'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ))}
                 </div>
               )}
             </div>
@@ -888,41 +896,38 @@ const ProcessedBillReview = () => {
             
             <div className="print-content" style={{ marginTop: "20px" }}>
               <div style={{ textAlign: "center", marginBottom: "10px" }}>
-                <h3 style={{ margin: "0", fontWeight: "semibold"}}>Advance Trading</h3>
-                {/* <p style={{ margin: "3px 0" }}>Reg Office: No: 170/A, Nuwaraeliya Rd, Delpitiya, Gampola</p>
-                <p style={{ margin: "2px 0" }}>Tel: 072-7070701</p> */}
-                <h4 style={{ margin: "8px 0" }}>Unloading Report</h4>
+                <h3 style={{ margin: "0", fontWeight: "bold", color: "#000000"}}>Advance Trading</h3>
+                <h4 style={{ margin: "8px 0", fontWeight: "bold", color: "#000000" }}>Unloading Report</h4>
               </div>
               
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
                 <div>
-                  <p><strong>Unit ID:</strong> {selectedUnit.unitId}</p>
-                  <p><strong>Driver:</strong> {selectedUnit.driverName || 'N/A'}</p>
+                  <p style={{ color: "#000000", fontWeight: "500" }}><strong style={{ color: "#000000", fontWeight: "bold" }}>Unit ID:</strong> {selectedUnit.unitId}</p>
+                  <p style={{ color: "#000000", fontWeight: "500" }}><strong style={{ color: "#000000", fontWeight: "bold" }}>Driver:</strong> {selectedUnit.driverName || 'N/A'}</p>
                 </div>
                 <div>
-                  <p><strong>Date:</strong> {selectedUnit.date || new Date().toISOString().split('T')[0]}</p>
-                  <p><strong>Route:</strong> {selectedUnit.route || 'N/A'}</p>
+                  <p style={{ color: "#000000", fontWeight: "500" }}><strong style={{ color: "#000000", fontWeight: "bold" }}>Date:</strong> {selectedUnit.date || new Date().toISOString().split('T')[0]}</p>
+                  <p style={{ color: "#000000", fontWeight: "500" }}><strong style={{ color: "#000000", fontWeight: "bold" }}>Route:</strong> {selectedUnit.route || 'N/A'}</p>
                 </div>
               </div>
               
-              <h5 style={{ borderBottom: "1px solid #000", paddingBottom: "3px", marginBottom: "3px" }}>Consolidated Products</h5>
+              <h5 style={{ borderBottom: "2px solid #000", paddingBottom: "3px", marginBottom: "3px", color: "#000000", fontWeight: "bold" }}>Consolidated Products</h5>
               
               {selectedUnit.consolidatedProducts && (
-                <table className="table table-bordered" style={{ marginBottom: "5px" }}>
+                <table className="table table-bordered" style={{ marginBottom: "5px", border: "2px solid #000000" }}>
                   <thead>
                     <tr style={{ backgroundColor: "#f2f2f2" }}>
-                      <th>Option</th>
-                      <th>Product</th>
-                      <th>Qty</th>
-                      <th>BPC</th>
-                      <th>Case</th>
-                      <th>Extra</th>
+                      <th style={{ color: "#000000", fontWeight: "bold", border: "2px solid #000000" }}>Option</th>
+                      <th style={{ color: "#000000", fontWeight: "bold", border: "2px solid #000000" }}>Product</th>
+                      <th style={{ color: "#000000", fontWeight: "bold", border: "2px solid #000000" }}>Qty</th>
+                      <th style={{ color: "#000000", fontWeight: "bold", border: "2px solid #000000" }}>Case</th>
+                      <th style={{ color: "#000000", fontWeight: "bold", border: "2px solid #000000" }}>Extra</th>
                       {(selectedUnit.consolidatedProducts[0].unloadingBT !== undefined || 
                          selectedUnit.consolidatedProducts[0].saleBT !== undefined) && (
                         <>
-                          <th>UnLoading</th>
-                          <th>Sale</th>
-                          <th>Value (Rs.)</th>
+                          <th style={{ color: "#000000", fontWeight: "bold", border: "2px solid #000000" }}>UnLoading</th>
+                          <th style={{ color: "#000000", fontWeight: "bold", border: "2px solid #000000" }}>Sale</th>
+                          <th style={{ color: "#000000", fontWeight: "bold", border: "2px solid #000000" }}>Value (Rs.)</th>
                         </>
                       )}
                     </tr>
@@ -938,17 +943,16 @@ const ProcessedBillReview = () => {
                         // Add the current product to the result
                         result.push(
                           <tr key={`product-${index}`}>
-                            <td>{product.optionId}</td>
-                            <td>{product.productName || products.find(p => p.id === product.productId)?.name}</td>
-                            <td>{product.totalQty}</td>
-                            <td>{product.bottlesPerCase || '-'}</td>
-                            <td>{product.caseCount || '-'}</td>
-                            <td>{product.extraBottles || '-'}</td>
+                            <td style={{ color: "#000000", border: "2px solid #000000" }}>{product.optionId}</td>
+                            <td style={{ color: "#000000", border: "2px solid #000000" }}>{product.productName || products.find(p => p.id === product.productId)?.name}</td>
+                            <td style={{ color: "#000000", border: "2px solid #000000" }}>{product.totalQty}</td>
+                            <td style={{ color: "#000000", border: "2px solid #000000" }}>{product.caseCount || '-'}</td>
+                            <td style={{ color: "#000000", border: "2px solid #000000" }}>{product.extraBottles || '-'}</td>
                             {(product.unloadingBT !== undefined || product.saleBT !== undefined) && (
                               <>
-                                <td>{product.unloadingBT || 0}</td>
-                                <td>{product.saleBT || 0}</td>
-                                <td>{(product.salesValue || 0).toFixed(2)}</td>
+                                <td style={{ color: "#000000", border: "2px solid #000000" }}>{product.unloadingBT || 0}</td>
+                                <td style={{ color: "#000000", border: "2px solid #000000" }}>{product.saleBT || 0}</td>
+                                <td style={{ color: "#000000", border: "2px solid #000000" }}>{(product.salesValue || 0).toFixed(2)}</td>
                               </>
                             )}
                           </tr>
@@ -961,22 +965,22 @@ const ProcessedBillReview = () => {
                           const totalSaleBT = currentOptionProducts.reduce((sum, p) => sum + (parseInt(p.saleBT) || 0), 0);
                           const totalSalesValue = currentOptionProducts.reduce((sum, p) => sum + (parseFloat(p.salesValue) || 0), 0);
                           
-                          const colSpan = (product.unloadingBT !== undefined || product.saleBT !== undefined) ? 9 : 6;
+                          const colSpan = (product.unloadingBT !== undefined || product.saleBT !== undefined) ? 8 : 5;
                           result.push(
                             <tr key={`total-${product.optionId}`} style={{ backgroundColor: "#f8f9fa", fontWeight: "bold" }}>
-                              <td colSpan={colSpan - 2} style={{ textAlign: "right" }}>Total for {product.optionId}:</td>
-                              <td style={{ color: "red" }}>{totalSaleBT}</td>
-                              <td style={{ color: "red" }}>{totalSalesValue.toFixed(2)}</td>
+                              <td colSpan={colSpan - 2} style={{ textAlign: "right", color: "#000000", fontWeight: "bold", border: "2px solid #000000" }}>Total for {product.optionId}:</td>
+                              <td style={{ color: "#000000", fontWeight: "bold", border: "2px solid #000000" }}>{totalSaleBT}</td>
+                              <td style={{ color: "#000000", fontWeight: "bold", border: "2px solid #000000" }}>{totalSalesValue.toFixed(2)}</td>
                             </tr>
                           );
                         }
                         
                         // Add separator row if not the last product and next has different optionId
                         if (index < array.length - 1 && product.optionId !== array[index + 1].optionId) {
-                          const colSpan = (product.unloadingBT !== undefined || product.saleBT !== undefined) ? 9 : 6;
+                          const colSpan = (product.unloadingBT !== undefined || product.saleBT !== undefined) ? 8 : 5;
                           result.push(
                             <tr key={`separator-${index}`} style={{ height: "10px", backgroundColor: "#f8f9fa" }}>
-                              <td colSpan={colSpan}></td>
+                              <td colSpan={colSpan} style={{ border: "2px solid #000000" }}></td>
                             </tr>
                           );
                         }
@@ -990,31 +994,11 @@ const ProcessedBillReview = () => {
               {(selectedUnit.consolidatedProducts[0].unloadingBT !== undefined || 
                 selectedUnit.consolidatedProducts[0].saleBT !== undefined) && (
                 <div style={{ textAlign: "right", marginTop: "10px" }}>
-                  {Object.entries(
-                    selectedUnit.consolidatedProducts.reduce((acc, product) => {
-                      if (!acc[product.optionId]) {
-                        acc[product.optionId] = [];
-                      }
-                      acc[product.optionId].push(product);
-                      return acc;
-                    }, {})
-                  ).map(([optionId, products]) => (
-                    <div key={optionId} style={{ marginBottom: "5px" }}>
-                      <p style={{ margin: "0", fontWeight: "bold", color: "red" }}>
-                        {optionId} - Total Sale BT: {products.reduce((sum, product) => sum + (parseInt(product.saleBT) || 0), 0)}
-                      </p>
-                      <p style={{ margin: "2px 0 0 0", fontWeight: "bold", color: "red" }}>
-                        {optionId} - Total Sales Value (Rs.): {products.reduce((sum, product) => sum + (parseFloat(product.salesValue) || 0), 0).toFixed(2)}
-                      </p>
-                    </div>
-                  ))}
-                  
-                  {/* Grand Total */}
-                  <div style={{ marginTop: "10px", borderTop: "1px solid #ddd", paddingTop: "5px" }}>
-                    <p style={{ margin: "0", fontWeight: "bold", color: "red" }}>
+                  <div style={{ marginTop: "10px", borderTop: "2px solid #000", paddingTop: "5px" }}>
+                    <p style={{ margin: "0", fontWeight: "bold", color: "#000000" }}>
                       Grand Total Sale BT: {selectedUnit.consolidatedProducts.reduce((sum, product) => sum + (parseInt(product.saleBT) || 0), 0)}
                     </p>
-                    <p style={{ margin: "5px 0 0 0", fontWeight: "bold", color: "red" }}>
+                    <p style={{ margin: "5px 0 0 0", fontWeight: "bold", color: "#000000" }}>
                       Grand Total Sales Value (Rs.): {selectedUnit.consolidatedProducts.reduce((sum, product) => sum + (parseFloat(product.salesValue) || 0), 0).toFixed(2)}
                     </p>
                   </div>
@@ -1022,14 +1006,14 @@ const ProcessedBillReview = () => {
               )}
               <br /> <br /> <br />
               <div style={{ marginTop: "8px", display: "flex", justifyContent: "space-between" }}>
-                <div style={{ width: "30%", borderTop: "0.5px solid #000", textAlign: "center", paddingTop: "2px" }}>
-                  <p style={{ margin: 0 }}>Prepared By</p>
+                <div style={{ width: "30%", borderTop: "2px solid #000", textAlign: "center", paddingTop: "2px" }}>
+                  <p style={{ margin: 0, color: "#000000" }}>Prepared By</p>
                 </div>
-                <div style={{ width: "30%", borderTop: "0.5px solid #000", textAlign: "center", paddingTop: "2px" }}>
-                  <p style={{ margin: 0 }}>Checked By</p>
+                <div style={{ width: "30%", borderTop: "2px solid #000", textAlign: "center", paddingTop: "2px" }}>
+                  <p style={{ margin: 0, color: "#000000" }}>Checked By</p>
                 </div>
-                <div style={{ width: "30%", borderTop: "0.5px solid #000", textAlign: "center", paddingTop: "2px" }}>
-                  <p style={{ margin: 0 }}>Approved By</p>
+                <div style={{ width: "30%", borderTop: "2px solid #000", textAlign: "center", paddingTop: "2px" }}>
+                  <p style={{ margin: 0, color: "#000000" }}>Approved By</p>
                 </div>
               </div>
             </div>
@@ -1042,41 +1026,38 @@ const ProcessedBillReview = () => {
         <div ref={printModalRef} style={{ display: "none" }}>
           <div className="print-content" style={{ marginTop: "20px" }}>
             <div style={{ textAlign: "center", marginBottom: "10px" }}>
-              <h3 style={{ margin: "0", fontWeight: "semibold"}}>Advance Trading</h3>
-              {/* <p style={{ margin: "3px 0" }}>Reg Office: No: 170/A, Nuwaraeliya Rd, Delpitiya, Gampola</p>
-              <p style={{ margin: "2px 0" }}>Tel: 072-7070701</p> */}
-              <h4 style={{ margin: "8px 0", fontWeight: "normal" }}>Unloading Report</h4>
+              <h3 style={{ margin: "0", fontWeight: "bold", color: "#000000"}}>Advance Trading</h3>
+              <h4 style={{ margin: "8px 0", fontWeight: "bold", color: "#000000" }}>Unloading Report</h4>
             </div>
             
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
               <div>
-                <p><strong>Unit ID:</strong> {selectedUnit.unitId}</p>
-                <p><strong>Driver:</strong> {selectedUnit.driverName || 'N/A'}</p>
+                <p style={{ color: "#000000", fontWeight: "500", fontSize: "18px" }}><strong style={{ color: "#000000", fontWeight: "bold" }}>Unit ID:</strong> {selectedUnit.unitId}</p>
+                <p style={{ color: "#000000", fontWeight: "500", fontSize: "18px" }}><strong style={{ color: "#000000", fontWeight: "bold" }}>Driver:</strong> {selectedUnit.driverName || 'N/A'}</p>
               </div>
               <div>
-                <p><strong>Date:</strong> {selectedUnit.date || new Date().toISOString().split('T')[0]}</p>
-                <p><strong>Route:</strong> {selectedUnit.route || 'N/A'}</p>
+                <p style={{ color: "#000000", fontWeight: "500", fontSize: "18px" }}><strong style={{ color: "#000000", fontWeight: "bold" }}>Date:</strong> {selectedUnit.date || new Date().toISOString().split('T')[0]}</p>
+                <p style={{ color: "#000000", fontWeight: "500", fontSize: "18px" }}><strong style={{ color: "#000000", fontWeight: "bold" }}>Route:</strong> {selectedUnit.route || 'N/A'}</p>
               </div>
             </div>
             
-            <h5 style={{ borderBottom: "1px solid #000", paddingBottom: "3px", marginBottom: "3px" }}>Consolidated Products</h5>
+            <h5 style={{ borderBottom: "2px solid #000", paddingBottom: "3px", marginBottom: "3px", color: "#000000", fontWeight: "bold" }}>Consolidated Products</h5>
             
             {selectedUnit.consolidatedProducts && (
-              <table className="table table-bordered" style={{ marginBottom: "5px" }}>
+              <table className="table table-bordered" style={{ marginBottom: "5px", border: "2px solid #000000" }}>
                 <thead>
                   <tr style={{ backgroundColor: "#f2f2f2" }}>
-                    <th>Option</th>
-                    <th>Product</th>
-                    <th>Qty</th>
-                    <th>BPC</th>
-                    <th>Case</th>
-                    <th>Extra</th>
+                    <th style={{ color: "#000000", fontWeight: "bold", border: "2px solid #000000" }}>Option</th>
+                    <th style={{ color: "#000000", fontWeight: "bold", border: "2px solid #000000" }}>Product</th>
+                    <th style={{ color: "#000000", fontWeight: "bold", border: "2px solid #000000" }}>Qty</th>
+                    <th style={{ color: "#000000", fontWeight: "bold", border: "2px solid #000000" }}>Case</th>
+                    <th style={{ color: "#000000", fontWeight: "bold", border: "2px solid #000000" }}>Extra</th>
                     {(selectedUnit.consolidatedProducts[0].unloadingBT !== undefined || 
                        selectedUnit.consolidatedProducts[0].saleBT !== undefined) && (
                       <>
-                        <th>UnLoading</th>
-                        <th>Sale</th>
-                        <th>Value (Rs.)</th>
+                        <th style={{ color: "#000000", fontWeight: "bold", border: "2px solid #000000" }}>UnLoading</th>
+                        <th style={{ color: "#000000", fontWeight: "bold", border: "2px solid #000000" }}>Sale</th>
+                        <th style={{ color: "#000000", fontWeight: "bold", border: "2px solid #000000" }}>Value (Rs.)</th>
                       </>
                     )}
                   </tr>
@@ -1092,17 +1073,16 @@ const ProcessedBillReview = () => {
                       // Add the current product to the result
                       result.push(
                         <tr key={`product-${index}`}>
-                          <td>{product.optionId}</td>
-                          <td>{product.productName || products.find(p => p.id === product.productId)?.name}</td>
-                          <td>{product.totalQty}</td>
-                          <td>{product.bottlesPerCase || '-'}</td>
-                          <td>{product.caseCount || '-'}</td>
-                          <td>{product.extraBottles || '-'}</td>
+                          <td style={{ color: "#000000", border: "2px solid #000000" }}>{product.optionId}</td>
+                          <td style={{ color: "#000000", border: "2px solid #000000" }}>{product.productName || products.find(p => p.id === product.productId)?.name}</td>
+                          <td style={{ color: "#000000", border: "2px solid #000000" }}>{product.totalQty}</td>
+                          <td style={{ color: "#000000", border: "2px solid #000000" }}>{product.caseCount || '-'}</td>
+                          <td style={{ color: "#000000", border: "2px solid #000000" }}>{product.extraBottles || '-'}</td>
                           {(product.unloadingBT !== undefined || product.saleBT !== undefined) && (
                             <>
-                              <td>{product.unloadingBT || 0}</td>
-                              <td>{product.saleBT || 0}</td>
-                              <td>{(product.salesValue || 0).toFixed(2)}</td>
+                              <td style={{ color: "#000000", border: "2px solid #000000" }}>{product.unloadingBT || 0}</td>
+                              <td style={{ color: "#000000", border: "2px solid #000000" }}>{product.saleBT || 0}</td>
+                              <td style={{ color: "#000000", border: "2px solid #000000" }}>{(product.salesValue || 0).toFixed(2)}</td>
                             </>
                           )}
                         </tr>
@@ -1115,22 +1095,22 @@ const ProcessedBillReview = () => {
                         const totalSaleBT = currentOptionProducts.reduce((sum, p) => sum + (parseInt(p.saleBT) || 0), 0);
                         const totalSalesValue = currentOptionProducts.reduce((sum, p) => sum + (parseFloat(p.salesValue) || 0), 0);
                         
-                        const colSpan = (product.unloadingBT !== undefined || product.saleBT !== undefined) ? 9 : 6;
+                        const colSpan = (product.unloadingBT !== undefined || product.saleBT !== undefined) ? 8 : 5;
                         result.push(
                           <tr key={`total-${product.optionId}`} style={{ backgroundColor: "#f8f9fa", fontWeight: "bold" }}>
-                            <td colSpan={colSpan - 2} style={{ textAlign: "right" }}>Total for {product.optionId}:</td>
-                            <td style={{ color: "red" }}>{totalSaleBT}</td>
-                            <td style={{ color: "red" }}>{totalSalesValue.toFixed(2)}</td>
+                            <td colSpan={colSpan - 2} style={{ textAlign: "right", color: "#000000", fontWeight: "bold", border: "2px solid #000000" }}>Total for {product.optionId}:</td>
+                            <td style={{ color: "#000000", fontWeight: "bold", border: "2px solid #000000" }}>{totalSaleBT}</td>
+                            <td style={{ color: "#000000", fontWeight: "bold", border: "2px solid #000000" }}>{totalSalesValue.toFixed(2)}</td>
                           </tr>
                         );
                       }
                       
                       // Add separator row if not the last product and next has different optionId
                       if (index < array.length - 1 && product.optionId !== array[index + 1].optionId) {
-                        const colSpan = (product.unloadingBT !== undefined || product.saleBT !== undefined) ? 9 : 6;
+                        const colSpan = (product.unloadingBT !== undefined || product.saleBT !== undefined) ? 8 : 5;
                         result.push(
                           <tr key={`separator-${index}`} style={{ height: "10px", backgroundColor: "#f8f9fa" }}>
-                            <td colSpan={colSpan}></td>
+                            <td colSpan={colSpan} style={{ border: "2px solid #000000" }}></td>
                           </tr>
                         );
                       }
@@ -1141,34 +1121,14 @@ const ProcessedBillReview = () => {
                 </tbody>
               </table>
             )}
-            {(selectedUnit.consolidatedProducts[0].unloadingBT !== undefined || 
-              selectedUnit.consolidatedProducts[0].saleBT !== undefined) && (
+            {(selectedUnit.consolidatedProducts && selectedUnit.consolidatedProducts[0].unloadingBT !== undefined || 
+               selectedUnit.consolidatedProducts && selectedUnit.consolidatedProducts[0].saleBT !== undefined) && (
               <div style={{ textAlign: "right", marginTop: "10px" }}>
-                {Object.entries(
-                  selectedUnit.consolidatedProducts.reduce((acc, product) => {
-                    if (!acc[product.optionId]) {
-                      acc[product.optionId] = [];
-                    }
-                    acc[product.optionId].push(product);
-                    return acc;
-                  }, {})
-                ).map(([optionId, products]) => (
-                  <div key={optionId} style={{ marginBottom: "5px" }}>
-                    <p style={{ margin: "0", fontWeight: "bold", color: "red" }}>
-                      {optionId} - Total Sale BT: {products.reduce((sum, product) => sum + (parseInt(product.saleBT) || 0), 0)}
-                    </p>
-                    <p style={{ margin: "2px 0 0 0", fontWeight: "bold", color: "red" }}>
-                      {optionId} - Total Sales Value (Rs.): {products.reduce((sum, product) => sum + (parseFloat(product.salesValue) || 0), 0).toFixed(2)}
-                    </p>
-                  </div>
-                ))}
-                
-                {/* Grand Total */}
-                <div style={{ marginTop: "10px", borderTop: "1px solid #ddd", paddingTop: "5px" }}>
-                  <p style={{ margin: "0", fontWeight: "bold", color: "red" }}>
+                <div style={{ marginTop: "10px", borderTop: "2px solid #000", paddingTop: "5px" }}>
+                  <p style={{ margin: "0", fontWeight: "bold", color: "#000000" }}>
                     Grand Total Sale BT: {selectedUnit.consolidatedProducts.reduce((sum, product) => sum + (parseInt(product.saleBT) || 0), 0)}
                   </p>
-                  <p style={{ margin: "5px 0 0 0", fontWeight: "bold", color: "red" }}>
+                  <p style={{ margin: "5px 0 0 0", fontWeight: "bold", color: "#000000" }}>
                     Grand Total Sales Value (Rs.): {selectedUnit.consolidatedProducts.reduce((sum, product) => sum + (parseFloat(product.salesValue) || 0), 0).toFixed(2)}
                   </p>
                 </div>
@@ -1176,14 +1136,14 @@ const ProcessedBillReview = () => {
             )}
             <br /> <br /> <br />
             <div style={{ marginTop: "8px", display: "flex", justifyContent: "space-between" }}>
-              <div style={{ width: "30%", borderTop: "0.5px solid #000", textAlign: "center", paddingTop: "2px" }}>
-                <p style={{ margin: 0 }}>Prepared By</p>
+              <div style={{ width: "30%", borderTop: "2px solid #000", textAlign: "center", paddingTop: "2px" }}>
+                <p style={{ margin: 0, color: "#000000" }}>Prepared By</p>
               </div>
-              <div style={{ width: "30%", borderTop: "0.5px solid #000", textAlign: "center", paddingTop: "2px" }}>
-                <p style={{ margin: 0 }}>Checked By</p>
+              <div style={{ width: "30%", borderTop: "2px solid #000", textAlign: "center", paddingTop: "2px" }}>
+                <p style={{ margin: 0, color: "#000000" }}>Checked By</p>
               </div>
-              <div style={{ width: "30%", borderTop: "0.5px solid #000", textAlign: "center", paddingTop: "2px" }}>
-                <p style={{ margin: 0 }}>Approved By</p>
+              <div style={{ width: "30%", borderTop: "2px solid #000", textAlign: "center", paddingTop: "2px" }}>
+                <p style={{ margin: 0, color: "#000000" }}>Approved By</p>
               </div>
             </div>
           </div>
@@ -1193,11 +1153,21 @@ const ProcessedBillReview = () => {
       <style>
         {`
           @media print {
+            @page {
+              size: A4;
+              margin: 5mm 3mm;
+            }
             body * {
               visibility: hidden;
+              color: #000 !important;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
             }
             .print-content, .print-content * {
               visibility: visible;
+              color: #000 !important; 
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
             }
             .no-print {
               display: none;
@@ -1208,61 +1178,126 @@ const ProcessedBillReview = () => {
               top: 0;
               width: 100%;
               padding: 5px;
-              font-size: 8px;
+              font-size: 14px;
+              color: #000 !important;
+              font-weight: 500 !important;
             }
             .print-content h2 {
-              font-size: 14px;
+              font-size: 20px;
               margin: 0;
+              color: #000 !important;
+              font-weight: 700 !important;
             }
             .print-content h3 {
-              font-size: 12px;
+              font-size: 18px;
               margin: 5px 0;
+              color: #000 !important;
+              font-weight: 700 !important;
+            }
+            .print-content h4 {
+              font-size: 16px;
+              margin: 5px 0;
+              color: #000 !important;
+              font-weight: 700 !important;
             }
             .print-content h5 {
-              font-size: 10px;
+              font-size: 15px;
               margin: 5px 0 2px;
               padding-bottom: 3px !important;
+              color: #000 !important;
+              border-bottom: 3px solid #000 !important;
+              font-weight: 700 !important;
             }
             .print-content p {
               margin: 1px 0;
-              font-size: 8px;
+              font-size: 14px;
+              color: #000 !important;
+              font-weight: 500 !important;
             }
-            @page {
-              size: A4;
-              margin: 5mm 3mm;
+            .print-content p strong {
+              color: #000 !important;
+              font-weight: 700 !important;
+            }
+            .print-content div p {
+              color: #000 !important;
+              font-weight: 500 !important;
+            }
+            .print-content div p strong {
+              color: #000 !important;
+              font-weight: 700 !important;
             }
             table {
               border-collapse: collapse;
               width: 100%;
               margin-bottom: 5px;
+              border: 3px solid #000 !important;
             }
             table, th, td {
-              border: 0.5px solid black;
+              border: 2px solid #000 !important;
+              color: #000 !important;
             }
             th, td {
-              padding: 1px 2px;
+              padding: 3px 4px;
               text-align: left;
-              font-size: 7px;
+              font-size: 12px;
               white-space: nowrap;
+              color: #000 !important;
+              border: 2px solid #000 !important;
+              font-weight: 500 !important;
+            }
+            th {
+              font-weight: 700 !important;
+              color: #000 !important;
+              background-color: #f2f2f2 !important;
+              border-bottom: 3px solid #000 !important;
             }
             tr {
               height: auto;
-              line-height: 1.1;
+              line-height: 1.3;
+              color: #000 !important;
             }
             .print-content .table-bordered {
               margin-bottom: 5px;
+              border: 3px solid #000 !important;
             }
             .separator-row {
               height: 2px !important;
+              border-bottom: 2.5px solid #000 !important;
             }
             .print-content > div:last-child {
               margin-top: 10px !important;
             }
             .print-content > div:last-child > div {
               padding-top: 2px !important;
+              border-top: 2.5px solid #000 !important;
             }
             .print-content > div:last-child p {
               margin: 0;
+              color: #000 !important;
+            }
+            tr[style*="backgroundColor: #f8f9fa"] {
+              background-color: #f2f2f2 !important;
+              color: #000 !important;
+            }
+            tr[style*="backgroundColor: #f8f9fa"] td {
+              color: #000 !important;
+              border: 2px solid #000 !important;
+              font-weight: 700 !important;
+            }
+            tr[style*="backgroundColor: #f8f9fa"] td[style*="color: red"] {
+              color: #000 !important;
+              font-weight: 700 !important;
+            }
+            .fw-bold {
+              font-weight: 700 !important;
+              color: #000 !important;
+            }
+            div[style*="borderTop: 1px solid #ddd"] {
+              border-top: 2.5px solid #000 !important;
+            }
+            p[style*="color: red"] {
+              color: #000 !important;
+              font-weight: 700 !important;
             }
           }
         `}

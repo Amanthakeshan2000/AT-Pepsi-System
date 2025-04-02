@@ -977,33 +977,32 @@ const BillManagement = () => {
             
             <div className="print-content" style={{ marginTop: "20px" }}>
               <div style={{ textAlign: "center", marginBottom: "10px" }}>
-                <h3 style={{ margin: "0", fontWeight: "semibold" }}>Advance Trading</h3>
+                {/* <h3 style={{ margin: "0", fontWeight: "semibold" }}>Advance Trading</h3> */}
                 {/* <p style={{ margin: "3px 0" }}>Reg Office: No: 170/A, Nuwaraeliya Rd, Delpitiya, Gampola</p>
                 <p style={{ margin: "2px 0" }}>Tel: 072-7070701</p> */}
-                <h4 style={{ margin: "8px 0" , fontWeight: "normal"}}>Loading Sheet</h4>
+                <h4 style={{ margin: "8px 0", fontWeight: "bold", color: "#000000" }}>Loading Sheet</h4>
               </div>
               
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0px" }}>
                 <div>
-                  <p><strong>Unit ID:</strong> {selectedBill.unitId}</p>
-                  <p><strong>Driver:</strong> {selectedBill.driverName || 'N/A'}</p>
+                  <p style={{ fontSize: "18px", color: "#000000" }}><strong>Unit ID:</strong> {selectedBill.unitId}</p>
+                  <p style={{ fontSize: "18px", marginTop:"-15px", color: "#000000" }}><strong>Driver:</strong> {selectedBill.driverName || 'N/A'}</p>
                 </div>
-                <div>
-                  <p><strong>Date:</strong> {selectedBill.date}</p>
-                  <p><strong>Route:</strong> {selectedBill.route || 'N/A'}</p>
+                <div style={{ fontSize: "18px" }}>
+                  <p style={{ fontSize: "18px", color: "#000000" }}><strong>Date:</strong> {selectedBill.date}</p>
+                  <p style={{ fontSize: "18px", marginTop:"-15px", color: "#000000" }}><strong>Route:</strong> {selectedBill.route || 'N/A'}</p>
                 </div>
               </div>
               
-              <h5 style={{ borderBottom: "1px solid #000", paddingBottom: "3px", marginBottom: "3px" }}>Consolidated Products</h5>
-              <table className="table table-bordered" style={{ marginBottom: "5px" }}>
+              <h5 style={{ borderBottom: "2px solid #000", paddingBottom: "3px", marginBottom: "3px", color: "#000000", fontWeight: "bold" }}>Consolidated Products</h5>
+              <table className="table table-bordered" style={{ marginBottom: "5px", border: "1.5px solid #000" }}>
                 <thead>
                   <tr style={{ backgroundColor: "#f2f2f2" }}>
-                    <th>Option</th>
-                    <th>Product Name</th>
-                    <th>Qty</th>
-                    <th>Bottle/Case</th>
-                    <th>Case</th>
-                    <th>Extra</th>
+                    <th style={{ color: "#000000", border: "1px solid #000", borderBottom: "1.5px solid #000" }}>Option</th>
+                    <th style={{ color: "#000000", border: "1px solid #000", borderBottom: "1.5px solid #000" }}>Product Name</th>
+                    <th style={{ color: "#000000", border: "1px solid #000", borderBottom: "1.5px solid #000" }}>Qty</th>
+                    <th style={{ color: "#000000", border: "1px solid #000", borderBottom: "1.5px solid #000" }}>Case</th>
+                    <th style={{ color: "#000000", border: "1px solid #000", borderBottom: "1.5px solid #000" }}>Extra</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1019,20 +1018,19 @@ const BillManagement = () => {
                       // Add the current product to the result
                       result.push(
                         <tr key={`product-${index}`} style={{ lineHeight: "1" }}>
-                          <td>{product.optionId}</td>
-                          <td>{product.productName || products.find(p => p.id === product.productId)?.name}</td>
-                          <td>{product.totalQty}</td>
-                          <td>{product.bottlesPerCase || '-'}</td>
-                          <td>{product.caseCount || '-'}</td>
-                          <td>{product.extraBottles || '-'}</td>
+                          <td style={{ color: "#000000", border: "1px solid #000" }}>{product.optionId}</td>
+                          <td style={{ color: "#000000", border: "1px solid #000" }}>{product.productName || products.find(p => p.id === product.productId)?.name}</td>
+                          <td style={{ color: "#000000", border: "1px solid #000" }}>{product.totalQty}</td>
+                          <td style={{ color: "#000000", border: "1px solid #000" }}>{product.caseCount || '-'}</td>
+                          <td style={{ color: "#000000", border: "1px solid #000" }}>{product.extraBottles || '-'}</td>
                         </tr>
                       );
                       
                       // If the next product has a different optionId, add a separator row
                       if (index < array.length - 1 && product.optionId !== array[index + 1].optionId) {
                         result.push(
-                          <tr key={`separator-${index}`} style={{ height: "2px", backgroundColor: "#f0f0f0" }} className="separator-row">
-                            <td colSpan="6"></td>
+                          <tr key={`separator-${index}`} style={{ height: "2px", backgroundColor: "#f0f0f0", borderBottom: "1px solid #000" }} className="separator-row">
+                            <td colSpan="5" style={{ border: "0px" }}></td>
                           </tr>
                         );
                       }
@@ -1041,17 +1039,28 @@ const BillManagement = () => {
                     }, [])
                   }
                 </tbody>
+                <tfoot>
+                  <tr style={{ fontWeight: "bold", backgroundColor: "#f2f2f2", borderTop: "2px solid #000" }}>
+                    <td colSpan="3" style={{ textAlign: "right", color: "#000000", border: "1px solid #000", borderTop: "2px solid #000" }}>Total Cases:</td>
+                    <td style={{ fontWeight: "bold", color: "#000000", border: "1px solid #000", borderTop: "2px solid #000" }}>
+                      {(selectedBill.consolidatedProducts || []).reduce((total, product) => {
+                        return total + (parseInt(product.caseCount) || 0);
+                      }, 0)}
+                    </td>
+                    <td style={{ color: "#000000", border: "1px solid #000", borderTop: "2px solid #000" }}></td>
+                  </tr>
+                </tfoot>
               </table>
               <br /> <br /> <br />
               <div style={{ marginTop: "8px", display: "flex", justifyContent: "space-between" }}>
-                <div style={{ width: "30%", borderTop: "0.5px solid #000", textAlign: "center", paddingTop: "2px" }}>
-                  <p style={{ margin: 0 }}>Prepared By</p>
+                <div style={{ width: "30%", borderTop: "1.5px solid #000", textAlign: "center", paddingTop: "2px" }}>
+                  <p style={{ margin: 0, color: "#000000" }}>Prepared By</p>
                 </div>
-                <div style={{ width: "30%", borderTop: "0.5px solid #000", textAlign: "center", paddingTop: "2px" }}>
-                  <p style={{ margin: 0 }}>Checked By</p>
+                <div style={{ width: "30%", borderTop: "1.5px solid #000", textAlign: "center", paddingTop: "2px" }}>
+                  <p style={{ margin: 0, color: "#000000" }}>Checked By</p>
                 </div>
-                <div style={{ width: "30%", borderTop: "0.5px solid #000", textAlign: "center", paddingTop: "2px" }}>
-                  <p style={{ margin: 0 }}>Approved By</p>
+                <div style={{ width: "30%", borderTop: "1.5px solid #000", textAlign: "center", paddingTop: "2px" }}>
+                  <p style={{ margin: 0, color: "#000000" }}>Approved By</p>
                 </div>
               </div>
             </div>
@@ -1078,23 +1087,39 @@ const BillManagement = () => {
               width: 100%;
               padding: 5px;
               font-size: 8px;
+              color: #000000 !important;
             }
             .print-content h2 {
               font-size: 14px;
               margin: 0;
+              color: #000000 !important;
             }
             .print-content h3 {
               font-size: 12px;
               margin: 5px 0;
+              color: #000000 !important;
+            }
+            .print-content h4 {
+              font-size: 11px;
+              margin: 5px 0;
+              color: #000000 !important;
+              font-weight: bold !important;
             }
             .print-content h5 {
               font-size: 10px;
               margin: 5px 0 2px;
               padding-bottom: 3px !important;
+              color: #000000 !important;
+              border-bottom: 1.5px solid #000 !important;
             }
             .print-content p {
               margin: 1px 0;
               font-size: 8px;
+              color: #000000 !important;
+            }
+            .print-content p strong {
+              color: #000000 !important;
+              font-weight: bold !important;
             }
             @page {
               size: A4;
@@ -1104,34 +1129,63 @@ const BillManagement = () => {
               border-collapse: collapse;
               width: 100%;
               margin-bottom: 5px;
+              border: 1.5px solid black !important;
             }
             table, th, td {
-              border: 0.5px solid black;
+              border: 1px solid black !important;
+              color: #000000 !important;
             }
             th, td {
               padding: 1px 2px;
               text-align: left;
               font-size: 7px;
               white-space: nowrap;
+              color: #000000 !important;
+            }
+            th {
+              font-weight: bold !important;
+              color: #000000 !important;
+              background-color: #f2f2f2 !important;
+              border-bottom: 1.5px solid black !important;
             }
             tr {
               height: auto;
               line-height: 1.1;
+              color: #000000 !important;
             }
             .print-content .table-bordered {
               margin-bottom: 5px;
+              border: 1.5px solid black !important;
             }
             .separator-row {
               height: 2px !important;
+              border-bottom: 1px solid black !important;
+            }
+            tfoot {
+              border-top: 2px solid black !important;
+            }
+            tfoot tr {
+              font-weight: bold;
+              background-color: #f2f2f2;
+              font-size: 8px !important;
+              color: #000000 !important;
+            }
+            tfoot td {
+              font-size: 8px !important;
+              font-weight: bold !important;
+              color: #000000 !important;
+              border-top: 2px solid black !important;
             }
             .print-content > div:last-child {
               margin-top: 10px !important;
             }
             .print-content > div:last-child > div {
               padding-top: 2px !important;
+              border-top: 1.5px solid black !important;
             }
             .print-content > div:last-child p {
               margin: 0;
+              color: #000000 !important;
             }
           }
         `}
