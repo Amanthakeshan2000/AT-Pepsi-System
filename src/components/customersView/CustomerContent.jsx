@@ -26,6 +26,8 @@ const BillAdd = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(5);
   const [selectedBill, setSelectedBill] = useState(null);
+  const [creatorFilter, setCreatorFilter] = useState(""); // Add state for filtering by creator
+  const [uniqueCreators, setUniqueCreators] = useState([]); // Store unique email creators
 
   const billsCollectionRef = collection(db, "Bill");
   const productsCollectionRef = collection(db, "Product");
@@ -61,6 +63,10 @@ const BillAdd = () => {
           const dateB = new Date(b.createDate || 0);
           return dateB - dateA; // Descending order
         });
+        
+        // Extract unique creators for the filter dropdown
+        const creators = new Set(billList.map(bill => bill.createdBy || "Unknown"));
+        setUniqueCreators(Array.from(creators));
         
         setBills(billList);
       } catch (error) {
@@ -830,6 +836,9 @@ const BillAdd = () => {
     e.preventDefault();
     setLoading(true);
     try {
+      // Get the logged-in user's email
+      const userEmail = localStorage.getItem("userEmail") || "Unknown";
+      
       // Process each product option to update stock quantities
       const stockUpdatePromises = [];
       
@@ -898,6 +907,7 @@ const BillAdd = () => {
           expireOptions,
           percentageDiscount,
           updatedAt: serverTimestamp(),
+          updatedBy: userEmail, // Add the user who updated the bill
         });
         alert("Bill updated successfully!");
         setEditBill(null);
@@ -917,6 +927,7 @@ const BillAdd = () => {
           percentageDiscount,
           printStatus: false, // Default to false if not set
           createdAt: serverTimestamp(),
+          createdBy: userEmail, // Add the user who created the bill
         });
         alert("Bill added successfully!");
       }
@@ -935,6 +946,10 @@ const BillAdd = () => {
         const dateB = new Date(b.createDate || 0);
         return dateB - dateA; // Descending order
       });
+      
+      // Extract unique creators for the filter dropdown
+      const creators = new Set(billList.map(bill => bill.createdBy || "Unknown"));
+      setUniqueCreators(Array.from(creators));
       
       setBills(billList);
 
@@ -986,12 +1001,14 @@ const BillAdd = () => {
   };
 
   const filteredBills = bills.filter(bill => 
-    bill.billNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (bill.billNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
     bill.outletName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     bill.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
     bill.contact.toLowerCase().includes(searchTerm.toLowerCase()) ||
     bill.salesRef.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    bill.refContact.toLowerCase().includes(searchTerm.toLowerCase())
+    bill.refContact.toLowerCase().includes(searchTerm.toLowerCase())) &&
+    // Filter by creator if a creator filter is selected
+    (creatorFilter === "" || bill.createdBy === creatorFilter)
   );
 
   // Sort the filtered bills by date (newest first)
@@ -1351,7 +1368,7 @@ const BillAdd = () => {
             )}
           </div>
         </div>
-
+        
         <div className="card shadow-sm mb-4">
           <div className="card-header bg-success text-white d-flex justify-content-between align-items-center">
             <h5 className="mb-0 text-white">Discount Options</h5>
@@ -1712,7 +1729,7 @@ const BillAdd = () => {
             </div>
           </div>
         </div>
-
+        
         <div className="d-flex justify-content-center">
           <button 
             type="submit" 
@@ -1725,127 +1742,156 @@ const BillAdd = () => {
       </form>
 
       {/* Bill History Section */}
-      <div className="mt-5">
-        <h3 className="mb-3">Bill History</h3>
-        
-        <div className="mb-3">
-          <input 
-            type="text" 
-            className="form-control"
-            placeholder="Search by bill number, outlet name, address..."
-            value={searchTerm} 
-            onChange={(e) => setSearchTerm(e.target.value)} 
-          />
-      </div>
-
-        <div className="table-responsive">
-          <table className="table table-striped table-hover">
-            <thead className="table-primary">
-          <tr>
-            <th>Bill No</th>
-            <th>Outlet Name</th>
-                <th>Date</th>
-                <th>Status</th>
-                <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-              {currentBills.length > 0 ? (
-                currentBills.map((bill) => (
-            <tr key={bill.id}>
-              <td>{bill.billNo}</td>
-              <td>{bill.outletName}</td>
-              <td>{bill.createDate}</td>
-              <td>
-                      <span className={`badge ${bill.printStatus ? 'bg-success' : 'bg-warning'}`}>
-                        {bill.printStatus ? 'Printed' : 'Not Printed'}
-                      </span>
-                        </td>
-                    <td>
-                      <div className="d-flex">
-                  <button 
-                          className="btn btn-primary btn-sm me-1"
-                          onClick={() => handleViewBill(bill)}
-                          title="View Bill"
-                        >
-                          <i className="bi bi-eye"></i>
-                        </button>
-                        <button
-                          className="btn btn-info btn-sm me-1"
-                    onClick={() => handlePrintBill(bill)}
-                          title="Print Bill"
-                        >
-                          <i className="bi bi-printer"></i>
-                        </button>
-                        <button
-                          className="btn btn-warning btn-sm me-1"
-                          onClick={() => handleEditBill(bill)}
-                          title="Edit Bill"
-                        >
-                          <i className="bi bi-pencil"></i>
-                        </button>
-                        <button
-                          className="btn btn-danger btn-sm"
-                          onClick={() => handleDeleteBill(bill.id)}
-                          title="Delete Bill"
-                        >
-                          <i className="bi bi-trash"></i>
-                  </button>
-                </div>
-              </td>
-            </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="5" className="text-center">No bills found</td>
-                </tr>
-              )}
-        </tbody>
-      </table>
+      <div className="card shadow-sm mb-4 mt-5">
+        <div className="card-header bg-primary text-white">
+          <h5 className="mb-0 text-white">Bill History</h5>
         </div>
+        <div className="card-body">
+          <div className="row mb-3">
+            <div className="col-md-6">
+              <div className="input-group">
+                <span className="input-group-text">
+                  <i className="bi bi-search"></i>
+                </span>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Search bills..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="col-md-6">
+              <div className="input-group">
+                <span className="input-group-text">
+                  <i className="bi bi-person"></i>
+                </span>
+                <select
+                  className="form-select"
+                  value={creatorFilter}
+                  onChange={(e) => setCreatorFilter(e.target.value)}
+                >
+                  <option value="">All Users</option>
+                  {uniqueCreators.map((creator, index) => (
+                    <option key={index} value={creator}>{creator}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
 
-        {/* Pagination */}
-        {filteredBills.length > itemsPerPage && (
-        <nav>
-            <ul className="pagination justify-content-center">
-              <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
-                <button
-                  className="page-link"
-                  onClick={() => paginate(currentPage - 1)}
-                  disabled={currentPage === 1}
-                >
-                  Previous
-                </button>
-              </li>
-              {Array.from({ length: Math.ceil(filteredBills.length / itemsPerPage) }).map((_, index) => (
-                <li
-                  key={index}
-                  className={`page-item ${currentPage === index + 1 ? 'active' : ''}`}
-                >
-                  <button className="page-link" onClick={() => paginate(index + 1)}>
-                    {index + 1}
+          <div className="table-responsive">
+            <table className="table table-striped table-hover">
+              <thead className="table-primary">
+                <tr>
+                  <th>Bill No</th>
+                  <th>Outlet Name</th>
+                  <th>Date</th>
+                  <th>Status</th>
+                  <th>Created By</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {currentBills.length > 0 ? (
+                  currentBills.map((bill) => (
+                    <tr key={bill.id}>
+                      <td>{bill.billNo}</td>
+                      <td>{bill.outletName}</td>
+                      <td>{bill.createDate}</td>
+                      <td>
+                        <span className={`badge ${bill.printStatus ? 'bg-success' : 'bg-warning'}`}>
+                          {bill.printStatus ? 'Printed' : 'Not Printed'}
+                        </span>
+                      </td>
+                      <td>{bill.createdBy || "Unknown"}</td>
+                      <td>
+                        <div className="d-flex">
+                          <button 
+                            className="btn btn-primary btn-sm me-1"
+                            onClick={() => handleViewBill(bill)}
+                            title="View Bill"
+                          >
+                            <i className="bi bi-eye"></i>
+                          </button>
+                          <button
+                            className="btn btn-info btn-sm me-1"
+                            onClick={() => handlePrintBill(bill)}
+                            title="Print Bill"
+                          >
+                            <i className="bi bi-printer"></i>
+                          </button>
+                          <button
+                            className="btn btn-warning btn-sm me-1"
+                            onClick={() => handleEditBill(bill)}
+                            title="Edit Bill"
+                          >
+                            <i className="bi bi-pencil"></i>
+                          </button>
+                          <button
+                            className="btn btn-danger btn-sm"
+                            onClick={() => handleDeleteBill(bill.id)}
+                            title="Delete Bill"
+                          >
+                            <i className="bi bi-trash"></i>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="6" className="text-center">No bills found</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          {filteredBills.length > itemsPerPage && (
+            <nav>
+              <ul className="pagination justify-content-center">
+                <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                  <button
+                    className="page-link"
+                    onClick={() => paginate(currentPage - 1)}
+                    disabled={currentPage === 1}
+                  >
+                    Previous
                   </button>
-              </li>
-            ))}
-              <li
-                className={`page-item ${
-                  currentPage === Math.ceil(filteredBills.length / itemsPerPage) ? 'disabled' : ''
-                }`}
-              >
-                <button
-                  className="page-link"
-                  onClick={() => paginate(currentPage + 1)}
-                  disabled={currentPage === Math.ceil(filteredBills.length / itemsPerPage)}
+                </li>
+                {Array.from({ length: Math.ceil(filteredBills.length / itemsPerPage) }).map((_, index) => (
+                  <li
+                    key={index}
+                    className={`page-item ${currentPage === index + 1 ? 'active' : ''}`}
+                  >
+                    <button className="page-link" onClick={() => paginate(index + 1)}>
+                      {index + 1}
+                    </button>
+                  </li>
+                ))}
+                <li
+                  className={`page-item ${
+                    currentPage === Math.ceil(filteredBills.length / itemsPerPage) ? 'disabled' : ''
+                  }`}
                 >
-                  Next
-                </button>
-              </li>
-          </ul>
-        </nav>
-        )}
+                  <button
+                    className="page-link"
+                    onClick={() => paginate(currentPage + 1)}
+                    disabled={currentPage === Math.ceil(filteredBills.length / itemsPerPage)}
+                  >
+                    Next
+                  </button>
+                </li>
+              </ul>
+            </nav>
+          )}
+        </div>
       </div>
-
-      {/* Bill View Modal */}
+      
+      {/* Keep existing selected bill popup code */}
       {selectedBill && (
         <div className="modal d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
           <div className="modal-dialog modal-lg" style={{ maxWidth: "900px" }}>
