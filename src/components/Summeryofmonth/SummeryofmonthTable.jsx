@@ -23,31 +23,72 @@ const SummeryofmonthTable = () => {
       const startDate = new Date(year, parseInt(month) - 1, 1);
       const endDate = new Date(year, parseInt(month), 0); // Last day of the month
       
-      // Fetch data from BillReviews
-      const q = query(billReviewsCollectionRef, orderBy("createdAt", "desc"));
-      const querySnapshot = await getDocs(q);
+      // Fetch data from BillReviews, ManualBill, SaleSummaryNew, and Products
+      const [billReviewsSnapshot, manualBillsSnapshot, saleSummarySnapshot, productsSnapshot] = await Promise.all([
+        getDocs(query(billReviewsCollectionRef, orderBy("createdAt", "desc"))),
+        getDocs(collection(db, "ManualBill")),
+        getDocs(collection(db, "SaleSummaryNew")),
+        getDocs(collection(db, "Product"))
+      ]);
       
       // Process data
-      const reviewList = querySnapshot.docs.map((doc) => ({
+      const reviewList = billReviewsSnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
+
+      const manualBills = manualBillsSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      const saleSummaries = saleSummarySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      // Create a map of product margins
+      const productMargins = new Map();
+      productsSnapshot.docs.forEach(doc => {
+        const product = doc.data();
+        if (product.margin) {
+          productMargins.set(doc.id, parseFloat(product.margin) || 0);
+          console.log(`Product ${doc.id} margin:`, product.margin);
+        }
+      });
       
       // Filter reviews by date
       const filteredReviews = reviewList.filter(review => {
         if (!review.createdAt) return false;
-        
         const reviewDate = review.createdAt.toDate ? review.createdAt.toDate() : new Date(review.createdAt);
         return reviewDate >= startDate && reviewDate <= endDate;
+      });
+
+      // Filter manual bills by date
+      const filteredManualBills = manualBills.filter(bill => {
+        if (!bill.customDate) return false;
+        const billDate = new Date(bill.customDate);
+        return billDate >= startDate && billDate <= endDate;
+      });
+
+      // Filter sale summaries by date
+      const filteredSaleSummaries = saleSummaries.filter(summary => {
+        const manualBill = manualBills.find(bill => bill.invoiceId === summary.invoiceId);
+        if (!manualBill || !manualBill.customDate) return false;
+        const summaryDate = new Date(manualBill.customDate);
+        return summaryDate >= startDate && summaryDate <= endDate;
       });
       
       // Group by date and calculate summaries
       const dailySummaries = [];
       const dateMap = new Map();
       
-      filteredReviews.forEach(review => {
-        const reviewDate = review.createdAt.toDate ? review.createdAt.toDate() : new Date(review.createdAt);
-        const dateStr = reviewDate.toISOString().split('T')[0];
+      // Process SaleSummaries
+      filteredSaleSummaries.forEach(summary => {
+        const manualBill = manualBills.find(bill => bill.invoiceId === summary.invoiceId);
+        if (!manualBill || !manualBill.customDate) return;
+        
+        const dateStr = manualBill.customDate;
         
         if (!dateMap.has(dateStr)) {
           dateMap.set(dateStr, {
@@ -55,49 +96,52 @@ const SummeryofmonthTable = () => {
             loadingValue: 0,
             discountValue: 0,
             expireValue: 0,
-            margin: 0,
             salesValue: 0,
+            margin: 0,
           });
         }
         
-        const summary = dateMap.get(dateStr);
+        const dailySummary = dateMap.get(dateStr);
         
-        // Calculate values from consolidated products
-        if (review.consolidatedProducts && review.consolidatedProducts.length > 0) {
-          review.consolidatedProducts.forEach(product => {
-            // Calculate loading value (unloaded bottles * price)
-            const unloadingBT = parseInt(product.unloadingBT) || 0;
-            const price = parseFloat(product.salesValue) / (parseInt(product.saleBT) || 1);
-            summary.loadingValue += unloadingBT * price;
+        // Process each bill in the summary
+        summary.data.forEach(bill => {
+          // Calculate Gross Sale (Loading Value)
+          const grossSale = bill.productOptions.reduce((sum, opt) => {
+            const qty = parseFloat(opt.qty) || 0;
+            const price = parseFloat(opt.price) || 0;
+            return sum + (qty * price);
+          }, 0);
+          dailySummary.loadingValue += grossSale;
+          
+          // Add Discount Value
+          dailySummary.discountValue += parseFloat(bill.discount) || 0;
+          
+          // Add Expire Value
+          dailySummary.expireValue += parseFloat(bill.expire) || 0;
+          
+          // Calculate Net Sale (Sales Value)
+          const netSale = grossSale - (parseFloat(bill.discount) || 0) - (parseFloat(bill.expire) || 0);
+          dailySummary.salesValue += netSale;
+
+          // Calculate Margin based on product margins
+          bill.productOptions.forEach(opt => {
+            const qty = parseFloat(opt.qty) || 0;
+            const price = parseFloat(opt.price) || 0;
+            // Get the product margin from the map using the productId
+            const productMargin = productMargins.get(opt.productId) || 0;
+            // Calculate margin for this product: quantity * price * margin percentage
+            const productMarginValue = qty * price * (productMargin / 100);
+            dailySummary.margin += productMarginValue;
             
-            // Sales value is directly available
-            summary.salesValue += parseFloat(product.salesValue) || 0;
+            console.log(`Product ${opt.productId}:`, {
+              quantity: qty,
+              price: price,
+              marginPercentage: productMargin,
+              marginValue: productMarginValue,
+              totalMargin: dailySummary.margin
+            });
           });
-        }
-        
-        // Get discount and expire values from bills
-        if (review.bills && review.bills.length > 0) {
-          review.bills.forEach(bill => {
-            // Calculate discount total
-            if (bill.discountOptions && bill.discountOptions.length > 0) {
-              bill.discountOptions.forEach(option => {
-                summary.discountValue += parseFloat(option.total) || 0;
-              });
-            }
-            
-            // Calculate expire total
-            if (bill.expireOptions && bill.expireOptions.length > 0) {
-              bill.expireOptions.forEach(option => {
-                summary.expireValue += parseFloat(option.total) || 0;
-              });
-            }
-          });
-        }
-      });
-      
-      // Calculate margin
-      dateMap.forEach(summary => {
-        summary.margin = summary.salesValue - summary.discountValue - summary.expireValue;
+        });
       });
       
       // Convert map to array and sort by date
@@ -210,9 +254,9 @@ const SummeryofmonthTable = () => {
                   <tr>
                     <th className="text-white">Date</th>
                     <th className="text-white">Loading Value (Rs.)</th>
-                    <th className="text-white">Sales Value (Rs.)</th>
                     <th className="text-white">Discount Value (Rs.)</th>
                     <th className="text-white">Expire Value (Rs.)</th>
+                    <th className="text-white">Sales Value (Rs.)</th>
                     <th className="text-white">Margin (Rs.)</th>
                   </tr>
                 </thead>
@@ -221,9 +265,9 @@ const SummeryofmonthTable = () => {
                     <tr key={index}>
                       <td>{new Date(item.date).toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' })}</td>
                       <td className="text-end">{formatCurrency(item.loadingValue)}</td>
-                      <td className="text-end">{formatCurrency(item.salesValue)}</td>
                       <td className="text-end">{formatCurrency(item.discountValue)}</td>
                       <td className="text-end">{formatCurrency(item.expireValue)}</td>
+                      <td className="text-end">{formatCurrency(item.salesValue)}</td>
                       <td className="text-end">{formatCurrency(item.margin)}</td>
                     </tr>
                   ))}
@@ -232,9 +276,9 @@ const SummeryofmonthTable = () => {
                   <tr>
                     <th className="text-white">Total</th>
                     <th className="text-white text-end">{formatCurrency(totals.loadingValue)}</th>
-                    <th className="text-white text-end">{formatCurrency(totals.salesValue)}</th>
                     <th className="text-white text-end">{formatCurrency(totals.discountValue)}</th>
                     <th className="text-white text-end">{formatCurrency(totals.expireValue)}</th>
+                    <th className="text-white text-end">{formatCurrency(totals.salesValue)}</th>
                     <th className="text-white text-end">{formatCurrency(totals.margin)}</th>
                   </tr>
                 </tfoot>
@@ -281,8 +325,10 @@ const SummeryofmonthTable = () => {
               border-collapse: collapse;
             }
             .table th, .table td {
-              padding: 8px;
-              border: 1px solid #ddd;
+              padding: 12px;
+              border: 1px solid #000;
+              font-size: 14px;
+              font-weight: bold;
             }
             .table-dark {
               background-color: #343a40 !important;
@@ -299,6 +345,30 @@ const SummeryofmonthTable = () => {
             }
             .d-print-flex {
               display: flex !important;
+            }
+            h2 {
+              font-size: 24px !important;
+              font-weight: bold !important;
+            }
+            h3 {
+              font-size: 20px !important;
+              font-weight: bold !important;
+            }
+            p {
+              font-size: 14px !important;
+            }
+            .table-dark th {
+              color: white !important;
+              font-size: 14px !important;
+              font-weight: bold !important;
+            }
+            .table-dark td {
+              font-size: 14px !important;
+              font-weight: bold !important;
+            }
+            .table tfoot th {
+              font-size: 16px !important;
+              font-weight: bold !important;
             }
           }
           

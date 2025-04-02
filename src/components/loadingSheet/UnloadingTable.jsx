@@ -610,6 +610,51 @@ const ProcessedBillReview = () => {
                 })}
               </tbody>
             </table>
+            <div style={{ textAlign: "right", marginTop: "10px" }}>
+              {/* Group products by optionId and calculate totals */}
+              {Object.entries(
+                currentUnitBills.flatMap(bill => 
+                  bill.products.map(product => ({
+                    optionId: product.optionId,
+                    saleBT: parseInt(product.saleBT) || 0,
+                    salesValue: parseFloat(product.salesValue) || 0
+                  }))
+                ).reduce((acc, curr) => {
+                  if (!acc[curr.optionId]) {
+                    acc[curr.optionId] = {
+                      saleBT: 0,
+                      salesValue: 0
+                    };
+                  }
+                  acc[curr.optionId].saleBT += curr.saleBT;
+                  acc[curr.optionId].salesValue += curr.salesValue;
+                  return acc;
+                }, {})
+              ).map(([optionId, totals]) => (
+                <div key={optionId} style={{ marginBottom: "5px" }}>
+                  <p style={{ margin: "0", fontWeight: "bold", color: "red" }}>
+                    {optionId} - Total Sale BT: {totals.saleBT}
+                  </p>
+                  <p style={{ margin: "2px 0 0 0", fontWeight: "bold", color: "red" }}>
+                    {optionId} - Total Sales Value (Rs.): {totals.salesValue.toFixed(2)}
+                  </p>
+                </div>
+              ))}
+              
+              {/* Grand Total */}
+              <div style={{ marginTop: "10px", borderTop: "1px solid #ddd", paddingTop: "5px" }}>
+                <p style={{ margin: "0", fontWeight: "bold", color: "red" }}>
+                  Grand Total Sale BT: {currentUnitBills.reduce((sum, bill) => 
+                    sum + bill.products.reduce((productSum, product) => 
+                      productSum + (parseInt(product.saleBT) || 0), 0), 0)}
+                </p>
+                <p style={{ margin: "5px 0 0 0", fontWeight: "bold", color: "red" }}>
+                  Grand Total Sales Value (Rs.): {currentUnitBills.reduce((sum, bill) => 
+                    sum + bill.products.reduce((productSum, product) => 
+                      productSum + (parseFloat(product.salesValue) || 0), 0), 0).toFixed(2)}
+                </p>
+              </div>
+            </div>
           </div>
 
           <div className="text-center mt-3">
@@ -644,6 +689,8 @@ const ProcessedBillReview = () => {
             </div>
             <div style={{ marginTop: "20px" }}>
               <p><strong>Date:</strong> {selectedUnit.date}</p>
+              <p><strong>Driver:</strong> {selectedUnit.driverName || 'N/A'}</p>
+              <p><strong>Route:</strong> {selectedUnit.route || 'N/A'}</p>
               
               {selectedUnit.consolidatedProducts ? (
                 // Display consolidated products if available
@@ -696,7 +743,24 @@ const ProcessedBillReview = () => {
                             </tr>
                           );
                           
-                          // If the next product has a different optionId, add a separator row
+                          // If the next product has a different optionId or this is the last product,
+                          // add a totals row for the current option group
+                          if (index === array.length - 1 || product.optionId !== array[index + 1].optionId) {
+                            const currentOptionProducts = array.filter(p => p.optionId === product.optionId);
+                            const totalSaleBT = currentOptionProducts.reduce((sum, p) => sum + (parseInt(p.saleBT) || 0), 0);
+                            const totalSalesValue = currentOptionProducts.reduce((sum, p) => sum + (parseFloat(p.salesValue) || 0), 0);
+                            
+                            const colSpan = (product.unloadingBT !== undefined || product.saleBT !== undefined) ? 9 : 6;
+                            result.push(
+                              <tr key={`total-${product.optionId}`} style={{ backgroundColor: "#f8f9fa", fontWeight: "bold" }}>
+                                <td colSpan={colSpan - 2} style={{ textAlign: "right" }}>Total for {product.optionId}:</td>
+                                <td style={{ color: "red" }}>{totalSaleBT}</td>
+                                <td style={{ color: "red" }}>{totalSalesValue.toFixed(2)}</td>
+                              </tr>
+                            );
+                          }
+                          
+                          // Add separator row if not the last product and next has different optionId
                           if (index < array.length - 1 && product.optionId !== array[index + 1].optionId) {
                             const colSpan = (product.unloadingBT !== undefined || product.saleBT !== undefined) ? 9 : 6;
                             result.push(
@@ -711,6 +775,39 @@ const ProcessedBillReview = () => {
                       }
                     </tbody>
                   </table>
+                  {(selectedUnit.consolidatedProducts[0].unloadingBT !== undefined || 
+                    selectedUnit.consolidatedProducts[0].saleBT !== undefined) && (
+                    <div style={{ textAlign: "right", marginTop: "10px" }}>
+                      {Object.entries(
+                        selectedUnit.consolidatedProducts.reduce((acc, product) => {
+                          if (!acc[product.optionId]) {
+                            acc[product.optionId] = [];
+                          }
+                          acc[product.optionId].push(product);
+                          return acc;
+                        }, {})
+                      ).map(([optionId, products]) => (
+                        <div key={optionId} style={{ marginBottom: "5px" }}>
+                          <p style={{ margin: "0", fontWeight: "bold", color: "red" }}>
+                            {optionId} - Total Sale BT: {products.reduce((sum, product) => sum + (parseInt(product.saleBT) || 0), 0)}
+                          </p>
+                          <p style={{ margin: "2px 0 0 0", fontWeight: "bold", color: "red" }}>
+                            {optionId} - Total Sales Value (Rs.): {products.reduce((sum, product) => sum + (parseFloat(product.salesValue) || 0), 0).toFixed(2)}
+                          </p>
+                        </div>
+                      ))}
+                      
+                      {/* Grand Total */}
+                      <div style={{ marginTop: "10px", borderTop: "1px solid #ddd", paddingTop: "5px" }}>
+                        <p style={{ margin: "0", fontWeight: "bold", color: "red" }}>
+                          Grand Total Sale BT: {selectedUnit.consolidatedProducts.reduce((sum, product) => sum + (parseInt(product.saleBT) || 0), 0)}
+                        </p>
+                        <p style={{ margin: "5px 0 0 0", fontWeight: "bold", color: "red" }}>
+                          Grand Total Sales Value (Rs.): {selectedUnit.consolidatedProducts.reduce((sum, product) => sum + (parseFloat(product.salesValue) || 0), 0).toFixed(2)}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </>
               ) : null}
               
@@ -791,18 +888,20 @@ const ProcessedBillReview = () => {
             
             <div className="print-content" style={{ marginTop: "20px" }}>
               <div style={{ textAlign: "center", marginBottom: "10px" }}>
-                <h2 style={{ margin: "0" }}>Advance Trading</h2>
-                <p style={{ margin: "3px 0" }}>Reg Office: No: 170/A, Nuwaraeliya Rd, Delpitiya, Gampola</p>
-                <p style={{ margin: "2px 0" }}>Tel: 072-7070701</p>
-                <h3 style={{ margin: "8px 0" }}>Unloading Report</h3>
+                <h3 style={{ margin: "0", fontWeight: "semibold"}}>Advance Trading</h3>
+                {/* <p style={{ margin: "3px 0" }}>Reg Office: No: 170/A, Nuwaraeliya Rd, Delpitiya, Gampola</p>
+                <p style={{ margin: "2px 0" }}>Tel: 072-7070701</p> */}
+                <h4 style={{ margin: "8px 0" }}>Unloading Report</h4>
               </div>
               
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
                 <div>
                   <p><strong>Unit ID:</strong> {selectedUnit.unitId}</p>
+                  <p><strong>Driver:</strong> {selectedUnit.driverName || 'N/A'}</p>
                 </div>
                 <div>
                   <p><strong>Date:</strong> {selectedUnit.date || new Date().toISOString().split('T')[0]}</p>
+                  <p><strong>Route:</strong> {selectedUnit.route || 'N/A'}</p>
                 </div>
               </div>
               
@@ -838,7 +937,7 @@ const ProcessedBillReview = () => {
                       .reduce((result, product, index, array) => {
                         // Add the current product to the result
                         result.push(
-                          <tr key={`product-${index}`} style={{ lineHeight: "1" }}>
+                          <tr key={`product-${index}`}>
                             <td>{product.optionId}</td>
                             <td>{product.productName || products.find(p => p.id === product.productId)?.name}</td>
                             <td>{product.totalQty}</td>
@@ -855,11 +954,28 @@ const ProcessedBillReview = () => {
                           </tr>
                         );
                         
-                        // If the next product has a different optionId, add a separator row
+                        // If the next product has a different optionId or this is the last product,
+                        // add a totals row for the current option group
+                        if (index === array.length - 1 || product.optionId !== array[index + 1].optionId) {
+                          const currentOptionProducts = array.filter(p => p.optionId === product.optionId);
+                          const totalSaleBT = currentOptionProducts.reduce((sum, p) => sum + (parseInt(p.saleBT) || 0), 0);
+                          const totalSalesValue = currentOptionProducts.reduce((sum, p) => sum + (parseFloat(p.salesValue) || 0), 0);
+                          
+                          const colSpan = (product.unloadingBT !== undefined || product.saleBT !== undefined) ? 9 : 6;
+                          result.push(
+                            <tr key={`total-${product.optionId}`} style={{ backgroundColor: "#f8f9fa", fontWeight: "bold" }}>
+                              <td colSpan={colSpan - 2} style={{ textAlign: "right" }}>Total for {product.optionId}:</td>
+                              <td style={{ color: "red" }}>{totalSaleBT}</td>
+                              <td style={{ color: "red" }}>{totalSalesValue.toFixed(2)}</td>
+                            </tr>
+                          );
+                        }
+                        
+                        // Add separator row if not the last product and next has different optionId
                         if (index < array.length - 1 && product.optionId !== array[index + 1].optionId) {
                           const colSpan = (product.unloadingBT !== undefined || product.saleBT !== undefined) ? 9 : 6;
                           result.push(
-                            <tr key={`separator-${index}`} style={{ height: "2px", backgroundColor: "#f0f0f0" }} className="separator-row">
+                            <tr key={`separator-${index}`} style={{ height: "10px", backgroundColor: "#f8f9fa" }}>
                               <td colSpan={colSpan}></td>
                             </tr>
                           );
@@ -870,6 +986,39 @@ const ProcessedBillReview = () => {
                     }
                   </tbody>
                 </table>
+              )}
+              {(selectedUnit.consolidatedProducts[0].unloadingBT !== undefined || 
+                selectedUnit.consolidatedProducts[0].saleBT !== undefined) && (
+                <div style={{ textAlign: "right", marginTop: "10px" }}>
+                  {Object.entries(
+                    selectedUnit.consolidatedProducts.reduce((acc, product) => {
+                      if (!acc[product.optionId]) {
+                        acc[product.optionId] = [];
+                      }
+                      acc[product.optionId].push(product);
+                      return acc;
+                    }, {})
+                  ).map(([optionId, products]) => (
+                    <div key={optionId} style={{ marginBottom: "5px" }}>
+                      <p style={{ margin: "0", fontWeight: "bold", color: "red" }}>
+                        {optionId} - Total Sale BT: {products.reduce((sum, product) => sum + (parseInt(product.saleBT) || 0), 0)}
+                      </p>
+                      <p style={{ margin: "2px 0 0 0", fontWeight: "bold", color: "red" }}>
+                        {optionId} - Total Sales Value (Rs.): {products.reduce((sum, product) => sum + (parseFloat(product.salesValue) || 0), 0).toFixed(2)}
+                      </p>
+                    </div>
+                  ))}
+                  
+                  {/* Grand Total */}
+                  <div style={{ marginTop: "10px", borderTop: "1px solid #ddd", paddingTop: "5px" }}>
+                    <p style={{ margin: "0", fontWeight: "bold", color: "red" }}>
+                      Grand Total Sale BT: {selectedUnit.consolidatedProducts.reduce((sum, product) => sum + (parseInt(product.saleBT) || 0), 0)}
+                    </p>
+                    <p style={{ margin: "5px 0 0 0", fontWeight: "bold", color: "red" }}>
+                      Grand Total Sales Value (Rs.): {selectedUnit.consolidatedProducts.reduce((sum, product) => sum + (parseFloat(product.salesValue) || 0), 0).toFixed(2)}
+                    </p>
+                  </div>
+                </div>
               )}
               <br /> <br /> <br />
               <div style={{ marginTop: "8px", display: "flex", justifyContent: "space-between" }}>
@@ -893,18 +1042,20 @@ const ProcessedBillReview = () => {
         <div ref={printModalRef} style={{ display: "none" }}>
           <div className="print-content" style={{ marginTop: "20px" }}>
             <div style={{ textAlign: "center", marginBottom: "10px" }}>
-              <h2 style={{ margin: "0" }}>Advance Trading</h2>
-              <p style={{ margin: "3px 0" }}>Reg Office: No: 170/A, Nuwaraeliya Rd, Delpitiya, Gampola</p>
-              <p style={{ margin: "2px 0" }}>Tel: 072-7070701</p>
-              <h3 style={{ margin: "8px 0" }}>Unloading Report</h3>
+              <h3 style={{ margin: "0", fontWeight: "semibold"}}>Advance Trading</h3>
+              {/* <p style={{ margin: "3px 0" }}>Reg Office: No: 170/A, Nuwaraeliya Rd, Delpitiya, Gampola</p>
+              <p style={{ margin: "2px 0" }}>Tel: 072-7070701</p> */}
+              <h4 style={{ margin: "8px 0", fontWeight: "normal" }}>Unloading Report</h4>
             </div>
             
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
               <div>
                 <p><strong>Unit ID:</strong> {selectedUnit.unitId}</p>
+                <p><strong>Driver:</strong> {selectedUnit.driverName || 'N/A'}</p>
               </div>
               <div>
                 <p><strong>Date:</strong> {selectedUnit.date || new Date().toISOString().split('T')[0]}</p>
+                <p><strong>Route:</strong> {selectedUnit.route || 'N/A'}</p>
               </div>
             </div>
             
@@ -940,7 +1091,7 @@ const ProcessedBillReview = () => {
                     .reduce((result, product, index, array) => {
                       // Add the current product to the result
                       result.push(
-                        <tr key={`product-${index}`} style={{ lineHeight: "1" }}>
+                        <tr key={`product-${index}`}>
                           <td>{product.optionId}</td>
                           <td>{product.productName || products.find(p => p.id === product.productId)?.name}</td>
                           <td>{product.totalQty}</td>
@@ -957,11 +1108,28 @@ const ProcessedBillReview = () => {
                         </tr>
                       );
                       
-                      // If the next product has a different optionId, add a separator row
+                      // If the next product has a different optionId or this is the last product,
+                      // add a totals row for the current option group
+                      if (index === array.length - 1 || product.optionId !== array[index + 1].optionId) {
+                        const currentOptionProducts = array.filter(p => p.optionId === product.optionId);
+                        const totalSaleBT = currentOptionProducts.reduce((sum, p) => sum + (parseInt(p.saleBT) || 0), 0);
+                        const totalSalesValue = currentOptionProducts.reduce((sum, p) => sum + (parseFloat(p.salesValue) || 0), 0);
+                        
+                        const colSpan = (product.unloadingBT !== undefined || product.saleBT !== undefined) ? 9 : 6;
+                        result.push(
+                          <tr key={`total-${product.optionId}`} style={{ backgroundColor: "#f8f9fa", fontWeight: "bold" }}>
+                            <td colSpan={colSpan - 2} style={{ textAlign: "right" }}>Total for {product.optionId}:</td>
+                            <td style={{ color: "red" }}>{totalSaleBT}</td>
+                            <td style={{ color: "red" }}>{totalSalesValue.toFixed(2)}</td>
+                          </tr>
+                        );
+                      }
+                      
+                      // Add separator row if not the last product and next has different optionId
                       if (index < array.length - 1 && product.optionId !== array[index + 1].optionId) {
                         const colSpan = (product.unloadingBT !== undefined || product.saleBT !== undefined) ? 9 : 6;
                         result.push(
-                          <tr key={`separator-${index}`} style={{ height: "2px", backgroundColor: "#f0f0f0" }} className="separator-row">
+                          <tr key={`separator-${index}`} style={{ height: "10px", backgroundColor: "#f8f9fa" }}>
                             <td colSpan={colSpan}></td>
                           </tr>
                         );
@@ -972,6 +1140,39 @@ const ProcessedBillReview = () => {
                   }
                 </tbody>
               </table>
+            )}
+            {(selectedUnit.consolidatedProducts[0].unloadingBT !== undefined || 
+              selectedUnit.consolidatedProducts[0].saleBT !== undefined) && (
+              <div style={{ textAlign: "right", marginTop: "10px" }}>
+                {Object.entries(
+                  selectedUnit.consolidatedProducts.reduce((acc, product) => {
+                    if (!acc[product.optionId]) {
+                      acc[product.optionId] = [];
+                    }
+                    acc[product.optionId].push(product);
+                    return acc;
+                  }, {})
+                ).map(([optionId, products]) => (
+                  <div key={optionId} style={{ marginBottom: "5px" }}>
+                    <p style={{ margin: "0", fontWeight: "bold", color: "red" }}>
+                      {optionId} - Total Sale BT: {products.reduce((sum, product) => sum + (parseInt(product.saleBT) || 0), 0)}
+                    </p>
+                    <p style={{ margin: "2px 0 0 0", fontWeight: "bold", color: "red" }}>
+                      {optionId} - Total Sales Value (Rs.): {products.reduce((sum, product) => sum + (parseFloat(product.salesValue) || 0), 0).toFixed(2)}
+                    </p>
+                  </div>
+                ))}
+                
+                {/* Grand Total */}
+                <div style={{ marginTop: "10px", borderTop: "1px solid #ddd", paddingTop: "5px" }}>
+                  <p style={{ margin: "0", fontWeight: "bold", color: "red" }}>
+                    Grand Total Sale BT: {selectedUnit.consolidatedProducts.reduce((sum, product) => sum + (parseInt(product.saleBT) || 0), 0)}
+                  </p>
+                  <p style={{ margin: "5px 0 0 0", fontWeight: "bold", color: "red" }}>
+                    Grand Total Sales Value (Rs.): {selectedUnit.consolidatedProducts.reduce((sum, product) => sum + (parseFloat(product.salesValue) || 0), 0).toFixed(2)}
+                  </p>
+                </div>
+              </div>
             )}
             <br /> <br /> <br />
             <div style={{ marginTop: "8px", display: "flex", justifyContent: "space-between" }}>

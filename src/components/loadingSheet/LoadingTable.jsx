@@ -16,6 +16,8 @@ const BillManagement = () => {
   const [itemsPerPage] = useState(5);
   const [printMode, setPrintMode] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
+  const [driverName, setDriverName] = useState("");
+  const [route, setRoute] = useState("");
 
   const billsCollectionRef = collection(db, "Bill");
   const productsCollectionRef = collection(db, "Product");
@@ -171,6 +173,16 @@ const BillManagement = () => {
         return;
       }
 
+      if (!driverName.trim()) {
+        alert("Please enter Driver Name");
+        return;
+      }
+
+      if (!route.trim()) {
+        alert("Please enter Route");
+        return;
+      }
+
       // Group products by their unique identifiers
       const consolidatedProducts = [];
       
@@ -231,6 +243,8 @@ const BillManagement = () => {
       const unitData = {
         unitId,
         date: selectedDate,
+        driverName,
+        route,
         bills: newBillItems,
         consolidatedProducts: consolidatedProducts,
         createdAt: serverTimestamp(),
@@ -241,6 +255,8 @@ const BillManagement = () => {
 
       alert("Unit saved successfully!");
       setNewBillItems([]);
+      setDriverName("");
+      setRoute("");
       await fetchProcessedUnits(); // Refresh processed units
     } catch (error) {
       console.error("Error saving unit:", error.message);
@@ -364,14 +380,36 @@ const BillManagement = () => {
       {/* Process New Bills Section */}
       <div style={{ backgroundColor: "white", padding: "20px", borderRadius: "8px", marginBottom: "20px" }}>
         <h4>Process New Bills</h4>
-        <div className="mb-3">
-          <label>Select Date: </label>
-          <input 
-            type="date" 
-            className="form-control w-25 d-inline-block ms-2" 
-            value={selectedDate} 
-            onChange={(e) => setSelectedDate(e.target.value)}
-          />
+        <div className="row mb-3">
+          <div className="col-md-4">
+            <label>Select Date: </label>
+            <input 
+              type="date" 
+              className="form-control" 
+              value={selectedDate} 
+              onChange={(e) => setSelectedDate(e.target.value)}
+            />
+          </div>
+          <div className="col-md-4">
+            <label>Driver Name: </label>
+            <input 
+              type="text" 
+              className="form-control" 
+              placeholder="Enter driver name"
+              value={driverName}
+              onChange={(e) => setDriverName(e.target.value)}
+            />
+          </div>
+          <div className="col-md-4">
+            <label>Route: </label>
+            <input 
+              type="text" 
+              className="form-control" 
+              placeholder="Enter route"
+              value={route}
+              onChange={(e) => setRoute(e.target.value)}
+            />
+          </div>
         </div>
 
         {/* Display added bills as cards */}
@@ -465,7 +503,7 @@ const BillManagement = () => {
                         <td>{productName} - {optionId}</td>
                         <td>{totalQty}</td>
                         <td>
-                          <div className="form-check form-check-inline">
+                          <div className="form-check form-check-inline" style={{ marginRight: '15px' }}>
                             <input
                               type="radio"
                               name={`bpc-${uniqueKey}`}
@@ -476,10 +514,22 @@ const BillManagement = () => {
                                   handleBottlesPerCaseChange(billIndex, entryProductIndex, 9);
                                 }
                               }}
+                              style={{
+                                width: '18px',
+                                height: '18px',
+                                margin: '0 6px 0 0',
+                                cursor: 'pointer',
+                                accentColor: '#007bff'
+                              }}
                             />
-                            <label>9</label>
+                            <label style={{ 
+                              fontSize: '14px', 
+                              cursor: 'pointer',
+                              userSelect: 'none',
+                              fontWeight: '500'
+                            }}>9</label>
                           </div>
-                          <div className="form-check form-check-inline">
+                          <div className="form-check form-check-inline" style={{ marginRight: '15px' }}>
                             <input
                               type="radio"
                               name={`bpc-${uniqueKey}`}
@@ -490,10 +540,22 @@ const BillManagement = () => {
                                   handleBottlesPerCaseChange(billIndex, entryProductIndex, 12);
                                 }
                               }}
+                              style={{
+                                width: '18px',
+                                height: '18px',
+                                margin: '0 6px 0 0',
+                                cursor: 'pointer',
+                                accentColor: '#007bff'
+                              }}
                             />
-                            <label>12</label>
+                            <label style={{ 
+                              fontSize: '14px', 
+                              cursor: 'pointer',
+                              userSelect: 'none',
+                              fontWeight: '500'
+                            }}>12</label>
                           </div>
-                          <div className="form-check form-check-inline">
+                          <div className="form-check form-check-inline" style={{ marginRight: '15px' }}>
                             <input
                               type="radio"
                               name={`bpc-${uniqueKey}`}
@@ -504,10 +566,22 @@ const BillManagement = () => {
                                   handleBottlesPerCaseChange(billIndex, entryProductIndex, 15);
                                 }
                               }}
+                              style={{
+                                width: '18px',
+                                height: '18px',
+                                margin: '0 6px 0 0',
+                                cursor: 'pointer',
+                                accentColor: '#007bff'
+                              }}
                             />
-                            <label>15</label>
+                            <label style={{ 
+                              fontSize: '14px', 
+                              cursor: 'pointer',
+                              userSelect: 'none',
+                              fontWeight: '500'
+                            }}>15</label>
                           </div>
-                          <div className="form-check form-check-inline">
+                          <div className="form-check form-check-inline" style={{ marginRight: '15px' }}>
                             <input
                               type="radio"
                               name={`bpc-${uniqueKey}`}
@@ -518,10 +592,22 @@ const BillManagement = () => {
                                   handleBottlesPerCaseChange(billIndex, entryProductIndex, 24);
                                 }
                               }}
+                              style={{
+                                width: '18px',
+                                height: '18px',
+                                margin: '0 6px 0 0',
+                                cursor: 'pointer',
+                                accentColor: '#007bff'
+                              }}
                             />
-                            <label>24</label>
+                            <label style={{ 
+                              fontSize: '14px', 
+                              cursor: 'pointer',
+                              userSelect: 'none',
+                              fontWeight: '500'
+                            }}>24</label>
                           </div>
-                          <div className="form-check form-check-inline">
+                          <div className="form-check form-check-inline" style={{ marginRight: '15px' }}>
                             <input
                               type="radio"
                               name={`bpc-${uniqueKey}`}
@@ -532,8 +618,20 @@ const BillManagement = () => {
                                   handleBottlesPerCaseChange(billIndex, entryProductIndex, 30);
                                 }
                               }}
+                              style={{
+                                width: '18px',
+                                height: '18px',
+                                margin: '0 6px 0 0',
+                                cursor: 'pointer',
+                                accentColor: '#007bff'
+                              }}
                             />
-                            <label>30</label>
+                            <label style={{ 
+                              fontSize: '14px', 
+                              cursor: 'pointer',
+                              userSelect: 'none',
+                              fontWeight: '500'
+                            }}>30</label>
                           </div>
                         </td>
                         <td>{firstInstance.bottlesPerCase ? Math.floor(totalQty / firstInstance.bottlesPerCase) : '-'}</td>
@@ -579,6 +677,8 @@ const BillManagement = () => {
             <tr>
               <th>Unit ID</th>
               <th>Date</th>
+              <th>Driver Name</th>
+              <th>Route</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -587,6 +687,8 @@ const BillManagement = () => {
               <tr key={unit.id}>
                 <td>{unit.unitId}</td>
                 <td>{unit.date}</td>
+                <td>{unit.driverName || 'N/A'}</td>
+                <td>{unit.route || 'N/A'}</td>
                 <td>
                   <div className="d-flex gap-2">
                     <button 
@@ -875,18 +977,20 @@ const BillManagement = () => {
             
             <div className="print-content" style={{ marginTop: "20px" }}>
               <div style={{ textAlign: "center", marginBottom: "10px" }}>
-                <h2 style={{ margin: "0" }}>Advance Trading</h2>
-                <p style={{ margin: "3px 0" }}>Reg Office: No: 170/A, Nuwaraeliya Rd, Delpitiya, Gampola</p>
-                <p style={{ margin: "2px 0" }}>Tel: 072-7070701</p>
-                <h3 style={{ margin: "8px 0" }}>Loading Sheet</h3>
+                <h3 style={{ margin: "0", fontWeight: "semibold" }}>Advance Trading</h3>
+                {/* <p style={{ margin: "3px 0" }}>Reg Office: No: 170/A, Nuwaraeliya Rd, Delpitiya, Gampola</p>
+                <p style={{ margin: "2px 0" }}>Tel: 072-7070701</p> */}
+                <h4 style={{ margin: "8px 0" , fontWeight: "normal"}}>Loading Sheet</h4>
               </div>
               
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
                 <div>
                   <p><strong>Unit ID:</strong> {selectedBill.unitId}</p>
+                  <p><strong>Driver:</strong> {selectedBill.driverName || 'N/A'}</p>
                 </div>
                 <div>
                   <p><strong>Date:</strong> {selectedBill.date}</p>
+                  <p><strong>Route:</strong> {selectedBill.route || 'N/A'}</p>
                 </div>
               </div>
               
