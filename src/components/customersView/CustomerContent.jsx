@@ -912,7 +912,7 @@ const BillAdd = () => {
                 </tr>
                 <tr>
                       <td><strong class="print-normal-weight">FREE ISSUE</strong></td>
-                      <td class="print-boldt">Rs. ${calculateTotal(bill.freeIssueOptions)}</td>
+                      <td class="print-bold">Rs. ${calculateTotal(bill.freeIssueOptions)}</td>
                 </tr>
                 <tr>
                       <td><strong class="print-normal-weight">EXPIRE</strong></td>
