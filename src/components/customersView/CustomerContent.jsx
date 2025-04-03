@@ -260,9 +260,9 @@ const BillAdd = () => {
               color: #000;
             }
             .page {
-              width: 100%;
-              max-width: 210mm;
-              padding: 3mm 5mm;
+              width: 95%;
+              max-width: 100%;
+              padding: 2mm 5mm;
               margin: 0 auto;
               box-sizing: border-box;
               box-shadow: 0 0 10mm rgba(0,0,0,0.2);
@@ -434,7 +434,7 @@ const BillAdd = () => {
               border-bottom: 0.25px solid #000;
             }
             .total-section table { 
-              width: 60%; 
+              width: 65%; 
               border-collapse: collapse; 
               margin-top: 0.5mm; 
               margin-left: auto;
@@ -453,6 +453,7 @@ const BillAdd = () => {
               color: #000;
             }
             .signature-area {
+              width: 100%;
               display: flex;
               justify-content: space-between;
               margin-top: 10mm;
@@ -484,22 +485,23 @@ const BillAdd = () => {
             @media print {
               @page { 
                 size: A4 portrait; 
-                margin: 0; 
+                margin: 5mm 10mm; 
               }
               .no-print { 
                 display: none !important; 
               }
               body { 
-              background-color: #fff; 
+                background-color: #fff; 
                 margin: 0;
                 padding: 0;
                 display: block;
+                width: 100%;
               }
               .page {
                 width: 100%;
                 max-width: none;
-                padding: 10mm;
-                margin: 0 auto;
+                padding: 2mm;
+                margin: 0;
                 box-shadow: none;
                 position: relative;
               }
@@ -694,7 +696,10 @@ const BillAdd = () => {
               }
               
               .page {
-                padding: 2mm !important;
+                padding: 1mm !important;
+                width: 96% !important;
+                max-width: 96% !important;
+                margin: 0 auto !important;
               }
               
               /* Make smaller text for print */
@@ -717,6 +722,29 @@ const BillAdd = () => {
                 margin-left: 1mm !important;
                 border-bottom: 0.5px solid #000 !important;
                 width: 50mm !important;
+              }
+              
+              /* Optimize for full page printing */
+              .products-table {
+                width: 100% !important;
+              }
+              
+              .total-section table {
+                width: 65% !important;
+              }
+              
+              .signature-area {
+                width: 100% !important;
+              }
+              
+              .details table {
+                width: 100% !important;
+              }
+              
+              .invoice-container {
+                padding: 0 !important;
+                margin: 0 auto !important;
+                width: 95% !important;
               }
             }
           </style>
@@ -871,24 +899,24 @@ const BillAdd = () => {
               <table>
                 <tr>
                       <td><strong class="print-normal-weight">SUBTOTAL</strong></td>
-                      <td class="print-normal-weight">Rs. ${calculateProductTotal(bill.productOptions)}</td>
+                      <td class="print-bold">Rs. ${calculateProductTotal(bill.productOptions)}</td>
                 </tr>
                 ${hasPercentageDiscount ? `
                 <tr>
                       <td><strong class="print-normal-weight">PERCENTAGE DISCOUNT (${bill.percentageDiscount}%)</strong></td>
-                      <td class="print-normal-weight">Rs. ${percentageDiscountAmount}</td>
+                      <td class="print-bold">Rs. ${percentageDiscountAmount}</td>
                 </tr>` : ''}
                 <tr>
                       <td><strong class="print-normal-weight">DISCOUNT</strong></td>
-                      <td class="print-normal-weight">Rs. ${calculateTotal(bill.discountOptions)}</td>
+                      <td class="print-bold">Rs. ${calculateTotal(bill.discountOptions)}</td>
                 </tr>
                 <tr>
                       <td><strong class="print-normal-weight">FREE ISSUE</strong></td>
-                      <td class="print-normal-weight">Rs. ${calculateTotal(bill.freeIssueOptions)}</td>
+                      <td class="print-bold">Rs. ${calculateTotal(bill.freeIssueOptions)}</td>
                 </tr>
                 <tr>
                       <td><strong class="print-normal-weight">EXPIRE</strong></td>
-                      <td class="print-normal-weight">Rs. ${calculateTotal(bill.expireOptions)}</td>
+                      <td class="print-bold">Rs. ${calculateTotal(bill.expireOptions)}</td>
                 </tr>
                 <tr>
                       <td><strong class="print-bold">TOTAL</strong></td>
@@ -1816,7 +1844,7 @@ const BillAdd = () => {
           <div className="card-header bg-info text-white d-flex justify-content-between align-items-center">
             <h5 className="mb-0 text-white">Free Issue Options</h5>
             <button type="button" className="btn btn-light btn-sm" onClick={addFreeIssueOption}>
-              <i className="bi bi-plus-circle"></i> Add Free Issue
+              <i className="bi bi-plus-circle"></i> Add Free Issues
             </button>
           </div>
           <div className="card-body">
