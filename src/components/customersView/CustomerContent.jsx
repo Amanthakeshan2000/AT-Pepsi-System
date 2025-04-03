@@ -249,54 +249,81 @@ const BillAdd = () => {
           <title>Invoice - ${bill.billNo}</title>
           <style>
             body { 
-              font-family: Arial, sans-serif; 
-              margin: 5px; 
-              font-size: 10px; 
+              font-family: 'Courier New', monospace; 
+              margin: 0; 
+              padding: 0;
+              font-size: 14px; 
               line-height: 1.2; 
-              background-color: #f9f9f9;
+              background-color: #fff;
+              display: flex;
+              justify-content: center;
+              color: #000;
+            }
+            .page {
+              width: 100%;
+              max-width: 210mm;
+              padding: 5mm 5mm;
+              margin: 0 auto;
+              box-sizing: border-box;
+              box-shadow: 0 0 10mm rgba(0,0,0,0.2);
+              background-color: #fff;
             }
             .invoice-container { 
-              max-width: 700px; 
+              width: 100%; 
               margin: 0 auto; 
-              border: 1px solid #333; 
-              padding: 5px; 
+              border: none; 
+              padding: 2mm; 
+              box-sizing: border-box;
             }
             .header { 
               text-align: center; 
-              padding: 2px; 
+              padding: 1mm; 
+              border-bottom: 0.25px solid #000;
+              margin-bottom: 2mm;
             }
             .header .company { 
               display: flex; 
               justify-content: space-between; 
               align-items: center; 
-              margin-bottom: 5px; 
             }
             .company-title { 
-              font-size: 23px; 
+              font-size: 28px; 
               font-weight: bold; 
-              color: rgb(0, 0, 0); 
+              color: #000;
+              margin: 0 auto;
+              text-align: center;
+              width: 100%;
             }
             .company-pepsi { 
-              font-size: 15px; 
+              font-size: 16px; 
               font-weight: bold; 
-              color: rgb(112, 112, 112); 
+              color: #000;
+              position: absolute;
+              right: 10px;
+              top: 5px;
             }
             .company-details { 
-              font-size: 8px; 
-              color: #333; 
-              margin-bottom: 5px; 
+              font-size: 14px; 
+              color: #000; 
+              margin-bottom: 1mm; 
               text-align: center;
+              line-height: 1.2;
             }
             .details table { 
               width: 100%; 
               border: none; 
+              border-bottom: 0.25px solid #000;
+              margin-bottom: 1mm;
             }
             .details td { 
-              padding: 2px; 
+              padding: 1mm 1.5mm; 
               vertical-align: top; 
+              font-size: 16px;
+              font-weight: bold;
+              color: #000;
             }
             .details td:first-child { 
-              width: 30%; 
+              width: 25%; 
               font-weight: bold; 
             }
             .details td:nth-child(3) { 
@@ -305,195 +332,432 @@ const BillAdd = () => {
             }
             .payment-options { 
               width: 50%; 
-              margin-left: auto; /* Right-align */
-              margin-top: 5px; 
+              margin-left: auto;
+              margin-bottom: 1mm;
               display: flex; 
               justify-content: space-around; 
-              border: 1px solid #ddd; 
-              padding: 2px; 
+              border: 0.25px solid #000; 
+              padding: 1mm; 
             }
             .payment-option { 
               width: 33%; 
-              text-align: center; 
+              text-align: center;
+              font-size: 14px;
+              font-weight: bold;
+              color: #000;
             }
             .discounts { 
               display: flex; 
               justify-content: space-between; 
-              margin: 5px 0; 
+              margin: 1mm 0; 
+              border: 0.25px solid #000;
+              padding: 1mm;
             }
             .discounts div { 
               width: 32%; 
-              border: 1px solid #ddd; 
-              padding: 2px; 
+              padding: 1mm; 
+              border-right: 0.25px solid #000;
+              color: #000;
+            }
+            .discounts div:last-child {
+              border-right: none;
+            }
+            .discounts p {
+              margin: 0;
+              font-size: 13px;
+              color: #000;
+            }
+            .discounts strong {
+              font-size: 14px;
+              font-weight: bold;
+              color: #000;
+            }
+            .discounts p:first-child {
+              border-bottom: 0.25px solid #000;
+              padding-bottom: 1mm;
+              margin-bottom: 1mm;
+              font-size: 15px;
+              font-weight: bold;
+              color: #000;
             }
             table { 
               width: 100%; 
               border-collapse: collapse; 
-              margin-top: 5px; 
+              margin-top: 1mm; 
             }
             th, td { 
-              padding: 2px; 
+              padding: 1mm; 
               text-align: left; 
-              font-size: 10px; 
-            }
-            .total-section table { 
-              width: 50%; 
-              border-collapse: collapse; 
-              margin-top: 5px; 
-              margin-left: auto; /* Right-align the table */
-              border: none; 
-            }
-            .total-section td { 
-              padding: 2px; 
-              text-align: right; 
-              font-size: 10px; 
-              font-weight: bold; 
-            }
-            .total-section .total-row td { 
-              color: #e74c3c; 
+              font-size: 12px;
+              color: #000; 
             }
             .products-table { 
-              width: 70%; /* Smaller width */
-              margin: 0 auto; /* Center-align */
-              border: 1px solid #ddd; 
+              width: 100%;
+              border-collapse: collapse;
+              margin-bottom: 1mm;
+              color: #000;
+            }
+            .products-table th, .products-table td {
+              border: 0.25px solid #000;
+              padding: 1mm;
+              text-align: left;
+              font-size: 14px;
+              color: #000;
+            }
+            .products-table th {
+              font-weight: bold;
+              background-color: #fff;
+              color: #000;
+              font-size: 15px;
             }
             .products-table thead { 
-              border-bottom: 1px solid #ddd; 
+              border-bottom: 0.5px solid #000; 
             }
             .products-table th { 
-              border: none; 
-              background-color: #fff; 
+              border-bottom: 0.5px solid #000;
+              background-color: #fff;
+              font-size: 13px;
+              font-weight: bold;
+              padding: 1mm;
+              color: #000;
             }
             .products-table td { 
-              border: none; 
+              border-bottom: 0.25px dotted #000;
+              font-size: 14px;
+              padding: 1.5mm;
+              color: #000;
             }
-            .signature { 
-              border-top: 1px dashed #000; 
-              margin-top: 5px; 
-              text-align: center; 
-              font-size: 8px; 
+            .products-table tr:last-child td {
+              border-bottom: none;
             }
-            .footer { 
-              text-align: center; 
-              margin-top: 5px; 
-              font-size: 8px; 
-              color: #777; 
+            .total-section table { 
+              width: 60%; 
+              border-collapse: collapse; 
+              margin-top: 1mm; 
+              margin-left: auto;
+              border: 0.25px solid #000; 
+            }
+            .total-section td { 
+              padding: 1mm; 
+              text-align: right; 
+              font-size: 16px; 
+              font-weight: bold;
+              color: #000;
+            }
+            .total-section tr:last-child td { 
+              font-size: 18px;
+              border-top: 0.25px solid #000;
+              color: #000;
+            }
+            .signature-area {
+              display: flex;
+              justify-content: space-between;
+              margin-top: 2mm;
+              font-size: 15px;
+              font-weight: bold;
+              border-top: 0.25px dashed #000;
+              padding-top: 1mm;
+              color: #000;
+            }
+            .footer {
+              text-align: center;
+              margin-top: 2mm;
+              font-size: 14px;
+              border-top: 0.25px solid #000;
+              padding-top: 1mm;
+              color: #000;
             }
             @media print {
-              @page { size: A4; margin: 5mm; }
-              .no-print { display: none; }
+              @page { 
+                size: A4 portrait; 
+                margin: 0; 
+              }
+              .no-print { 
+                display: none !important; 
+              }
+              body { 
+                background-color: #fff;
+                margin: 0;
+                padding: 0;
+                display: block;
+              }
+              .page {
+                width: 100%;
+                max-width: none;
+                padding: 10mm;
+                margin: 0 auto;
+                box-shadow: none;
+                min-height: 297mm;
+                position: relative;
+              }
+              .invoice-container {
+                border: none;
+              }
+              .print-buttons {
+                display: none !important;
+              }
+            }
+            .print-buttons {
+              display: flex;
+              justify-content: center;
+              margin-top: 4mm;
+            }
+            .print-button {
+              padding: 2mm 4mm;
+              margin: 0 2mm;
+              background-color: #4CAF50;
+              color: white;
+              border: none;
+              border-radius: 1mm;
+              cursor: pointer;
+              font-size: 12px;
+            }
+            .totals {
+              width: 60%;
+              margin-left: auto;
+              border: 0.25px solid #000;
+              padding: 1mm;
+              color: #000;
+            }
+            .totals p {
+              display: flex;
+              justify-content: space-between;
+              margin: 0;
+              padding: 0.5mm 0;
+              border-bottom: 0.25px solid #eee;
+              font-size: 15px;
+              color: #000;
+            }
+            .totals p:last-child {
+              font-weight: bold;
+              font-size: 18px;
+              border-top: 0.25px solid #000;
+              border-bottom: none;
+              padding-top: 1mm;
+              margin-top: 1mm;
+              color: #000;
+            }
+            h1, h2, h3, h4, h5, h6 {
+              color: #000;
+              margin: 2mm 0;
+              font-weight: bold;
+            }
+            h1 {
+              font-size: 22px;
+              text-align: center;
+            }
+            .customer-details, .invoice-details {
+              font-size: 14px;
+              font-weight: bold;
+              color: #000;
+            }
+            .customer-details strong, .invoice-details strong {
+              font-weight: bolder;
+              color: #000;
+            }
+            .totals strong {
+              font-weight: bold;
+              color: #000;
+            }
+            .totals p:last-child {
+              font-weight: bold;
+              font-size: 18px;
+              border-top: 0.25px solid #000;
+              border-bottom: none;
+              padding-top: 2mm;
+              margin-top: 2mm;
+              color: #000;
             }
           </style>
         </head>
         <body>
-          <div class="invoice-container">
-            <div class="header">
-              <div class="company">
-                <div class="company-title"></div>
-                <div class="company-pepsi">pepsi</div>
+          <div class="page">
+            <div class="invoice-container">
+              <div class="header">
+                <div class="company" style="position: relative;">
+                  <div class="company-pepsi">pepsi</div>
+                  <div class="company-title">Advance Trading</div>
+                </div>
+                <p class="company-details">Reg Office: No: 170/A, Nuwaraeliya Rd, Delpitiya, Gampola<br>Tel: 072-7070701</p>
               </div>
-              <div class="company-title">Advance Trading</div>
-              <p class="company-details">Reg Office: No: 170/A, Nuwaraeliya Rd, Delpitiya, Gampola<br>Tel: 072-7070701</p>
-            </div>
-            <div class="details">
-              <table>
-                <tr><td><strong>Customer Name</strong></td><td>${bill.outletName}</td><td><strong>Invoice No:</strong></td><td><strong>${bill.billNo}</strong></td></tr>
-                <tr><td><strong>Customer Contact</strong></td><td>${bill.contact}</td><td><strong>Date:</strong></td><td>${bill.createDate}</td></tr>
-                <tr><td><strong>Address</strong></td><td>${bill.address}</td></tr>
-                <tr><td><strong>Ref Name</strong></td><td>${bill.salesRef}</td></tr>
-                <tr><td><strong>Ref Contact</strong></td><td>${bill.refContact}</td></tr>
-              </table>
-            </div>
-            <div class="payment-options">
-              <div class="payment-option"><input type="checkbox" name="payment" value="cash"> cash</div>
-              <div class="payment-option"><input type="checkbox" name="payment" value="credit"> credit</div>
-              <div class="payment-option"><input type="checkbox" name="payment" value="cheque"> cheque</div>
-            </div>
-            <div class="discounts">
-              <div>
-                <p><strong>DISCOUNT</strong></p>
-                ${bill.discountOptions.map(option => `
-                  <p>${option.name}: ${option.case} * ${option.perCaseRate} = ${option.total}</p>
-                `).join('')}
-                <p><strong>Total</strong> ${calculateTotal(bill.discountOptions)}</p>
-              </div>
-              <div>
-                <p><strong>FREE ISSUE</strong></p>
-                ${bill.freeIssueOptions.map(option => `
-                  <p>${option.name}: ${option.case} * ${option.perCaseRate} = ${option.total}</p>
-                `).join('')}
-                <p><strong>Total</strong> ${calculateTotal(bill.freeIssueOptions)}</p>
-              </div>
-              <div>
-                <p><strong>EXPIRE</strong></p>
-                ${bill.expireOptions.map(option => `
-                  <p>${option.name}: ${option.case} * ${option.perCaseRate} = ${option.total}</p>
-                `).join('')}
-                <p><strong>Total</strong> ${calculateTotal(bill.expireOptions)}</p>
-              </div>
-            </div>
-
-            <table class="products-table">
-              <thead>
-                <tr>
-                  <th>DESCRIPTION</th>
-                  <th>QTY</th>
-                  <th>*</th>
-                  <th>RATE Rs.</th>
-                  <th>RATE Rs.</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${bill.productOptions.map(option => `
+              
+              <div class="details">
+                <table>
                   <tr>
-                    <td>${products.find(p => p.id === option.productId)?.name || 'N/A'} ${option.optionId}</td>
-                    <td>${option.qty}</td>
-                    <td>*</td>
-                    <td>${option.price}</td>
-                    <td>${((parseFloat(option.price) || 0) * (parseFloat(option.qty) || 0)).toFixed(2)}</td>
+                    <td>Customer:</td>
+                    <td>${bill.outletName}</td>
+                    <td>Invoice No:</td>
+                    <td>${bill.billNo}</td>
                   </tr>
-                `).join('')}
-              </tbody>
-            </table>
+                  <tr>
+                    <td>Contact:</td>
+                    <td>${bill.contact}</td>
+                    <td>Date:</td>
+                    <td>${bill.createDate}</td>
+                  </tr>
+                  <tr>
+                    <td>Address:</td>
+                    <td colspan="3">${bill.address}</td>
+                  </tr>
+                  <tr>
+                    <td>Ref Name:</td>
+                    <td>${bill.salesRef}</td>
+                    <td>Ref Contact:</td>
+                    <td>${bill.refContact}</td>
+                  </tr>
+                </table>
+              </div>
+              
+              <div class="payment-options">
+                <div class="payment-option"><input type="checkbox" name="payment" value="cash"> Cash</div>
+                <div class="payment-option"><input type="checkbox" name="payment" value="credit"> Credit</div>
+                <div class="payment-option"><input type="checkbox" name="payment" value="cheque"> Cheque</div>
+              </div>
 
-            <div class="total-section">
-              <table>
-                <tr>
-                  <td><strong>SUBTOTAL</strong></td>
-                   <td>=</td>
-                  <td>${calculateProductTotal(bill.productOptions)}</td>
-                </tr>
-                <tr>
-                  <td><strong>DISCOUNT</strong></td>
-                  <td>=</td>
-                  <td>${calculateTotal(bill.discountOptions)}</td>
-                </tr>
-                <tr>
-                  <td><strong>FREE ISSUE</strong></td>
-                  <td>=</td>
-                  <td>${calculateTotal(bill.freeIssueOptions)}</td>
-                </tr>
-                <tr>
-                  <td><strong>EXPIRE</strong></td>
-                  <td>=</td>
-                  <td>${calculateTotal(bill.expireOptions)}</td>
-                </tr>
-                <tr>
-                  <td><strong>TOTAL</strong></td>
-                  <td>=</td>
-                  <td style="color: #e74c3c;">${(
-                    parseFloat(calculateProductTotal(bill.productOptions)) -
-                    (parseFloat(calculateTotal(bill.discountOptions)) +
-                     parseFloat(calculateTotal(bill.freeIssueOptions)) +
-                     parseFloat(calculateTotal(bill.expireOptions)))
-                  ).toFixed(2)}</td>
-                </tr>
+              <table class="products-table">
+                <thead>
+                  <tr>
+                    <th style="width:40%">DESCRIPTION</th>
+                    <th style="width:12%; text-align:center">QTY</th>
+                    <th style="width:15%; text-align:right">UNIT PRICE</th>
+                    <th style="width:15%; text-align:right">AMOUNT</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${bill.productOptions.map(option => `
+                    <tr>
+                      <td>${products.find(p => p.id === option.productId)?.name || 'N/A'} ${option.optionId}</td>
+                      <td style="text-align:center">${option.qty}</td>
+                      <td style="text-align:right">${option.price}</td>
+                      <td style="text-align:right">${((parseFloat(option.price) || 0) * (parseFloat(option.qty) || 0)).toFixed(2)}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
               </table>
-            </div>
 
-            <div class="signature">customer signature</div>
-            <div class="footer">
-              <p>Thank you!</p>
+              <div class="discounts">
+                <div>
+                  <p>DISCOUNT</p>
+                  ${Object.entries(bill.discountOptions
+                    .reduce((uniqueMap, option) => {
+                      const optionId = option.optionId || '';
+                      if (!uniqueMap[optionId]) {
+                        uniqueMap[optionId] = {
+                          case: parseFloat(option.case) || 0,
+                          perCaseRate: parseFloat(option.perCaseRate) || 0,
+                          total: parseFloat(option.total) || 0
+                        };
+                      } else {
+                        uniqueMap[optionId].case += parseFloat(option.case) || 0;
+                        uniqueMap[optionId].total += parseFloat(option.total) || 0;
+                      }
+                      return uniqueMap;
+                    }, {})
+                  )
+                    .map(([optionId, entry]) => `
+                      <p>${optionId}: ${entry.case} × ${entry.perCaseRate} = ${entry.total.toFixed(2)}</p>
+                    `).join('')
+                  }
+                  <p><strong>Total: ${calculateTotal(bill.discountOptions)}</strong></p>
+                </div>
+                <div>
+                  <p>FREE ISSUE</p>
+                  ${Object.entries(bill.freeIssueOptions
+                    .reduce((uniqueMap, option) => {
+                      const optionId = option.optionId || '';
+                      if (!uniqueMap[optionId]) {
+                        uniqueMap[optionId] = {
+                          case: parseFloat(option.case) || 0,
+                          perCaseRate: parseFloat(option.perCaseRate) || 0,
+                          total: parseFloat(option.total) || 0
+                        };
+                      } else {
+                        uniqueMap[optionId].case += parseFloat(option.case) || 0;
+                        uniqueMap[optionId].total += parseFloat(option.total) || 0;
+                      }
+                      return uniqueMap;
+                    }, {})
+                  )
+                    .map(([optionId, entry]) => `
+                      <p>${optionId}: ${entry.case} × ${entry.perCaseRate} = ${entry.total.toFixed(2)}</p>
+                    `).join('')
+                  }
+                  <p><strong>Total: ${calculateTotal(bill.freeIssueOptions)}</strong></p>
+                </div>
+                <div>
+                  <p>EXPIRE</p>
+                  ${Object.entries(bill.expireOptions
+                    .reduce((uniqueMap, option) => {
+                      const optionId = option.optionId || '';
+                      if (!uniqueMap[optionId]) {
+                        uniqueMap[optionId] = {
+                          case: parseFloat(option.case) || 0,
+                          perCaseRate: parseFloat(option.perCaseRate) || 0,
+                          total: parseFloat(option.total) || 0
+                        };
+                      } else {
+                        uniqueMap[optionId].case += parseFloat(option.case) || 0;
+                        uniqueMap[optionId].total += parseFloat(option.total) || 0;
+                      }
+                      return uniqueMap;
+                    }, {})
+                  )
+                    // Generate HTML for each unique optionId
+                    .map(([optionId, entry]) => `
+                      <p>${optionId}: ${entry.case} * ${entry.perCaseRate} = ${entry.total.toFixed(2)}</p>
+                    `).join('')
+                  }
+                  <p><strong>Total: ${calculateTotal(bill.expireOptions)}</strong></p>
+                </div>
+              </div>
+
+              <div class="total-section">
+                <table>
+                  <tr>
+                    <td><strong>SUBTOTAL</strong></td>
+                    <td>Rs. ${calculateProductTotal(bill.productOptions)}</td>
+                  </tr>
+                  <tr>
+                    <td><strong>DISCOUNT</strong></td>
+                    <td>Rs. ${calculateTotal(bill.discountOptions)}</td>
+                  </tr>
+                  <tr>
+                    <td><strong>FREE ISSUE</strong></td>
+                    <td>Rs. ${calculateTotal(bill.freeIssueOptions)}</td>
+                  </tr>
+                  <tr>
+                    <td><strong>EXPIRE</strong></td>
+                    <td>Rs. ${calculateTotal(bill.expireOptions)}</td>
+                  </tr>
+                  <tr>
+                    <td><strong>TOTAL</strong></td>
+                    <td>Rs. ${(
+                      parseFloat(calculateProductTotal(bill.productOptions)) -
+                      (parseFloat(calculateTotal(bill.discountOptions)) +
+                       parseFloat(calculateTotal(bill.freeIssueOptions)) +
+                       parseFloat(calculateTotal(bill.expireOptions)))
+                    ).toFixed(2)}</td>
+                  </tr>
+                </table>
+              </div>
+
+              <div class="signature-area">
+                <div>
+                  <p>Customer Signature: ___________________</p>
+                </div>
+                <div>
+                  <p>Authorized Signature: ___________________</p>
+                </div>
+              </div>
+
+              <div class="footer">
+                <p>Thank you for your business! For questions contact us at 072-7070701</p>
+              </div>
+
+              <div class="print-buttons no-print">
+                <button class="print-button" onclick="window.print();">Print Invoice</button>
+                <button class="print-button" style="background-color: #f44336;" onclick="window.close();">Close</button>
+              </div>
             </div>
           </div>
         </body>
@@ -1252,7 +1516,7 @@ const BillAdd = () => {
         
         <div className="card shadow-sm mb-4">
           <div className="card-header bg-success text-white d-flex justify-content-between align-items-center">
-            <h5 className="mb-0 text-white">Discount Options</h5>
+            <h5 className="mb-0 text-white">Discount Optionss</h5>
             <button type="button" className="btn btn-light btn-sm" onClick={addDiscountOption}>
               <i className="bi bi-plus-circle"></i> Add Discount
             </button>
@@ -1272,7 +1536,7 @@ const BillAdd = () => {
               <tbody>
                 {discountOptions.map((option, index) => (
                   <tr key={index}>
-                    <td>{option.name}</td>
+                    <td>{option.optionId}</td>
                     <td>
                       <input
                         type="number"
@@ -1356,7 +1620,7 @@ const BillAdd = () => {
               <tbody>
                 {freeIssueOptions.map((option, index) => (
                   <tr key={index}>
-                    <td>{option.name}</td>
+                    <td>{option.optionId}</td>
                     <td>
                       <input
                         type="number"
@@ -1440,7 +1704,7 @@ const BillAdd = () => {
               <tbody>
                 {expireOptions.map((option, index) => (
                   <tr key={index}>
-                    <td>{option.name}</td>
+                    <td>{option.optionId}</td>
                     <td>
                       <input
                         type="number"
@@ -1610,7 +1874,7 @@ const BillAdd = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="d-flex justify-content-center">
           <button 
             type="submit" 
@@ -1634,12 +1898,12 @@ const BillAdd = () => {
                 <span className="input-group-text">
                   <i className="bi bi-search"></i>
                 </span>
-                <input
-                  type="text"
+          <input 
+            type="text" 
                   className="form-control"
-                  placeholder="Search bills..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search bills..." 
+            value={searchTerm} 
+            onChange={(e) => setSearchTerm(e.target.value)} 
                 />
               </div>
             </div>
@@ -1659,37 +1923,37 @@ const BillAdd = () => {
                   ))}
                 </select>
               </div>
-            </div>
-          </div>
+        </div>
+      </div>
 
           <div className="table-responsive">
             <table className="table table-striped table-hover">
               <thead className="table-primary">
-                <tr>
-                  <th>Bill No</th>
-                  <th>Outlet Name</th>
+          <tr>
+            <th>Bill No</th>
+            <th>Outlet Name</th>
                   <th>Date</th>
                   <th>Status</th>
                   <th>Created By</th>
                   <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
+          </tr>
+        </thead>
+        <tbody>
                 {currentBills.length > 0 ? (
                   currentBills.map((bill) => (
-                    <tr key={bill.id}>
-                      <td>{bill.billNo}</td>
-                      <td>{bill.outletName}</td>
-                      <td>{bill.createDate}</td>
-                      <td>
+            <tr key={bill.id}>
+              <td>{bill.billNo}</td>
+              <td>{bill.outletName}</td>
+              <td>{bill.createDate}</td>
+              <td>
                         <span className={`badge ${bill.printStatus ? 'bg-success' : 'bg-warning'}`}>
                           {bill.printStatus ? 'Printed' : 'Not Printed'}
                         </span>
-                      </td>
+                        </td>
                       <td>{bill.createdBy || "Unknown"}</td>
                       <td>
                         <div className="d-flex">
-                          <button 
+                  <button 
                             className="btn btn-primary btn-sm me-1"
                             onClick={() => handleViewBill(bill)}
                             title="View Bill"
@@ -1698,7 +1962,7 @@ const BillAdd = () => {
                           </button>
                           <button
                             className="btn btn-info btn-sm me-1"
-                            onClick={() => handlePrintBill(bill)}
+                    onClick={() => handlePrintBill(bill)}
                             title="Print Bill"
                           >
                             <i className="bi bi-printer"></i>
@@ -1716,23 +1980,23 @@ const BillAdd = () => {
                             title="Delete Bill"
                           >
                             <i className="bi bi-trash"></i>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
+                  </button>
+                </div>
+              </td>
+            </tr>
                   ))
                 ) : (
                   <tr>
                     <td colSpan="6" className="text-center">No bills found</td>
                   </tr>
                 )}
-              </tbody>
-            </table>
+        </tbody>
+      </table>
           </div>
 
           {/* Pagination */}
           {filteredBills.length > itemsPerPage && (
-            <nav>
+        <nav>
               <ul className="pagination justify-content-center">
                 <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
                   <button
@@ -1751,8 +2015,8 @@ const BillAdd = () => {
                     <button className="page-link" onClick={() => paginate(index + 1)}>
                       {index + 1}
                     </button>
-                  </li>
-                ))}
+              </li>
+            ))}
                 <li
                   className={`page-item ${
                     currentPage === Math.ceil(filteredBills.length / itemsPerPage) ? 'disabled' : ''
@@ -1766,12 +2030,12 @@ const BillAdd = () => {
                     Next
                   </button>
                 </li>
-              </ul>
-            </nav>
+          </ul>
+        </nav>
           )}
         </div>
       </div>
-      
+
       {/* Keep existing selected bill popup code */}
       {selectedBill && (
         <div className="modal d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
