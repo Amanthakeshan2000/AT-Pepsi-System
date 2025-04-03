@@ -873,6 +873,11 @@ const BillAdd = () => {
                       <td><strong class="print-normal-weight">SUBTOTAL</strong></td>
                       <td class="print-normal-weight">Rs. ${calculateProductTotal(bill.productOptions)}</td>
                 </tr>
+                ${hasPercentageDiscount ? `
+                <tr>
+                      <td><strong class="print-normal-weight">PERCENTAGE DISCOUNT (${bill.percentageDiscount}%)</strong></td>
+                      <td class="print-normal-weight">Rs. ${percentageDiscountAmount}</td>
+                </tr>` : ''}
                 <tr>
                       <td><strong class="print-normal-weight">DISCOUNT</strong></td>
                       <td class="print-normal-weight">Rs. ${calculateTotal(bill.discountOptions)}</td>
@@ -891,7 +896,8 @@ const BillAdd = () => {
                     parseFloat(calculateProductTotal(bill.productOptions)) -
                     (parseFloat(calculateTotal(bill.discountOptions)) +
                      parseFloat(calculateTotal(bill.freeIssueOptions)) +
-                     parseFloat(calculateTotal(bill.expireOptions)))
+                     parseFloat(calculateTotal(bill.expireOptions)) +
+                     (hasPercentageDiscount ? parseFloat(percentageDiscountAmount) : 0))
                   ).toFixed(2)}</td>
                 </tr>
               </table>
