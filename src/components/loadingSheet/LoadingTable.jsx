@@ -318,6 +318,563 @@ const BillManagement = () => {
     window.location.reload();
   };
 
+  const handlePrintBill = (bill) => {
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Invoice - ${bill.billNo}</title>
+          <style>
+            @page {
+              size: A4;
+              margin: 0;
+            }
+            body {
+              font-family: 'Courier New', monospace;
+              margin: 0;
+              padding: 0;
+              color: black;
+              background-color: white;
+            }
+            .invoice-container {
+              width: 100%;
+              max-width: 800px;
+              margin: 0 auto;
+              padding: 10px;
+              position: relative;
+              overflow: hidden;
+            }
+            .background-pattern {
+              position: absolute;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+              opacity: 0.03;
+              z-index: -1;
+              background-image: repeating-linear-gradient(45deg, #000 0, #000 1px, transparent 0, transparent 50%);
+              background-size: 10px 10px;
+              pointer-events: none;
+            }
+            .invoice-header {
+              text-align: center;
+              margin-bottom: 20px;
+              position: relative;
+            }
+            .invoice-badge {
+              position: absolute;
+              top: 10px;
+              right: 10px;
+              font-size: 18px;
+              font-weight: bold;
+              padding: 8px 12px;
+              border: 3px double black;
+              transform: rotate(5deg);
+            }
+            .company-title {
+              font-size: 36px;
+              font-weight: bold;
+              text-transform: uppercase;
+              letter-spacing: 3px;
+              margin: 0;
+              line-height: 1.2;
+              text-shadow: 1px 1px 0 white;
+            }
+            .company-details {
+              font-size: 14px;
+              margin: 5px 0;
+            }
+            .invoice-number {
+              font-size: 20px;
+              font-weight: bold;
+              margin: 15px 0 5px;
+              padding: 5px;
+              border-top: 1px solid black;
+              border-bottom: 1px solid black;
+              display: inline-block;
+            }
+            .customer-grid {
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 10px;
+              margin-bottom: 20px;
+              border: 1px solid black;
+              padding: 15px;
+            }
+            .grid-title {
+              grid-column: 1/-1;
+              font-size: 18px;
+              font-weight: bold;
+              text-transform: uppercase;
+              border-bottom: 1px dashed black;
+              padding-bottom: 5px;
+              margin-bottom: 10px;
+            }
+            .grid-section {
+              margin-bottom: 10px;
+            }
+            .grid-label {
+              font-size: 14px;
+              font-weight: bold;
+              margin-bottom: 3px;
+            }
+            .grid-value {
+              font-size: 16px;
+              margin-bottom: 10px;
+            }
+            .invoice-banner {
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              margin: 15px 0;
+              padding: 10px 15px;
+              background-color: white;
+              border: 1px solid black;
+              position: relative;
+            }
+            .banner-text {
+              font-size: 20px;
+              font-weight: bold;
+              text-transform: uppercase;
+              letter-spacing: 2px;
+            }
+            .payment-methods {
+              display: flex;
+              gap: 15px;
+            }
+            .payment-method {
+              display: flex;
+              align-items: center;
+            }
+            .method-checkbox {
+              width: 15px;
+              height: 15px;
+              border: 1px solid black;
+              margin-right: 5px;
+              display: inline-block;
+            }
+            .method-label {
+              font-size: 14px;
+            }
+            .corner-accent {
+              position: absolute;
+              font-size: 20px;
+              line-height: 1;
+            }
+            .corner-top-left {
+              top: 5px;
+              left: 5px;
+            }
+            .corner-top-right {
+              top: 5px;
+              right: 5px;
+            }
+            .corner-bottom-left {
+              bottom: 5px;
+              left: 5px;
+            }
+            .corner-bottom-right {
+              bottom: 5px;
+              right: 5px;
+            }
+            .product-section {
+              margin-bottom: 20px;
+              border: 1px solid black;
+            }
+            .section-header {
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              padding: 5px 0;
+              position: relative;
+            }
+            .section-title {
+              font-size: 18px;
+              font-weight: bold;
+              text-transform: uppercase;
+              padding: 0 15px;
+              background-color: white;
+              position: relative;
+              z-index: 1;
+            }
+            .header-line {
+              position: absolute;
+              top: 50%;
+              left: 0;
+              right: 0;
+              height: 1px;
+              background-color: black;
+              z-index: 0;
+            }
+            .product-table {
+              width: 100%;
+              border-collapse: collapse;
+            }
+            .product-table th {
+              border-top: 1px solid black;
+              border-bottom: 1px solid black;
+              font-size: 14px;
+              font-weight: bold;
+              text-align: left;
+              padding: 8px 10px;
+              text-transform: uppercase;
+            }
+            .product-table td {
+              border-bottom: 1px dashed black;
+              font-size: 15px;
+              padding: 8px 10px;
+            }
+            .product-table tr:last-child td {
+              border-bottom: none;
+            }
+            .discounts-grid {
+              display: grid;
+              grid-template-columns: repeat(3, 1fr);
+              gap: 10px;
+              margin-bottom: 20px;
+            }
+            .discount-card {
+              border: 1px solid black;
+              padding: 10px;
+            }
+            .discount-title {
+              font-size: 16px;
+              font-weight: bold;
+              text-align: center;
+              border-bottom: 1px dashed black;
+              padding-bottom: 5px;
+              margin-bottom: 10px;
+              text-transform: uppercase;
+            }
+            .discount-content {
+              font-size: 14px;
+              min-height: 60px;
+            }
+            .discount-footer {
+              font-size: 15px;
+              font-weight: bold;
+              text-align: right;
+              padding-top: 5px;
+              border-top: 1px dashed black;
+            }
+            .summary-block {
+              width: 60%;
+              margin-left: auto;
+              margin-bottom: 20px;
+              border: 1px solid black;
+              padding: 10px;
+            }
+            .summary-row {
+              display: flex;
+              justify-content: space-between;
+              margin-bottom: 5px;
+            }
+            .summary-row:last-child {
+              margin-bottom: 0;
+              border-top: 1px solid black;
+              padding-top: 5px;
+            }
+            .summary-label {
+              font-size: 15px;
+              font-weight: bold;
+            }
+            .summary-value {
+              font-size: 15px;
+              text-align: right;
+            }
+            .grand-total {
+              font-size: 18px;
+              font-weight: bold;
+            }
+            .signature-row {
+              display: flex;
+              justify-content: space-between;
+              margin-top: 30px;
+              margin-bottom: 20px;
+            }
+            .signature-field {
+              width: 45%;
+            }
+            .signature-line {
+              border-top: 1px solid black;
+              padding-top: 5px;
+              font-size: 14px;
+              text-transform: uppercase;
+              text-align: center;
+            }
+            .invoice-footer {
+              text-align: center;
+              margin-top: 20px;
+              padding-top: 10px;
+              border-top: 1px solid black;
+              position: relative;
+            }
+            .thank-you {
+              font-size: 18px;
+              font-weight: bold;
+              text-transform: uppercase;
+              margin-bottom: 5px;
+            }
+            .terms {
+              font-size: 12px;
+              margin-bottom: 10px;
+            }
+            .serial {
+              position: absolute;
+              bottom: 10px;
+              right: 10px;
+              font-size: 10px;
+              font-family: "Courier New", monospace;
+              border: 1px solid black;
+              padding: 2px 5px;
+            }
+            .border-accent {
+              position: absolute;
+              height: 50px;
+              width: 50px;
+              border: 3px solid black;
+              z-index: -1;
+            }
+            .accent-top-left {
+              top: -15px;
+              left: -15px;
+              border-right: none;
+              border-bottom: none;
+            }
+            .accent-top-right {
+              top: -15px;
+              right: -15px;
+              border-left: none;
+              border-bottom: none;
+            }
+            .accent-bottom-left {
+              bottom: -15px;
+              left: -15px;
+              border-right: none;
+              border-top: none;
+            }
+            .accent-bottom-right {
+              bottom: -15px;
+              right: -15px;
+              border-left: none;
+              border-top: none;
+            }
+            .print-controls {
+              text-align: center;
+              margin-top: 20px;
+            }
+            .print-button {
+              padding: 10px 20px;
+              font-size: 16px;
+              cursor: pointer;
+              background-color: black;
+              color: white;
+              border: none;
+              margin-right: 10px;
+            }
+            .close-button {
+              padding: 10px 20px;
+              font-size: 16px;
+              cursor: pointer;
+              background-color: #333;
+              color: white;
+              border: none;
+            }
+            @media print {
+              .no-print { display: none; }
+              .invoice-container {
+                padding: 0;
+              }
+              body * {
+                color: black !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="invoice-container">
+            <div class="background-pattern"></div>
+            <div class="border-accent accent-top-left"></div>
+            <div class="border-accent accent-top-right"></div>
+            <div class="border-accent accent-bottom-left"></div>
+            <div class="border-accent accent-bottom-right"></div>
+            
+            <div class="invoice-header">
+              <div class="invoice-badge">OFFICIAL COPY</div>
+              <div class="company-title">ADVANCE TRADING</div>
+              <div class="company-details">No: 170/A, Nuwaraeliya Rd, Delpitiya, Gampola | Tel: 072-7070701</div>
+              <div class="invoice-number">INVOICE #${bill.billNo || 'N/A'}</div>
+            </div>
+            
+            <div class="customer-grid">
+              <div class="grid-title">CUSTOMER DETAILS</div>
+              <div class="grid-section">
+                <div class="grid-label">CUSTOMER:</div>
+                <div class="grid-value">${bill.outletName || 'N/A'}</div>
+                
+                <div class="grid-label">ADDRESS:</div>
+                <div class="grid-value">${bill.address || 'N/A'}</div>
+                
+                <div class="grid-label">CONTACT:</div>
+                <div class="grid-value">${bill.contact || 'N/A'}</div>
+              </div>
+              
+              <div class="grid-section">
+                <div class="grid-label">DATE:</div>
+                <div class="grid-value">${bill.createDate || 'N/A'}</div>
+                
+                <div class="grid-label">SALES REF:</div>
+                <div class="grid-value">${bill.salesRef || 'N/A'}</div>
+                
+                <div class="grid-label">REF CONTACT:</div>
+                <div class="grid-value">${bill.refContact || 'N/A'}</div>
+              </div>
+            </div>
+            
+            <div class="invoice-banner">
+              <div class="corner-accent corner-top-left">●</div>
+              <div class="corner-accent corner-top-right">●</div>
+              <div class="corner-accent corner-bottom-left">●</div>
+              <div class="corner-accent corner-bottom-right">●</div>
+              
+              <div class="banner-text">Payment Method</div>
+              <div class="payment-methods">
+                <div class="payment-method">
+                  <div class="method-checkbox"></div>
+                  <div class="method-label">CASH</div>
+                </div>
+                <div class="payment-method">
+                  <div class="method-checkbox"></div>
+                  <div class="method-label">CREDIT</div>
+                </div>
+                <div class="payment-method">
+                  <div class="method-checkbox"></div>
+                  <div class="method-label">CHEQUE</div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="product-section">
+              <div class="section-header">
+                <div class="header-line"></div>
+                <div class="section-title">PRODUCT DETAILS</div>
+              </div>
+              <table class="product-table">
+                <thead>
+                  <tr>
+                    <th style="width: 50%;">DESCRIPTION</th>
+                    <th style="width: 15%; text-align: center;">QUANTITY</th>
+                    <th style="width: 15%; text-align: right;">UNIT PRICE</th>
+                    <th style="width: 20%; text-align: right;">AMOUNT</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${bill.productOptions.map(option => `
+                    <tr>
+                      <td>${products.find(p => p.id === option.productId)?.name || 'N/A'} ${option.optionId}</td>
+                      <td style="text-align: center;">${option.qty || '0'}</td>
+                      <td style="text-align: right;">${option.price || '0.00'}</td>
+                      <td style="text-align: right;">${((parseFloat(option.price) || 0) * (parseFloat(option.qty) || 0)).toFixed(2)}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+            
+            <div class="section-header">
+              <div class="header-line"></div>
+              <div class="section-title">ADJUSTMENTS</div>
+            </div>
+            
+            <div class="discounts-grid">
+              <div class="discount-card">
+                <div class="discount-title">Discount</div>
+                <div class="discount-content">
+                  ${bill.discountOptions && bill.discountOptions.length > 0 ? bill.discountOptions.map(option => `
+                    ${option.name}: ${option.case} × ${option.perCaseRate} = ${option.total || '0.00'}<br>
+                  `).join('') : 'None'}
+                </div>
+                <div class="discount-footer">Total: Rs. ${calculateTotal(bill.discountOptions || [])}</div>
+              </div>
+              
+              <div class="discount-card">
+                <div class="discount-title">Free Issue</div>
+                <div class="discount-content">
+                  ${bill.freeIssueOptions && bill.freeIssueOptions.length > 0 ? bill.freeIssueOptions.map(option => `
+                    ${option.name}: ${option.case} × ${option.perCaseRate} = ${option.total || '0.00'}<br>
+                  `).join('') : 'None'}
+                </div>
+                <div class="discount-footer">Total: Rs. ${calculateTotal(bill.freeIssueOptions || [])}</div>
+              </div>
+              
+              <div class="discount-card">
+                <div class="discount-title">Expire</div>
+                <div class="discount-content">
+                  ${bill.expireOptions && bill.expireOptions.length > 0 ? bill.expireOptions.map(option => `
+                    ${option.name}: ${option.case} × ${option.perCaseRate} = ${option.total || '0.00'}<br>
+                  `).join('') : 'None'}
+                </div>
+                <div class="discount-footer">Total: Rs. ${calculateTotal(bill.expireOptions || [])}</div>
+              </div>
+            </div>
+            
+            <div class="summary-block">
+              <div class="summary-row">
+                <div class="summary-label">SUBTOTAL:</div>
+                <div class="summary-value">Rs. ${calculateProductTotal(bill.productOptions)}</div>
+              </div>
+              <div class="summary-row">
+                <div class="summary-label">DISCOUNT:</div>
+                <div class="summary-value">Rs. ${calculateTotal(bill.discountOptions || [])}</div>
+              </div>
+              <div class="summary-row">
+                <div class="summary-label">FREE ISSUE:</div>
+                <div class="summary-value">Rs. ${calculateTotal(bill.freeIssueOptions || [])}</div>
+              </div>
+              <div class="summary-row">
+                <div class="summary-label">EXPIRE:</div>
+                <div class="summary-value">Rs. ${calculateTotal(bill.expireOptions || [])}</div>
+              </div>
+              <div class="summary-row">
+                <div class="summary-label grand-total">GRAND TOTAL:</div>
+                <div class="summary-value grand-total">Rs. ${(
+                  parseFloat(calculateProductTotal(bill.productOptions)) -
+                  (parseFloat(calculateTotal(bill.discountOptions || [])) +
+                   parseFloat(calculateTotal(bill.freeIssueOptions || [])) +
+                   parseFloat(calculateTotal(bill.expireOptions || [])))
+                ).toFixed(2)}</div>
+              </div>
+            </div>
+            
+            <div class="signature-row">
+              <div class="signature-field">
+                <div class="signature-line">Customer Signature</div>
+              </div>
+              <div class="signature-field">
+                <div class="signature-line">Authorized Signature</div>
+              </div>
+            </div>
+            
+            <div class="invoice-footer">
+              <div class="thank-you">Thank You For Your Business</div>
+              <div class="terms">All goods are sold as per our standard terms and conditions. 
+              Please examine all goods upon receipt and notify us within 24 hours of any discrepancies.</div>
+              <div class="serial">SN: ${bill.billNo || 'N/A'}-${new Date().getFullYear()}</div>
+            </div>
+          </div>
+          
+          <div class="print-controls no-print">
+            <button onclick="window.print()" class="print-button">Print Invoice</button>
+            <button onclick="window.close()" class="close-button">Close</button>
+          </div>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   return (
     <div className="container">
       <h3>Bill Management</h3>
@@ -1002,9 +1559,6 @@ const BillManagement = () => {
             
             <div className="print-content" style={{ marginTop: "20px" }}>
               <div style={{ textAlign: "center", marginBottom: "10px" }}>
-                {/* <h3 style={{ margin: "0", fontWeight: "semibold" }}>Advance Trading</h3> */}
-                {/* <p style={{ margin: "3px 0" }}>Reg Office: No: 170/A, Nuwaraeliya Rd, Delpitiya, Gampola</p>
-                <p style={{ margin: "2px 0" }}>Tel: 072-7070701</p> */}
                 <h4 style={{ margin: "8px 0", fontWeight: "bold", color: "#000000" }}>Loading Sheet</h4>
               </div>
               
@@ -1054,7 +1608,7 @@ const BillManagement = () => {
                       // If the next product has a different optionId, add a separator row
                       if (index < array.length - 1 && product.optionId !== array[index + 1].optionId) {
                         result.push(
-                          <tr key={`separator-${index}`} style={{ height: "2px", backgroundColor: "#f0f0f0", borderBottom: "1px solid #000" }} className="separator-row">
+                          <tr key={`separator-${index}`} style={{ height: "2px", backgroundColor: "#f0f0f0", borderBottom: "1px solid black !important" }} className="separator-row">
                             <td colSpan="5" style={{ border: "0px" }}></td>
                           </tr>
                         );
