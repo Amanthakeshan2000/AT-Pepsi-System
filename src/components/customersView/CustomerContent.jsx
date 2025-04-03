@@ -248,221 +248,160 @@ const BillAdd = () => {
         <head>
           <title>Invoice - ${bill.billNo}</title>
           <style>
-            @media print {
-              @page { 
-                size: A4; 
-                margin: 0;
-                padding: 0;
-              }
-              .no-print { display: none; }
             body { 
-                font-family: Arial, sans-serif !important;
-                font-size: 20px !important;
-                line-height: 1.5 !important;
-                margin: 0;
-                padding: 0;
-                color: #000000 !important;
-                font-weight: 700 !important;
-              }
-              .company-title { 
-                font-size: 56px !important;
-                color: #000000 !important;
-                font-weight: bold !important;
-              }
-              .company-pepsi { 
-                font-size: 28px !important;
-                color: #000000 !important;
-                font-weight: bold !important;
-              }
-              .company-details { 
-                font-size: 24px !important;
-                color: #000000 !important;
-                font-weight: 700 !important;
-              }
-              table { 
-                font-size: 20px !important;
-                color: #000000 !important;
-                font-weight: 700 !important;
-              }
-              th, td { 
-                font-size: 20px !important;
-                color: #000000 !important;
-                font-weight: 700 !important;
-              }
-              .signature, .footer { 
-                font-size: 18px !important;
-                color: #000000 !important;
-                font-weight: 700 !important;
-              }
-              .total-row { 
-                font-size: 22px !important;
-                color: #000000 !important;
-                font-weight: bold !important;
-              }
-              .final-total { 
-                font-size: 26px !important;
-                color: #000000 !important;
-                font-weight: bold !important;
+              font-family: Arial, sans-serif; 
+              margin: 5px; 
+              font-size: 10px; 
+              line-height: 1.2; 
+              background-color: #f9f9f9;
             }
             .invoice-container { 
-                max-width: 100%; 
-                margin: 0; 
+              max-width: 700px; 
+              margin: 0 auto; 
               border: 1px solid #333; 
-                padding: 20px; 
+              padding: 5px; 
             }
             .header { 
               text-align: center; 
-                padding: 15px; 
+              padding: 2px; 
             }
             .header .company { 
               display: flex; 
               justify-content: space-between; 
               align-items: center; 
-                margin-bottom: 20px; 
+              margin-bottom: 5px; 
+            }
+            .company-title { 
+              font-size: 23px; 
+              font-weight: bold; 
+              color: rgb(0, 0, 0); 
+            }
+            .company-pepsi { 
+              font-size: 15px; 
+              font-weight: bold; 
+              color: rgb(112, 112, 112); 
+            }
+            .company-details { 
+              font-size: 8px; 
+              color: #333; 
+              margin-bottom: 5px; 
+              text-align: center;
+            }
+            .details table { 
+              width: 100%; 
+              border: none; 
             }
             .details td { 
-                padding: 8px; 
-                color: #000000 !important;
-                font-weight: 700 !important;
+              padding: 2px; 
+              vertical-align: top; 
+            }
+            .details td:first-child { 
+              width: 30%; 
+              font-weight: bold; 
+            }
+            .details td:nth-child(3) { 
+              font-weight: bold; 
+              text-align: right; 
             }
             .payment-options { 
               width: 50%; 
-                margin-left: auto; 
-                margin-top: 20px; 
+              margin-left: auto; /* Right-align */
+              margin-top: 5px; 
               display: flex; 
               justify-content: space-around; 
               border: 1px solid #ddd; 
-                padding: 10px; 
-                font-size: 18px !important;
-                color: #000000 !important;
-                font-weight: 700 !important;
+              padding: 2px; 
             }
-            .discounts table { 
+            .payment-option { 
+              width: 33%; 
+              text-align: center; 
+            }
+            .discounts { 
+              display: flex; 
+              justify-content: space-between; 
+              margin: 5px 0; 
+            }
+            .discounts div { 
               width: 32%; 
-              border-collapse: collapse; 
               border: 1px solid #ddd; 
-                font-size: 18px !important;
-                color: #000000 !important;
-                font-weight: 700 !important;
-            }
-            .discounts th, .discounts td { 
-                padding: 8px; 
-              text-align: left; 
-              border: none; 
-                font-size: 18px !important;
-                color: #000000 !important;
-                font-weight: 700 !important;
+              padding: 2px; 
             }
             table { 
               width: 100%; 
               border-collapse: collapse; 
-                margin-top: 20px; 
-                font-size: 20px !important;
-                color: #000000 !important;
-                font-weight: 700 !important;
+              margin-top: 5px; 
             }
             th, td { 
-                padding: 8px; 
+              padding: 2px; 
               text-align: left; 
-                font-size: 20px !important;
-                color: #000000 !important;
-                font-weight: 700 !important;
+              font-size: 10px; 
             }
             .total-section table { 
               width: 50%; 
               border-collapse: collapse; 
-                margin-top: 20px; 
-                margin-left: auto; 
+              margin-top: 5px; 
+              margin-left: auto; /* Right-align the table */
               border: none; 
-                font-size: 20px !important;
-                color: #000000 !important;
-                font-weight: 700 !important;
             }
             .total-section td { 
-                padding: 8px; 
+              padding: 2px; 
               text-align: right; 
-                font-size: 20px !important;
-                font-weight: bold !important;
-                color: #000000 !important;
+              font-size: 10px; 
+              font-weight: bold; 
+            }
+            .total-section .total-row td { 
+              color: #e74c3c; 
             }
             .products-table { 
-                width: 70%; 
-                margin: 0 auto; 
+              width: 70%; /* Smaller width */
+              margin: 0 auto; /* Center-align */
               border: 1px solid #ddd; 
-                font-size: 20px !important;
-                color: #000000 !important;
-                font-weight: 700 !important;
+            }
+            .products-table thead { 
+              border-bottom: 1px solid #ddd; 
             }
             .products-table th { 
               border: none; 
               background-color: #fff; 
-                padding: 12px; 
-                font-size: 20px !important;
-                color: #000000 !important;
-                font-weight: bold !important;
             }
             .products-table td { 
               border: none; 
-                padding: 12px; 
-                font-size: 20px !important;
-                color: #000000 !important;
-                font-weight: 700 !important;
             }
             .signature { 
               border-top: 1px dashed #000; 
-                margin-top: 20px; 
+              margin-top: 5px; 
               text-align: center; 
-                font-size: 18px !important;
-                color: #000000 !important;
-                font-weight: 700 !important;
+              font-size: 8px; 
             }
             .footer { 
               text-align: center; 
-                margin-top: 20px; 
-                font-size: 18px !important; 
-                color: #000000 !important;
-                font-weight: 700 !important;
-              }
-              .total-section .total-row td { 
-                color: #000000 !important;
-                font-size: 22px !important;
-                font-weight: bold !important;
-              }
-              .total-section tr:last-child td { 
-                font-size: 26px !important;
-                font-weight: bold !important;
-                color: #000000 !important;
-              }
-              strong {
-                color: #000000 !important;
-                font-weight: bold !important;
-              }
-              input[type="checkbox"] {
-                border-color: #000000 !important;
-              }
-              .payment-option {
-                color: #000000 !important;
-                font-weight: 700 !important;
+              margin-top: 5px; 
+              font-size: 8px; 
+              color: #777; 
+            }
+            @media print {
+              @page { size: A4; margin: 5mm; }
+              .no-print { display: none; }
             }
           </style>
         </head>
         <body>
-            <div class="invoice-container" style="margin-top: 20px; margin-left: 5px; margin-right: 5px;">
+          <div class="invoice-container">
             <div class="header">
               <div class="company">
                 <div class="company-title"></div>
                 <div class="company-pepsi">pepsi</div>
               </div>
-                <div class="company-title" style="font-weight: normal;">Advance Trading</div>
+              <div class="company-title">Advance Trading</div>
               <p class="company-details">Reg Office: No: 170/A, Nuwaraeliya Rd, Delpitiya, Gampola<br>Tel: 072-7070701</p>
             </div>
             <div class="details">
               <table>
-                <tr><td><strong>Customer Name</strong></td><td>: ${bill.outletName}</td><td><strong>Invoice No:</strong></td><td><strong>${bill.billNo}</strong></td></tr>
-                <tr><td><strong>Customer Contact</strong></td><td>: ${bill.contact}</td><td><strong>Date:</strong></td><td>${bill.createDate}</td></tr>
-                <tr><td><strong>Address</strong></td><td>: ${bill.address}</td></tr>
-                <tr><td><strong>Ref Name</strong></td><td>: ${bill.salesRef}</td></tr>
-                <tr><td><strong>Ref Contact</strong></td><td>: ${bill.refContact}</td></tr>
+                <tr><td><strong>Customer Name</strong></td><td>${bill.outletName}</td><td><strong>Invoice No:</strong></td><td><strong>${bill.billNo}</strong></td></tr>
+                <tr><td><strong>Customer Contact</strong></td><td>${bill.contact}</td><td><strong>Date:</strong></td><td>${bill.createDate}</td></tr>
+                <tr><td><strong>Address</strong></td><td>${bill.address}</td></tr>
+                <tr><td><strong>Ref Name</strong></td><td>${bill.salesRef}</td></tr>
+                <tr><td><strong>Ref Contact</strong></td><td>${bill.refContact}</td></tr>
               </table>
             </div>
             <div class="payment-options">
@@ -470,74 +409,30 @@ const BillAdd = () => {
               <div class="payment-option"><input type="checkbox" name="payment" value="credit"> credit</div>
               <div class="payment-option"><input type="checkbox" name="payment" value="cheque"> cheque</div>
             </div>
-              ${(hasDiscounts || hasFreeIssues || hasExpires) ? `
             <div class="discounts">
-                ${hasDiscounts ? `
-              <table>
-                <tr><th colspan="3">DISCOUNT</th></tr>
-                <tr>
-                  <th>Name</th>
-                  <th>Case</th>
-                  <th>Total</th>
-                </tr>
-                  ${filteredDiscountOptions.map(option => `
-                  <tr>
-                    <td>${option.name}</td>
-                    <td>${option.case} * ${option.perCaseRate}</td>
-                    <td>= ${option.total}</td>
-                  </tr>
+              <div>
+                <p><strong>DISCOUNT</strong></p>
+                ${bill.discountOptions.map(option => `
+                  <p>${option.name}: ${option.case} * ${option.perCaseRate} = ${option.total}</p>
                 `).join('')}
-                <tr class="total-row">
-                  <td colspan="2">Total</td>
-                    <td>= ${calculateTotal(filteredDiscountOptions)}</td>
-                </tr>
-              </table>
-                ` : ''}
-                ${hasFreeIssues ? `
-              <table>
-                <tr><th colspan="3">FREE ISSUE</th></tr>
-                <tr>
-                  <th>Name</th>
-                  <th>Case</th>
-                  <th>Total</th>
-                </tr>
-                  ${filteredFreeIssueOptions.map(option => `
-                  <tr>
-                    <td>${option.name}</td>
-                    <td>${option.case} * ${option.perCaseRate}</td>
-                    <td>= ${option.total}</td>
-                  </tr>
+                <p><strong>Total</strong> ${calculateTotal(bill.discountOptions)}</p>
+              </div>
+              <div>
+                <p><strong>FREE ISSUE</strong></p>
+                ${bill.freeIssueOptions.map(option => `
+                  <p>${option.name}: ${option.case} * ${option.perCaseRate} = ${option.total}</p>
                 `).join('')}
-                <tr class="total-row">
-                  <td colspan="2">Total</td>
-                    <td>= ${calculateTotal(filteredFreeIssueOptions)}</td>
-                </tr>
-              </table>
-                ` : ''}
-                ${hasExpires ? `
-              <table>
-                <tr><th colspan="3">EXPIRE</th></tr>
-                <tr>
-                  <th>Name</th>
-                  <th>Case</th>
-                  <th>Total</th>
-                </tr>
-                  ${filteredExpireOptions.map(option => `
-                  <tr>
-                    <td>${option.name}</td>
-                    <td>${option.case} * ${option.perCaseRate}</td>
-                    <td>= ${option.total}</td>
-                  </tr>
+                <p><strong>Total</strong> ${calculateTotal(bill.freeIssueOptions)}</p>
+              </div>
+              <div>
+                <p><strong>EXPIRE</strong></p>
+                ${bill.expireOptions.map(option => `
+                  <p>${option.name}: ${option.case} * ${option.perCaseRate} = ${option.total}</p>
                 `).join('')}
-                <tr class="total-row">
-                  <td colspan="2">Total</td>
-                    <td>= ${calculateTotal(filteredExpireOptions)}</td>
-                </tr>
-              </table>
-                ` : ''}
+                <p><strong>Total</strong> ${calculateTotal(bill.expireOptions)}</p>
+              </div>
             </div>
-              ` : ''}
-<br/>
+
             <table class="products-table">
               <thead>
                 <tr>
@@ -560,51 +455,37 @@ const BillAdd = () => {
                 `).join('')}
               </tbody>
             </table>
-<br/>
+
             <div class="total-section">
               <table>
                 <tr>
-                    <td style="color: #e74c3c; font-size: 15.5px;"><strong>SUBTOTAL</strong></td>
-                     <td style="color: #e74c3c; font-size: 16px;">=</td>
-                    <td style="color: #e74c3c; font-size: 16px;">${productTotal}</td>
+                  <td><strong>SUBTOTAL</strong></td>
+                   <td>=</td>
+                  <td>${calculateProductTotal(bill.productOptions)}</td>
                 </tr>
-                  ${hasDiscounts ? `
                 <tr>
                   <td><strong>DISCOUNT</strong></td>
                   <td>=</td>
-                    <td>${calculateTotal(filteredDiscountOptions)}</td>
+                  <td>${calculateTotal(bill.discountOptions)}</td>
                 </tr>
-                  ` : ''}
-                  ${hasFreeIssues ? `
                 <tr>
                   <td><strong>FREE ISSUE</strong></td>
                   <td>=</td>
-                    <td>${calculateTotal(filteredFreeIssueOptions)}</td>
+                  <td>${calculateTotal(bill.freeIssueOptions)}</td>
                 </tr>
-                  ` : ''}
-                  ${hasExpires ? `
                 <tr>
                   <td><strong>EXPIRE</strong></td>
                   <td>=</td>
-                    <td>${calculateTotal(filteredExpireOptions)}</td>
+                  <td>${calculateTotal(bill.expireOptions)}</td>
                 </tr>
-                  ` : ''}
-                  ${hasPercentageDiscount ? `
-                  <tr>
-                    <td><strong>DISCOUNT (${bill.percentageDiscount}%)</strong></td>
-                    <td>=</td>
-                    <td>${percentageDiscountAmount}</td>
-                  </tr>
-                  ` : ''}
-                  <tr>
-                    <td style="color: #e74c3c; font-size: 15.5px;"><strong>TOTAL</strong></td>
-                    <td style="color: #e74c3c; font-size: 16px;">=</td>
-                    <td style="color: #e74c3c; font-size: 16px;">${(
-                      parseFloat(productTotal) -
-                      (parseFloat(hasDiscounts ? calculateTotal(filteredDiscountOptions) : 0) +
-                       parseFloat(hasFreeIssues ? calculateTotal(filteredFreeIssueOptions) : 0) +
-                       parseFloat(hasExpires ? calculateTotal(filteredExpireOptions) : 0) +
-                       parseFloat(percentageDiscountAmount))
+                <tr>
+                  <td><strong>TOTAL</strong></td>
+                  <td>=</td>
+                  <td style="color: #e74c3c;">${(
+                    parseFloat(calculateProductTotal(bill.productOptions)) -
+                    (parseFloat(calculateTotal(bill.discountOptions)) +
+                     parseFloat(calculateTotal(bill.freeIssueOptions)) +
+                     parseFloat(calculateTotal(bill.expireOptions)))
                   ).toFixed(2)}</td>
                 </tr>
               </table>

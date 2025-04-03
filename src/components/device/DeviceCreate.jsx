@@ -22,6 +22,8 @@ const ManualInvoice = () => {
   const [editSalesSummaryId, setEditSalesSummaryId] = useState(null);
   const [showPrintPreview, setShowPrintPreview] = useState(false);
   const [previewContent, setPreviewContent] = useState(null);
+  const [creatorFilter, setCreatorFilter] = useState("");
+  const [creators, setCreators] = useState([]);
 
   const billsCollectionRef = collection(db, "Bill");
   const manualBillsCollectionRef = collection(db, "ManualBill");
@@ -31,7 +33,12 @@ const ManualInvoice = () => {
     const fetchData = async () => {
       try {
         const billSnapshot = await getDocs(billsCollectionRef);
-        setBills(billSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+        const fetchedBills = billSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        setBills(fetchedBills);
+        
+        // Extract unique creators from bills
+        const uniqueCreators = [...new Set(fetchedBills.map(bill => bill.createdBy || "Unknown"))];
+        setCreators(uniqueCreators);
 
         const manualSnapshot = await getDocs(manualBillsCollectionRef);
         setManualInvoices(manualSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
@@ -308,11 +315,17 @@ const ManualInvoice = () => {
     return sums;
   };
 
-  const filteredBills = bills.filter((bill) =>
-    bill.billNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  const handleCreatorFilterChange = (e) => {
+    setCreatorFilter(e.target.value);
+    setCurrentPage(1); // Reset to first page when changing filters
+  };
+
+  const filteredBills = bills.filter((bill) => 
+    (bill.billNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
     bill.outletName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     bill.salesRef.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    bill.refContact.toLowerCase().includes(searchTerm.toLowerCase())
+    bill.refContact.toLowerCase().includes(searchTerm.toLowerCase())) &&
+    (creatorFilter === "" || (bill.createdBy || "Unknown") === creatorFilter)
   );
 
   const indexOfLastBill = currentPage * itemsPerPage;
@@ -748,7 +761,20 @@ const ManualInvoice = () => {
       {/* Available Invoices Section */}
       <div style={{ backgroundColor: "#fff", padding: "20px", borderRadius: "8px", marginBottom: "20px" }}>
         <h4>Available Invoices</h4>
-        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "15px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "15px" }}>
+          <div style={{ width: "250px" }}>
+            <select 
+              className="form-select" 
+              value={creatorFilter} 
+              onChange={handleCreatorFilterChange}
+              aria-label="Filter by creator"
+            >
+              <option value="">All Creators</option>
+              {creators.map((creator, index) => (
+                <option key={index} value={creator}>{creator}</option>
+              ))}
+            </select>
+          </div>
           <div style={{ position: "relative", width: "400px" }}>
             <input
               type="text"
