@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { db } from "../../utilities/firebaseConfig";
-import { collection, getDocs, query, orderBy, addDoc, serverTimestamp, where, doc, updateDoc } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, addDoc, serverTimestamp, where, doc, updateDoc, getDoc } from "firebase/firestore";
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
 const ProcessedBillReview = () => {
@@ -356,6 +356,71 @@ const ProcessedBillReview = () => {
         });
       });
 
+      // Update stock for all products with unloadingBT values
+      const stockUpdatePromises = [];
+      
+      // Create a map to aggregate unloadingBT by productId and optionId
+      const stockUpdates = {};
+      
+      // Collect all unloadingBT values
+      currentUnitBills.forEach(bill => {
+        bill.products.forEach(product => {
+          const unloadingBT = parseInt(product.unloadingBT) || 0;
+          if (unloadingBT > 0) {
+            const key = `${product.productId}_${product.optionId}`;
+            if (!stockUpdates[key]) {
+              stockUpdates[key] = {
+                productId: product.productId,
+                optionId: product.optionId,
+                unloadingBT: 0
+              };
+            }
+            stockUpdates[key].unloadingBT += unloadingBT;
+          }
+        });
+      });
+      
+      // Process each stock update
+      for (const key in stockUpdates) {
+        const update = stockUpdates[key];
+        if (update.unloadingBT > 0) {
+          const productRef = doc(db, "Product", update.productId);
+          const productDoc = await getDoc(productRef);
+          
+          if (productDoc.exists()) {
+            const productData = productDoc.data();
+            const productOptions = productData.productOptions || [];
+            
+            // Find the specific option to update
+            const optionIndex = productOptions.findIndex(opt => opt.name === update.optionId);
+            
+            if (optionIndex !== -1) {
+              // Get current stock and ADD the unloadingBT value (not subtract)
+              const currentStock = parseInt(productOptions[optionIndex].stock) || 0;
+              const newStock = currentStock + update.unloadingBT;
+              
+              // Update the stock value
+              productOptions[optionIndex].stock = newStock.toString();
+              
+              // Add to update promises
+              stockUpdatePromises.push(
+                updateDoc(productRef, {
+                  productOptions: productOptions
+                })
+              );
+              
+              console.log(`Updating stock for ${productData.name} - ${update.optionId}: ${currentStock} + ${update.unloadingBT} = ${newStock}`);
+            }
+          }
+        }
+      }
+      
+      // Execute all stock updates
+      if (stockUpdatePromises.length > 0) {
+        await Promise.all(stockUpdatePromises);
+        console.log(`Updated stock for ${stockUpdatePromises.length} product options`);
+      }
+
       const existingReview = savedReviews.find(review => review.unitId === currentUnitId);
       const reviewData = {
         unitId: currentUnitId,
@@ -378,7 +443,7 @@ const ProcessedBillReview = () => {
         console.log("Review saved with ID: ", docRef.id);
       }
 
-      alert("Review saved successfully!");
+      alert("Review saved successfully and stock updated!");
       setViewingBills(false);
       setCurrentUnitBills([]);
       setCurrentUnitId(null);
