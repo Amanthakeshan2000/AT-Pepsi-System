@@ -316,7 +316,7 @@ const BillAdd = () => {
               margin-bottom: 1mm;
             }
             .details td { 
-              padding: 1mm 1.5mm; 
+              padding: 0.5mm 1mm; 
               vertical-align: top; 
               font-size: 16px;
               font-weight: bold;
@@ -326,9 +326,8 @@ const BillAdd = () => {
               width: 25%; 
               font-weight: bold; 
             }
-            .details td:nth-child(3) { 
-              font-weight: bold; 
-              text-align: right; 
+            .right-align {
+              text-align: right !important;
             }
             .payment-options { 
               width: 50%; 
@@ -349,7 +348,7 @@ const BillAdd = () => {
             .discounts { 
               display: flex; 
               justify-content: space-between; 
-              margin: 0.5mm 0; 
+              margin: 2mm 0 0.5mm; 
               border: 0.25px solid #000;
               padding: 0.5mm;
             }
@@ -423,13 +422,16 @@ const BillAdd = () => {
               color: #000;
             }
             .products-table td { 
-              border-bottom: 0.25px dotted #000;
+              border-bottom: none;
               font-size: 14px;
-              padding: 1.5mm;
+              padding: 0.5mm;
               color: #000;
             }
-            .products-table tr:last-child td {
-              border-bottom: none;
+            .products-table tr td {
+              border-bottom: 0.25px solid #000;
+            }
+            .products-table tbody tr:last-child td {
+              border-bottom: 0.25px solid #000;
             }
             .total-section table { 
               width: 60%; 
@@ -453,12 +455,23 @@ const BillAdd = () => {
             .signature-area {
               display: flex;
               justify-content: space-between;
-              margin-top: 1mm;
+              margin-top: 10mm;
               font-size: 15px;
               font-weight: bold;
-              border-top: 0.25px dashed #000;
-              padding-top: 0.5mm;
+              padding-top: 3mm;
               color: #000;
+            }
+            
+            .signature-area p {
+              padding-bottom: 1mm;
+              margin-bottom: 0;
+            }
+            
+            .signature-line {
+              border-bottom: 0.25px solid #000;
+              display: inline-block;
+              width: 60mm;
+              margin-left: 2mm;
             }
             .footer {
               text-align: center;
@@ -477,7 +490,7 @@ const BillAdd = () => {
                 display: none !important; 
               }
               body { 
-                background-color: #fff; 
+              background-color: #fff; 
                 margin: 0;
                 padding: 0;
                 display: block;
@@ -491,7 +504,7 @@ const BillAdd = () => {
                 position: relative;
               }
               .invoice-container {
-                border: none; 
+              border: none; 
               }
               .print-buttons {
                 display: none !important;
@@ -580,13 +593,7 @@ const BillAdd = () => {
               color: #000 !important;
             }
             .page-number {
-              position: absolute;
-              bottom: 5mm;
-              right: 10mm;
-              font-size: 12px;
-            }
-            .products-wrapper {
-              width: 100%;
+              display: none;
             }
             /* Adjustments for dot matrix printing */
             @media print {
@@ -699,46 +706,58 @@ const BillAdd = () => {
               .customer-details, .invoice-details {
                 font-size: 12px !important;
               }
+              
+              .signature-area {
+                margin-top: 10mm !important;
+                padding-top: 3mm !important;
+                border-top: none !important;
+              }
+              
+              .signature-line {
+                margin-left: 1mm !important;
+                border-bottom: 0.5px solid #000 !important;
+                width: 50mm !important;
+              }
             }
           </style>
         </head>
         <body>
           <div class="page">
-            <div class="invoice-container">
-              <div class="header">
+          <div class="invoice-container">
+            <div class="header">
                 <div class="company" style="position: relative;">
-                  <div class="company-pepsi">pepsi</div>
-                  <div class="company-title print-normal-weight">Advance Trading</div>
-                </div>
-                <p class="company-details">Reg Office: No: 170/A, Nuwaraeliya Rd, Delpitiya, Gampola<br>Tel: 072-7070701</p>
+                <div class="company-pepsi">pepsi</div>
+                  <div class="company-title print-bold">Advance Trading</div>
               </div>
+              <p class="company-details">Reg Office: No: 170/A, Nuwaraeliya Rd, Delpitiya, Gampola<br>Tel: 072-7070701</p>
+            </div>
               
-              <div class="details">
-                <table>
+            <div class="details">
+              <table>
                   <tr>
                     <td>Customer:</td>
                     <td class="print-normal-weight">${bill.outletName}</td>
-                    <td>Invoice No:</td>
-                    <td class="print-normal-weight">${bill.billNo}</td>
-                  </tr>
+                    <td class="print-bold right-align">Invoice No:</td>
+                    <td class="print-bold right-align">${bill.billNo}</td>
+                </tr>
                   <tr>
                     <td>Contact:</td>
                     <td class="print-normal-weight">${bill.contact}</td>
-                    <td>Date:</td>
-                    <td class="print-normal-weight">${bill.createDate}</td>
+                    <td class="right-align">Date:</td>
+                    <td class="print-normal-weight right-align">${bill.createDate}</td>
                   </tr>
                   <tr>
                     <td>Address:</td>
                     <td colspan="3" class="print-normal-weight">${bill.address}</td>
-                  </tr>
+                </tr>
                   <tr>
                     <td>Ref Name:</td>
                     <td class="print-normal-weight">${bill.salesRef}</td>
-                    <td>Ref Contact:</td>
-                    <td class="print-normal-weight">${bill.refContact}</td>
-                  </tr>
-                </table>
-              </div>
+                    <td class="right-align">Ref Contact:</td>
+                    <td class="print-normal-weight right-align">${bill.refContact}</td>
+                </tr>
+              </table>
+            </div>
               
               <div class="payment-options">
                 <div class="payment-option print-normal-weight"><input type="checkbox" name="payment" value="cash"> Cash</div>
@@ -747,32 +766,32 @@ const BillAdd = () => {
               </div>
 
               <div class="products-wrapper">
-                <table class="products-table">
-                  <thead>
-                    <tr>
-                      <th style="width:40%">DESCRIPTION</th>
-                      <th style="width:12%; text-align:center">QTY</th>
-                      <th style="width:15%; text-align:right">UNIT PRICE</th>
-                      <th style="width:15%; text-align:right">AMOUNT</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${bill.productOptions.map(option => `
-                      <tr>
+            <table class="products-table">
+              <thead>
+                <tr>
+                      <th style="width:40%" class="print-bold">DESCRIPTION</th>
+                      <th style="width:12%; text-align:center" class="print-bold">QTY</th>
+                      <th style="width:15%; text-align:right" class="print-bold">UNIT PRICE</th>
+                      <th style="width:15%; text-align:right" class="print-bold">AMOUNT</th>
+                </tr>
+              </thead>
+              <tbody>
+                    ${bill.productOptions.map((option, index) => `
+                      <tr class="${index === bill.productOptions.length - 1 ? 'last-row' : ''}">
                         <td class="print-normal-weight">${products.find(p => p.id === option.productId)?.name || 'N/A'} ${option.optionId}</td>
                         <td style="text-align:center" class="print-normal-weight">${option.qty}</td>
                         <td style="text-align:right" class="print-normal-weight">${option.price}</td>
                         <td style="text-align:right" class="print-normal-weight">${((parseFloat(option.price) || 0) * (parseFloat(option.qty) || 0)).toFixed(2)}</td>
-                      </tr>
-                    `).join('')}
-                  </tbody>
-                </table>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
               </div>
               
               <div class="footer-content">
                 <div class="discounts">
                   <div>
-                    <p>DISCOUNT</p>
+                    <p class="print-bold">DISCOUNT</p>
                     ${Object.entries(bill.discountOptions
                       .reduce((uniqueMap, option) => {
                         const optionId = option.optionId || '';
@@ -789,6 +808,7 @@ const BillAdd = () => {
                         return uniqueMap;
                       }, {})
                     )
+                      .filter(([optionId, entry]) => entry.case > 0)
                       .map(([optionId, entry]) => `
                         <p class="print-normal-weight">${optionId}: ${entry.case} × ${entry.perCaseRate} = ${entry.total.toFixed(2)}</p>
                       `).join('')
@@ -796,7 +816,7 @@ const BillAdd = () => {
                     <p><strong class="print-normal-weight">Total: ${calculateTotal(bill.discountOptions)}</strong></p>
                   </div>
                   <div>
-                    <p>FREE ISSUE</p>
+                    <p class="print-bold">FREE ISSUE</p>
                     ${Object.entries(bill.freeIssueOptions
                       .reduce((uniqueMap, option) => {
                         const optionId = option.optionId || '';
@@ -813,6 +833,7 @@ const BillAdd = () => {
                         return uniqueMap;
                       }, {})
                     )
+                      .filter(([optionId, entry]) => entry.case > 0)
                       .map(([optionId, entry]) => `
                         <p class="print-normal-weight">${optionId}: ${entry.case} × ${entry.perCaseRate} = ${entry.total.toFixed(2)}</p>
                       `).join('')
@@ -820,7 +841,7 @@ const BillAdd = () => {
                     <p><strong class="print-normal-weight">Total: ${calculateTotal(bill.freeIssueOptions)}</strong></p>
                   </div>
                   <div>
-                    <p>EXPIRE</p>
+                    <p class="print-bold">EXPIRE</p>
                     ${Object.entries(bill.expireOptions
                       .reduce((uniqueMap, option) => {
                         const optionId = option.optionId || '';
@@ -837,60 +858,59 @@ const BillAdd = () => {
                         return uniqueMap;
                       }, {})
                     )
+                      .filter(([optionId, entry]) => entry.case > 0)
                       .map(([optionId, entry]) => `
-                        <p class="print-normal-weight">${optionId}: ${entry.case} * ${entry.perCaseRate} = ${entry.total.toFixed(2)}</p>
+                        <p class="print-normal-weight">${optionId}: ${entry.case} × ${entry.perCaseRate} = ${entry.total.toFixed(2)}</p>
                       `).join('')
                     }
                     <p><strong class="print-normal-weight">Total: ${calculateTotal(bill.expireOptions)}</strong></p>
                   </div>
                 </div>
 
-                <div class="total-section">
-                  <table>
-                    <tr>
+            <div class="total-section">
+              <table>
+                <tr>
                       <td><strong class="print-normal-weight">SUBTOTAL</strong></td>
                       <td class="print-normal-weight">Rs. ${calculateProductTotal(bill.productOptions)}</td>
-                    </tr>
-                    <tr>
+                </tr>
+                <tr>
                       <td><strong class="print-normal-weight">DISCOUNT</strong></td>
                       <td class="print-normal-weight">Rs. ${calculateTotal(bill.discountOptions)}</td>
-                    </tr>
-                    <tr>
+                </tr>
+                <tr>
                       <td><strong class="print-normal-weight">FREE ISSUE</strong></td>
                       <td class="print-normal-weight">Rs. ${calculateTotal(bill.freeIssueOptions)}</td>
-                    </tr>
-                    <tr>
+                </tr>
+                <tr>
                       <td><strong class="print-normal-weight">EXPIRE</strong></td>
                       <td class="print-normal-weight">Rs. ${calculateTotal(bill.expireOptions)}</td>
-                    </tr>
-                    <tr>
-                      <td><strong class="print-normal-weight">TOTAL</strong></td>
-                      <td class="print-normal-weight">Rs. ${(
-                        parseFloat(calculateProductTotal(bill.productOptions)) -
-                        (parseFloat(calculateTotal(bill.discountOptions)) +
-                        parseFloat(calculateTotal(bill.freeIssueOptions)) +
-                        parseFloat(calculateTotal(bill.expireOptions)))
-                      ).toFixed(2)}</td>
-                    </tr>
-                  </table>
-                </div>
+                </tr>
+                <tr>
+                      <td><strong class="print-bold">TOTAL</strong></td>
+                      <td class="print-bold">Rs. ${(
+                    parseFloat(calculateProductTotal(bill.productOptions)) -
+                    (parseFloat(calculateTotal(bill.discountOptions)) +
+                     parseFloat(calculateTotal(bill.freeIssueOptions)) +
+                     parseFloat(calculateTotal(bill.expireOptions)))
+                  ).toFixed(2)}</td>
+                </tr>
+              </table>
+            </div>
 
                 <div class="signature-area">
                   <div>
-                    <p class="print-normal-weight">Customer Signature: ___________________</p>
+                    <p class="print-normal-weight">Customer Signature: <span class="signature-line"></span></p>
                   </div>
                   <div>
-                    <p class="print-normal-weight">Authorized Signature: ___________________</p>
+                    <p class="print-normal-weight">Authorized Signature: <span class="signature-line"></span></p>
                   </div>
                 </div>
 
-                <div class="footer">
+            <div class="footer">
                   <p class="print-normal-weight">Thank you for your business! For questions contact us at 072-7070701</p>
-                </div>
-              </div>
+            </div>
+          </div>
               
-              <div class="page-number print-normal-weight">Page <span class="pageNum"></span></div>
-
               <div class="print-buttons no-print">
                 <button class="print-button" onclick="window.print();">Print Invoice</button>
                 <button class="print-button" style="background-color: #f44336;" onclick="window.close();">Close</button>
@@ -921,33 +941,18 @@ const BillAdd = () => {
                   const footerContent = document.querySelector('.footer-content');
                   footerContent.style.pageBreakBefore = 'always';
                   
-                  // Calculate page count (approximate)
-                  const estimatedPages = Math.ceil(contentHeight / pageHeight) + 1;
-                  
-                  // Insert page numbers
-                  document.querySelector('.pageNum').textContent = estimatedPages;
-                  
-                  // Add page 1 indicator at bottom of first page
-                  const pageIndicator = document.createElement('div');
-                  pageIndicator.className = 'page-number print-normal-weight';
-                  pageIndicator.style.fontSize = '10px';
-                  pageIndicator.style.marginTop = '0';
-                  pageIndicator.innerHTML = 'Page 1';
-                  document.querySelector('.products-wrapper').appendChild(pageIndicator);
-                  
                   // Add running total at the bottom of first page
                   const runningTotal = document.createElement('div');
                   runningTotal.className = 'running-total';
                   runningTotal.style.marginTop = '1mm';
                   runningTotal.style.fontSize = '12px';
-                  runningTotal.innerHTML = '<strong class="print-normal-weight">Page 1 Subtotal: Rs. ' + 
+                  runningTotal.innerHTML = '<strong class="print-normal-weight">Page Subtotal: Rs. ' + 
                     calculateProductTotal(document.querySelectorAll('.products-table tbody tr')) + 
                     '</strong><br><em>Continued on next page...</em>';
                   document.querySelector('.products-wrapper').appendChild(runningTotal);
                 } else {
                   // Single page invoice
                   pageContainer.classList.remove('multi-page');
-                  document.querySelector('.pageNum').textContent = '1';
                 }
               };
               
