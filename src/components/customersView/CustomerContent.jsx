@@ -872,16 +872,18 @@ const BillAdd = () => {
                     <p class="print-bold">EXPIRE</p>
                     ${Object.entries(bill.expireOptions
                       .reduce((uniqueMap, option) => {
-                        const optionId = option.optionId || '';
-                        if (!uniqueMap[optionId]) {
-                          uniqueMap[optionId] = {
+                        // Extract the base option name (e.g., "200 ML" from "200 ML - OLE")
+                        const baseOptionName = (option.optionId || option.name || '').split(' - ')[0].trim();
+                        
+                        if (!uniqueMap[baseOptionName]) {
+                          uniqueMap[baseOptionName] = {
                             case: parseFloat(option.case) || 0,
                             perCaseRate: parseFloat(option.perCaseRate) || 0,
                             total: parseFloat(option.total) || 0
                           };
                         } else {
-                          uniqueMap[optionId].case += parseFloat(option.case) || 0;
-                          uniqueMap[optionId].total += parseFloat(option.total) || 0;
+                          uniqueMap[baseOptionName].case += parseFloat(option.case) || 0;
+                          uniqueMap[baseOptionName].total += parseFloat(option.total) || 0;
                         }
                         return uniqueMap;
                       }, {})
@@ -1164,16 +1166,60 @@ const BillAdd = () => {
   };
 
   const addExpireOption = () => {
-    const selectedProducts = productOptions.filter(option => option.productId && option.optionId);
-    const newExpireOptions = selectedProducts.map(option => ({
-      productId: option.productId,
-      optionId: option.optionId,
-      name: `${products.find(p => p.id === option.productId)?.name} - ${option.optionId}`,
+    // Get all distinct product options from all products in the system
+    const allOptions = [];
+    const uniqueOptionNames = new Set();
+    
+    products.forEach(product => {
+      if (product.options && product.options.length > 0) {
+        product.options.forEach(option => {
+          if (option.name) {
+            // Extract the base option name (e.g., "200 ML" from "200 ML - OLE")
+            const optionName = option.name.split(' - ')[0].trim();
+            
+            // Only add if this base option name hasn't been seen before
+            if (!uniqueOptionNames.has(optionName)) {
+              uniqueOptionNames.add(optionName);
+              
+              // Create an expire option record for the option
+              allOptions.push({
+                productId: product.id,
+                optionId: optionName,
+                name: `${product.name} - ${option.name}`,
+                case: "",
+                perCaseRate: "",
+                total: ""
+              });
+            }
+          }
+        });
+      }
+    });
+    
+    // Add only options that don't already exist in expireOptions
+    const existingOptionIds = new Set(expireOptions.map(opt => {
+      const optionName = (opt.optionId || '').split(' - ')[0].trim();
+      return optionName;
+    }));
+    
+    const newOptions = allOptions.filter(opt => {
+      const optionName = (opt.optionId || '').split(' - ')[0].trim();
+      return !existingOptionIds.has(optionName);
+    });
+    
+    // If all options already exist, add a single blank option
+    if (newOptions.length === 0) {
+      setExpireOptions([...expireOptions, {
+        productId: "",
+        optionId: "",
+        name: "",
         case: "",
         perCaseRate: "",
-        total: "",
-      }));
-    setExpireOptions([...expireOptions, ...newExpireOptions]);
+        total: ""
+      }]);
+    } else {
+      setExpireOptions([...expireOptions, ...newOptions]);
+    }
   };
 
   const removeExpireOption = (index) => {
@@ -2447,13 +2493,30 @@ const BillAdd = () => {
                     </thead>
                     <tbody>
                       {selectedBill.expireOptions && selectedBill.expireOptions.length > 0 ? (
-                        selectedBill.expireOptions.map((option, index) => (
+                        // Group expire options by base option name to eliminate duplicates
+                        Object.values(selectedBill.expireOptions.reduce((acc, option) => {
+                          // Extract the base option name (e.g., "200 ML" from "200 ML - OLE")
+                          const baseOptionName = (option.optionId || option.name || '').split(' - ')[0].trim();
+                          
+                          if (!acc[baseOptionName]) {
+                            acc[baseOptionName] = { 
+                              ...option,
+                              // Ensure we use the base option name for display
+                              optionId: baseOptionName
+                            };
+                          } else {
+                            // Sum up case and total for the same base option
+                            acc[baseOptionName].case = (parseFloat(acc[baseOptionName].case) + parseFloat(option.case || 0)).toString();
+                            acc[baseOptionName].total = (parseFloat(acc[baseOptionName].total) + parseFloat(option.total || 0)).toString();
+                          }
+                          return acc;
+                        }, {})).map((option, index) => (
                           <tr key={index}>
-                          <td>{option.name}</td>
-                          <td>{option.case}</td>
-                          <td>{option.perCaseRate}</td>
+                            <td>{option.optionId || option.name}</td>
+                            <td>{option.case}</td>
+                            <td>{option.perCaseRate}</td>
                             <td>Rs. {option.total || "0.00"}</td>
-                        </tr>
+                          </tr>
                         ))
                       ) : (
                         <tr>
