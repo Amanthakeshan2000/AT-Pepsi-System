@@ -1,25 +1,30 @@
 import React, { useState, useEffect } from "react";
 import { db } from "../../utilities/firebaseConfig";
-import { collection, getDocs, query, orderBy, doc, updateDoc, getDoc, setDoc, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, doc, updateDoc, getDoc, setDoc, addDoc, serverTimestamp, where, deleteDoc } from "firebase/firestore";
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
 const PaymentTable = () => {
   const [bills, setBills] = useState([]);
+  const [myBills, setMyBills] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [myBillsLoading, setMyBillsLoading] = useState(true);
   const [selectedBill, setSelectedBill] = useState(null);
   const [paymentHistory, setPaymentHistory] = useState([]);
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split("T")[0]);
   const [searchTerm, setSearchTerm] = useState("");
   const [printMode, setPrintMode] = useState(false);
+  const [printMyBills, setPrintMyBills] = useState(false);
   const [selectedOutlet, setSelectedOutlet] = useState("");
   const [outlets, setOutlets] = useState([]);
 
   const billsCollectionRef = collection(db, "Bill");
   const paymentsCollectionRef = collection(db, "Payments");
+  const myBillsCollectionRef = collection(db, "MyBills");
 
   useEffect(() => {
     fetchBills();
+    fetchMyBills();
   }, [selectedOutlet]);
 
   useEffect(() => {
@@ -90,11 +95,110 @@ const PaymentTable = () => {
         };
       });
       
+      // Get the list of bills that are already in myBills
+      const userEmail = localStorage.getItem("userEmail") || "Unknown";
+      const myBillsQuery = query(myBillsCollectionRef, where("userEmail", "==", userEmail));
+      const myBillsSnapshot = await getDocs(myBillsQuery);
+      
+      const myBillIds = new Set();
+      myBillsSnapshot.docs.forEach(doc => {
+        const data = doc.data();
+        if (data.billId) {
+          myBillIds.add(data.billId);
+        }
+      });
+      
+      // Filter out bills that are already in myBills
+      billList = billList.filter(bill => !myBillIds.has(bill.id));
+      
       setBills(billList);
     } catch (error) {
       console.error("Error fetching bills:", error.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchMyBills = async () => {
+    setMyBillsLoading(true);
+    try {
+      // Get the logged-in user's email
+      const userEmail = localStorage.getItem("userEmail") || "Unknown";
+      
+      // Fetch myBills collection
+      const q = query(myBillsCollectionRef, where("userEmail", "==", userEmail));
+      const querySnapshot = await getDocs(q);
+      
+      const myBillIds = new Set();
+      const myBillsList = [];
+      
+      // First, collect all the bill IDs from MyBills
+      querySnapshot.docs.forEach(doc => {
+        const data = doc.data();
+        if (data.billId) {
+          myBillIds.add(data.billId);
+          myBillsList.push({
+            myBillId: doc.id,
+            billId: data.billId,
+            addedAt: data.addedAt
+          });
+        }
+      });
+      
+      // Then fetch the actual bill data for each myBill
+      const billPromises = myBillsList.map(async (myBill) => {
+        const billDoc = await getDoc(doc(db, "Bill", myBill.billId));
+        if (billDoc.exists()) {
+          const billData = billDoc.data();
+          
+          // Calculate total amount
+          const totalAmount = calculateTotalAmount(billData);
+          
+          // Fetch payments for this bill
+          const paymentQuery = query(paymentsCollectionRef, where("billId", "==", myBill.billId));
+          const paymentSnapshot = await getDocs(paymentQuery);
+          
+          const payments = paymentSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
+          
+          payments.sort((a, b) => new Date(a.paymentDate) - new Date(b.paymentDate));
+          
+          const paidAmount = payments.reduce((sum, payment) => sum + payment.amount, 0);
+          const balance = totalAmount - paidAmount;
+          
+          return {
+            id: myBill.billId,
+            myBillId: myBill.myBillId,
+            addedAt: myBill.addedAt,
+            ...billData,
+            totalAmount,
+            payments,
+            paidAmount,
+            balance
+          };
+        }
+        return null;
+      });
+      
+      const resolvedBills = (await Promise.all(billPromises)).filter(bill => bill !== null);
+      
+      // Sort by date added to MyBills (newest first)
+      resolvedBills.sort((a, b) => {
+        const dateA = a.addedAt?.toDate() || new Date(0);
+        const dateB = b.addedAt?.toDate() || new Date(0);
+        return dateB - dateA;
+      });
+      
+      setMyBills(resolvedBills);
+      
+      // Filter out bills that are already in myBills when setting the main bills list
+      setBills(prevBills => prevBills.filter(bill => !myBillIds.has(bill.id)));
+    } catch (error) {
+      console.error("Error fetching my bills:", error.message);
+    } finally {
+      setMyBillsLoading(false);
     }
   };
 
@@ -166,14 +270,26 @@ const PaymentTable = () => {
 
   const handlePrint = () => {
     setPrintMode(true);
+    setPrintMyBills(false);
     setTimeout(() => {
       window.print();
       setPrintMode(false);
     }, 300);
   };
 
-  const handleDownloadPDF = () => {
+  const handlePrintMyBills = () => {
     setPrintMode(true);
+    setPrintMyBills(true);
+    setTimeout(() => {
+      window.print();
+      setPrintMode(false);
+      setPrintMyBills(false);
+    }, 300);
+  };
+
+  const handleDownloadPDF = (isMyBills = false) => {
+    setPrintMode(true);
+    setPrintMyBills(isMyBills);
     // Create a custom print style for the computer form size
     const customStyle = document.createElement('style');
     customStyle.id = 'computer-form-style';
@@ -360,7 +476,7 @@ const PaymentTable = () => {
     `;
     document.head.appendChild(customStyle);
     
-    const printContent = document.querySelector('.print-content');
+    const printContent = document.querySelector(isMyBills ? '.my-bills-print-content' : '.print-content');
     const originalHTML = printContent.innerHTML;
     
     // Create a container with three copies (original, duplicate, triplicate)
@@ -394,7 +510,7 @@ const PaymentTable = () => {
         <h2>Advance Trading</h2>
         <p>Reg Office: No: 170/A, Nuwaraeliya Rd, Delpitiya, Gampola</p>
         <p>Tel: 072-7070701</p>
-        <h3>Payment Tracking Report</h3>
+        <h3>${isMyBills ? 'My Bills Report' : 'Payment Tracking Report'}</h3>
         ${selectedOutlet ? `<p><strong>Outlet: ${selectedOutlet}</strong></p>` : ''}
       `;
       
@@ -487,6 +603,7 @@ const PaymentTable = () => {
     const style = document.getElementById('computer-form-style');
     if (style) style.remove();
     setPrintMode(false);
+    setPrintMyBills(false);
     window.location.reload();
   };
 
@@ -515,10 +632,152 @@ const PaymentTable = () => {
   const maxPaymentCount = bills.reduce((max, bill) => 
     Math.max(max, bill.payments.length), 0);
 
+  const addToMyBills = async (bill) => {
+    try {
+      const userEmail = localStorage.getItem("userEmail") || "Unknown";
+      
+      // Add to MyBills collection
+      await addDoc(myBillsCollectionRef, {
+        billId: bill.id,
+        userEmail: userEmail,
+        addedAt: serverTimestamp()
+      });
+      
+      // Remove from bills list and add to myBills list
+      setBills(prevBills => prevBills.filter(b => b.id !== bill.id));
+      
+      // Refresh my bills to show the newly added bill
+      fetchMyBills();
+      
+      alert("Bill added to My Bills successfully!");
+    } catch (error) {
+      console.error("Error adding to My Bills:", error.message);
+      alert("Failed to add to My Bills: " + error.message);
+    }
+  };
+
+  const removeFromMyBills = async (myBillId, billId) => {
+    try {
+      // Delete from MyBills collection
+      await deleteDoc(doc(db, "MyBills", myBillId));
+      
+      // Remove from myBills list
+      setMyBills(prevMyBills => prevMyBills.filter(b => b.myBillId !== myBillId));
+      
+      // Refresh bills to include the removed bill
+      fetchBills();
+      
+      alert("Bill removed from My Bills successfully!");
+    } catch (error) {
+      console.error("Error removing from My Bills:", error.message);
+      alert("Failed to remove from My Bills: " + error.message);
+    }
+  };
+
   return (
     <div className="container">
       <h3>Payment Tracking</h3>
 
+      {/* My Bills Section */}
+      <div style={{ backgroundColor: "#f8f9fa", padding: "20px", borderRadius: "8px", marginBottom: "20px" }}>
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <h4 className="mb-0">
+            <i className="bi bi-star-fill text-warning me-2"></i>
+            My Bills
+          </h4>
+          <div className="d-flex gap-2">
+            <button className="btn btn-success btn-sm" onClick={handlePrintMyBills}>
+              <i className="bi bi-printer"></i> Print
+            </button>
+            <button className="btn btn-primary btn-sm" onClick={() => handleDownloadPDF(true)}>
+              <i className="bi bi-file-earmark-pdf"></i> PDF
+            </button>
+          </div>
+        </div>
+        
+        {myBillsLoading ? (
+          <div className="text-center my-3">
+            <div className="spinner-border spinner-border-sm text-primary" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </div>
+            <p className="mt-2">Loading your bills...</p>
+          </div>
+        ) : myBills.length === 0 ? (
+          <div className="alert alert-info">
+            <i className="bi bi-info-circle me-2"></i>
+            No bills added to My Bills yet. Click the <i className="bi bi-plus-circle"></i> icon next to a bill below to add it here.
+          </div>
+        ) : (
+          <div className="my-bills-print-content">
+            <div className="d-none d-print-block text-center mb-4">
+              <h2 style={{ margin: "0" }}>Advance Trading</h2>
+              <p style={{ margin: "3px 0" }}>Reg Office: No: 170/A, Nuwaraeliya Rd, Delpitiya, Gampola</p>
+              <p style={{ margin: "2px 0" }}>Tel: 072-7070701</p>
+              <h3 style={{ margin: "8px 0" }}>My Bills Report</h3>
+              {selectedOutlet && <h4 style={{ margin: "5px 0" }}>Outlet: {selectedOutlet}</h4>}
+            </div>
+
+            <div className="table-responsive">
+              <table className="table table-bordered table-hover">
+                <thead className="table-primary">
+                  <tr>
+                    <th>Date</th>
+                    <th>Bill No</th>
+                    <th>Outlet Name</th>
+                    <th className="text-end">Total (Rs.)</th>
+                    <th className="text-end">Balance (Rs.)</th>
+                    <th className="d-print-none">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {myBills.map((bill) => (
+                    <tr key={bill.id} className={bill.balance <= 0 ? "table-success" : ""}>
+                      <td>{formatDate(bill.createDate)}</td>
+                      <td>{bill.billNo}</td>
+                      <td>{bill.outletName}</td>
+                      <td className="text-end">{formatCurrency(bill.totalAmount)}</td>
+                      <td className="text-end fw-bold">{formatCurrency(bill.balance)}</td>
+                      <td className="d-print-none">
+                        <div className="d-flex gap-2">
+                          <button 
+                            className="btn btn-danger btn-sm" 
+                            onClick={() => removeFromMyBills(bill.myBillId, bill.id)}
+                            title="Remove from My Bills"
+                          >
+                            <i className="bi bi-trash"></i>
+                          </button>
+                          <button 
+                            className="btn btn-primary btn-sm" 
+                            onClick={() => handleSelectBill(bill)}
+                            disabled={bill.balance <= 0}
+                            title="Record Payment"
+                          >
+                            <i className="bi bi-cash"></i>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="d-none d-print-flex mt-5" style={{ display: "flex", justifyContent: "space-between" }}>
+              <div style={{ width: "30%", borderTop: "1px solid #000", textAlign: "center", paddingTop: "10px" }}>
+                <p>Prepared By</p>
+              </div>
+              <div style={{ width: "30%", borderTop: "1px solid #000", textAlign: "center", paddingTop: "10px" }}>
+                <p>Checked By</p>
+              </div>
+              <div style={{ width: "30%", borderTop: "1px solid #000", textAlign: "center", paddingTop: "10px" }}>
+                <p>Approved By</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Payment Tracking Table */}
       <div style={{ backgroundColor: "white", padding: "20px", borderRadius: "8px", marginBottom: "20px" }}>
         <div className="d-flex justify-content-between align-items-center mb-4">
           <div className="d-flex align-items-center gap-3">
@@ -556,7 +815,7 @@ const PaymentTable = () => {
             <button className="btn btn-success" onClick={handlePrint}>
               <i className="bi bi-printer"></i> Print
             </button>
-            <button className="btn btn-primary" onClick={handleDownloadPDF}>
+            <button className="btn btn-primary" onClick={() => handleDownloadPDF()}>
               <i className="bi bi-file-earmark-pdf"></i> PDF
             </button>
           </div>
@@ -614,13 +873,23 @@ const PaymentTable = () => {
                       ))}
                       <td className="text-end fw-bold">{formatCurrency(bill.balance)}</td>
                       <td className="d-print-none">
-                        <button 
-                          className="btn btn-primary btn-sm" 
-                          onClick={() => handleSelectBill(bill)}
-                          disabled={bill.balance <= 0}
-                        >
-                          <i className="bi bi-cash"></i> Record Payment
-                        </button>
+                        <div className="d-flex gap-2">
+                          <button 
+                            className="btn btn-success btn-sm" 
+                            onClick={() => addToMyBills(bill)}
+                            title="Add to My Bills"
+                          >
+                            <i className="bi bi-plus-circle"></i>
+                          </button>
+                          <button 
+                            className="btn btn-primary btn-sm" 
+                            onClick={() => handleSelectBill(bill)}
+                            disabled={bill.balance <= 0}
+                            title="Record Payment"
+                          >
+                            <i className="bi bi-cash"></i>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -746,13 +1015,15 @@ const PaymentTable = () => {
             body * {
               visibility: hidden;
             }
-            .print-content, .print-content * {
+            ${printMyBills 
+              ? '.my-bills-print-content, .my-bills-print-content *' 
+              : '.print-content, .print-content *'} {
               visibility: visible;
             }
             .d-print-none {
               display: none !important;
             }
-            .print-content {
+            ${printMyBills ? '.my-bills-print-content' : '.print-content'} {
               position: absolute;
               left: 0;
               top: 0;
@@ -793,30 +1064,30 @@ const PaymentTable = () => {
             }
             /* Computer form specific styles */
             ${printMode ? `
-            .print-content h2 {
+            ${printMyBills ? '.my-bills-print-content' : '.print-content'} h2 {
               font-size: 18pt;
               font-weight: bold;
             }
-            .print-content h3 {
+            ${printMyBills ? '.my-bills-print-content' : '.print-content'} h3 {
               font-size: 16pt;
               margin-top: 8px;
             }
-            .print-content h4 {
+            ${printMyBills ? '.my-bills-print-content' : '.print-content'} h4 {
               font-size: 14pt;
             }
-            .print-content p {
+            ${printMyBills ? '.my-bills-print-content' : '.print-content'} p {
               font-size: 11pt;
               margin: 3px 0;
             }
-            .print-content th {
+            ${printMyBills ? '.my-bills-print-content' : '.print-content'} th {
               font-size: 13pt;
               font-weight: bold;
             }
-            .print-content td {
+            ${printMyBills ? '.my-bills-print-content' : '.print-content'} td {
               font-size: 12pt;
             }
             /* Form structure elements - only for direct print button */
-            .print-content::before {
+            ${printMyBills ? '.my-bills-print-content' : '.print-content'}::before {
               content: "";
               position: absolute;
               width: 0.25in;
@@ -826,7 +1097,7 @@ const PaymentTable = () => {
               border-right: 1px dashed #999;
               background-image: repeating-linear-gradient(0deg, transparent, transparent 0.45in, #ccc 0.45in, #ccc 0.5in);
             }
-            .print-content::after {
+            ${printMyBills ? '.my-bills-print-content' : '.print-content'}::after {
               content: "";
               position: absolute;
               width: 0.25in;
@@ -850,3 +1121,4 @@ const PaymentTable = () => {
 };
 
 export default PaymentTable;
+
