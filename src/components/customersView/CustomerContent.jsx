@@ -260,9 +260,9 @@ const BillAdd = () => {
               color: #000;
             }
             .page {
-              width: 95%;
+              width: 99%;
               max-width: 100%;
-              padding: 2mm 5mm;
+              padding: 2mm 3mm;
               margin: 0 auto;
               box-sizing: border-box;
               box-shadow: 0 0 10mm rgba(0,0,0,0.2);
@@ -485,7 +485,7 @@ const BillAdd = () => {
             @media print {
               @page { 
                 size: A4 portrait; 
-                margin: 5mm 10mm; 
+                margin: 3mm 6mm; 
               }
               .no-print { 
                 display: none !important; 
@@ -697,8 +697,8 @@ const BillAdd = () => {
               
               .page {
                 padding: 1mm !important;
-                width: 96% !important;
-                max-width: 96% !important;
+                width: 98% !important;
+                max-width: 98% !important;
                 margin: 0 auto !important;
               }
               
@@ -744,7 +744,7 @@ const BillAdd = () => {
               .invoice-container {
                 padding: 0 !important;
                 margin: 0 auto !important;
-                width: 95% !important;
+                width: 98% !important;
               }
             }
           </style>
@@ -894,7 +894,7 @@ const BillAdd = () => {
                     <p><strong class="print-normal-weight">Total: ${calculateTotal(bill.expireOptions)}</strong></p>
                   </div>
                 </div>
-
+<br/>
             <div class="total-section">
               <table>
                 <tr>
