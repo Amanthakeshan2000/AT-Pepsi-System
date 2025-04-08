@@ -803,7 +803,7 @@ const ManualInvoice = () => {
             {currentBills.length > 0 ? (
               currentBills.map((bill) => (
                 <tr key={bill.id}>
-                  <td>{bill.billNo}</td>
+                  <td className="fw-bold">{bill.billNo}</td>
                   <td>{bill.outletName}</td>
                   <td>{bill.salesRef}</td>
                   <td>{bill.refContact}</td>

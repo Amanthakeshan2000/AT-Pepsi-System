@@ -263,7 +263,7 @@ const SummeryofmonthTable = () => {
                 <tbody>
                   {summaryData.map((item, index) => (
                     <tr key={index}>
-                      <td>{new Date(item.date).toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' })}</td>
+                      <td>{new Date(item.date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}</td>
                       <td className="text-end">{formatCurrency(item.loadingValue)}</td>
                       <td className="text-end">{formatCurrency(item.discountValue)}</td>
                       <td className="text-end">{formatCurrency(item.expireValue)}</td>
