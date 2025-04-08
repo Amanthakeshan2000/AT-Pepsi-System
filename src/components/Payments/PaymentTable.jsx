@@ -17,6 +17,8 @@ const PaymentTable = () => {
   const [printMyBills, setPrintMyBills] = useState(false);
   const [selectedOutlet, setSelectedOutlet] = useState("");
   const [outlets, setOutlets] = useState([]);
+  const [creatorFilter, setCreatorFilter] = useState("");
+  const [creators, setCreators] = useState([]);
 
   const billsCollectionRef = collection(db, "Bill");
   const paymentsCollectionRef = collection(db, "Payments");
@@ -122,17 +124,40 @@ const PaymentTable = () => {
   const fetchMyBills = async () => {
     setMyBillsLoading(true);
     try {
-      // Get the logged-in user's email
       const userEmail = localStorage.getItem("userEmail") || "Unknown";
       
-      // Fetch myBills collection
+      // Get creators from both MyBills and Bills collections
+      const creatorSet = new Set();
+      
+      // Get creators from MyBills
+      const allMyBillsQuery = query(myBillsCollectionRef);
+      const allMyBillsSnapshot = await getDocs(allMyBillsQuery);
+      allMyBillsSnapshot.docs.forEach(doc => {
+        const data = doc.data();
+        if (data.userEmail) {
+          creatorSet.add(data.userEmail);
+        }
+      });
+      
+      // Get creators from Bills
+      const billsQuery = query(billsCollectionRef);
+      const billsSnapshot = await getDocs(billsQuery);
+      billsSnapshot.docs.forEach(doc => {
+        const data = doc.data();
+        if (data.createdBy) {
+          creatorSet.add(data.createdBy);
+        }
+      });
+      
+      setCreators(Array.from(creatorSet).sort());
+      
+      // Then fetch current user's bills
       const q = query(myBillsCollectionRef, where("userEmail", "==", userEmail));
       const querySnapshot = await getDocs(q);
       
       const myBillIds = new Set();
       const myBillsList = [];
       
-      // First, collect all the bill IDs from MyBills
       querySnapshot.docs.forEach(doc => {
         const data = doc.data();
         if (data.billId) {
@@ -140,12 +165,12 @@ const PaymentTable = () => {
           myBillsList.push({
             myBillId: doc.id,
             billId: data.billId,
-            addedAt: data.addedAt
+            addedAt: data.addedAt,
+            createdBy: data.userEmail
           });
         }
       });
       
-      // Then fetch the actual bill data for each myBill
       const billPromises = myBillsList.map(async (myBill) => {
         const billDoc = await getDoc(doc(db, "Bill", myBill.billId));
         if (billDoc.exists()) {
@@ -674,6 +699,16 @@ const PaymentTable = () => {
     }
   };
 
+  // Add filtered bills function
+  const getFilteredMyBills = () => {
+    return myBills.filter(bill => {
+      if (creatorFilter && bill.createdBy !== creatorFilter) {
+        return false;
+      }
+      return true;
+    });
+  };
+
   return (
     <div className="container">
       <h3>Payment Tracking</h3>
@@ -685,7 +720,22 @@ const PaymentTable = () => {
             <i className="bi bi-star-fill text-warning me-2"></i>
             My Bills
           </h4>
-          <div className="d-flex gap-2">
+          <div className="d-flex gap-2 align-items-center">
+            <div className="input-group" style={{ width: "400px" }}>
+              <span className="input-group-text">
+                <i className="bi bi-person"></i>
+              </span>
+              <select 
+                className="form-select" 
+                value={creatorFilter}
+                onChange={(e) => setCreatorFilter(e.target.value)}
+              >
+                <option value="">All Creators</option>
+                {creators.map((creator, index) => (
+                  <option key={index} value={creator}>{creator}</option>
+                ))}
+              </select>
+            </div>
             <button className="btn btn-success btn-sm" onClick={handlePrintMyBills}>
               <i className="bi bi-printer"></i> Print
             </button>
@@ -724,17 +774,19 @@ const PaymentTable = () => {
                     <th>Date</th>
                     <th>Bill No</th>
                     <th>Outlet Name</th>
+                    <th>Created By</th>
                     <th className="text-end">Total (Rs.)</th>
                     <th className="text-end">Balance (Rs.)</th>
                     <th className="d-print-none">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {myBills.map((bill) => (
+                  {getFilteredMyBills().map((bill) => (
                     <tr key={bill.id} className={bill.balance <= 0 ? "table-success" : ""}>
                       <td>{formatDate(bill.createDate)}</td>
                       <td>{bill.billNo}</td>
                       <td>{bill.outletName}</td>
+                      <td>{bill.createdBy || "Unknown"}</td>
                       <td className="text-end">{formatCurrency(bill.totalAmount)}</td>
                       <td className="text-end fw-bold">{formatCurrency(bill.balance)}</td>
                       <td className="d-print-none">
@@ -759,6 +811,14 @@ const PaymentTable = () => {
                     </tr>
                   ))}
                 </tbody>
+                <tfoot>
+                  <tr>
+                    <td colSpan="4" className="text-end fw-bold">Total Balance:</td>
+                    <td className="text-end fw-bold">Rs. {formatCurrency(getFilteredMyBills().reduce((sum, bill) => sum + bill.totalAmount, 0))}</td>
+                    <td className="text-end fw-bold" style={{ color: '#dc3545' }}>Rs. {formatCurrency(getFilteredMyBills().reduce((sum, bill) => sum + bill.balance, 0))}</td>
+                    <td className="d-print-none"></td>
+                  </tr>
+                </tfoot>
               </table>
             </div>
 
