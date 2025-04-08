@@ -491,7 +491,7 @@ const BillAdd = () => {
                 display: none !important; 
               }
               body { 
-                background-color: #fff; 
+              background-color: #fff; 
                 margin: 0;
                 padding: 0;
                 display: block;
@@ -1186,8 +1186,8 @@ const BillAdd = () => {
                 productId: product.id,
                 optionId: optionName,
                 name: `${product.name} - ${option.name}`,
-                case: "",
-                perCaseRate: "",
+        case: "",
+        perCaseRate: "",
                 total: ""
               });
             }
@@ -2513,10 +2513,10 @@ const BillAdd = () => {
                         }, {})).map((option, index) => (
                           <tr key={index}>
                             <td>{option.optionId || option.name}</td>
-                            <td>{option.case}</td>
-                            <td>{option.perCaseRate}</td>
+                          <td>{option.case}</td>
+                          <td>{option.perCaseRate}</td>
                             <td>Rs. {option.total || "0.00"}</td>
-                          </tr>
+                        </tr>
                         ))
                       ) : (
                         <tr>

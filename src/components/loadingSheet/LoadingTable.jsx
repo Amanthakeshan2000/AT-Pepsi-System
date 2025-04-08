@@ -33,7 +33,8 @@ const BillManagement = () => {
 
   const fetchBills = async () => {
     try {
-      const querySnapshot = await getDocs(billsCollectionRef);
+      const q = query(billsCollectionRef, orderBy("createDate", "desc"));
+      const querySnapshot = await getDocs(q);
       const billList = querySnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
@@ -151,6 +152,8 @@ const BillManagement = () => {
   const handleEditProcessedUnit = async (unit) => {
     const updatedBills = [...newBillItems, ...unit.bills]; // Combine current new bills with unit bills
     setNewBillItems(updatedBills);
+    setDriverName(unit.driverName || ""); // Set driver name from the unit
+    setRoute(unit.route || ""); // Set route from the unit
     await handleDeleteProcessedUnit(unit.id); // Remove the old unit
   };
 

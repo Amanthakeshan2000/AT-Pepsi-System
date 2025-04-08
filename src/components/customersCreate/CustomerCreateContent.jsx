@@ -13,6 +13,7 @@ const CustomerRegistration = () => {
   const [status, setStatus] = useState(1); // Active by default
   const [loading, setLoading] = useState(false);
   const [editCustomer, setEditCustomer] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const customersCollectionRef = collection(db, "Customers");
 
@@ -94,6 +95,15 @@ const CustomerRegistration = () => {
     }
   };
 
+  const filterCustomers = () => {
+    return customers.filter(customer => 
+      customer.outletName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customer.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customer.contactNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customer.salesRefName.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  };
+
   return (
     <div className="container">
       <h3>{editCustomer ? "Edit Customer" : "Customer Registration"}</h3>
@@ -130,6 +140,26 @@ const CustomerRegistration = () => {
         <button type="submit" className="btn btn-primary" disabled={loading}>{loading ? "Saving..." : editCustomer ? "Update Customer" : "Register Customer"}</button>
       </form>
       <h3 className="mt-4">Customer List</h3>
+      <div style={{ position: "relative", width: "300px", marginBottom: "20px" }}>
+        <input 
+          type="text" 
+          className="form-control" 
+          placeholder="Search customers..." 
+          value={searchTerm} 
+          onChange={(e) => setSearchTerm(e.target.value)} 
+          style={{ paddingLeft: "40px" }}
+        />
+        <i
+          className="bi bi-search"
+          style={{
+            position: "absolute",
+            left: "10px",
+            top: "50%",
+            transform: "translateY(-50%)",
+            color: "#888"
+          }}
+        ></i>
+      </div>
       <table className="table table-striped">
         <thead>
           <tr>
@@ -144,7 +174,7 @@ const CustomerRegistration = () => {
           </tr>
         </thead>
         <tbody>
-          {customers.map((customer, index) => (
+          {filterCustomers().map((customer, index) => (
             <tr key={customer.docId}>
               <td>{index + 1}</td>
               <td>{customer.outletName}</td>

@@ -32,7 +32,8 @@ const ManualInvoice = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const billSnapshot = await getDocs(billsCollectionRef);
+        const q = query(billsCollectionRef, orderBy("createDate", "desc"));
+        const billSnapshot = await getDocs(q);
         const fetchedBills = billSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
         setBills(fetchedBills);
         
@@ -320,7 +321,7 @@ const ManualInvoice = () => {
     setCurrentPage(1); // Reset to first page when changing filters
   };
 
-  const filteredBills = bills.filter((bill) => 
+  const filteredBills = bills.filter((bill) =>
     (bill.billNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
     bill.outletName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     bill.salesRef.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -628,11 +629,11 @@ const ManualInvoice = () => {
       if (imgHeight > pageHeight - 2 * margin) {
         let heightLeft = imgHeight - (pageHeight - 2 * margin);
         let position = -(pageHeight - 2 * margin);
-        
-        while (heightLeft > 0) {
-          pdf.addPage();
+
+      while (heightLeft > 0) {
+        pdf.addPage();
           pdf.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight, '', 'FAST');
-          heightLeft -= (pageHeight - 2 * margin);
+        heightLeft -= (pageHeight - 2 * margin);
           position -= (pageHeight - 2 * margin);
         }
       }
@@ -749,7 +750,7 @@ const ManualInvoice = () => {
       // Clean up in case of error
       const tempDiv = document.querySelector('div[style*="position: absolute"]');
       if (tempDiv) {
-        document.body.removeChild(tempDiv);
+      document.body.removeChild(tempDiv);
       }
     }
   };
