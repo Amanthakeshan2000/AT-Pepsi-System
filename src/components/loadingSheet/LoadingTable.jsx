@@ -950,14 +950,70 @@ const BillManagement = () => {
           </tbody>
         </table>
         <div className="d-flex justify-content-center">
-          <nav>
-            <ul className="pagination">
-              {Array.from({ length: Math.ceil(filteredBills.length / itemsPerPage) }, (_, index) => (
-                <li key={index} className={`page-item ${currentPage === index + 1 ? "active" : ""}`}>
-                  <button className="page-link" onClick={() => paginate(index + 1)}>{index + 1}</button>
+          <nav className="mt-3">
+            <div className="d-flex align-items-center justify-content-center">
+              <ul className="pagination mb-0" style={{ maxWidth: '100%', overflowX: 'auto', display: 'flex', margin: '0 10px' }}>
+                <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`} style={{ minWidth: 'fit-content' }}>
+                  <button
+                    className="page-link"
+                    onClick={() => paginate(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    style={{ borderRadius: '4px 0 0 4px' }}
+                  >
+                    Previous
+                  </button>
                 </li>
-              ))}
-            </ul>
+                <div style={{ 
+                  display: 'flex', 
+                  overflowX: 'auto',
+                  maxWidth: 'calc(100% - 200px)', // Adjust based on Previous/Next button widths
+                  margin: '0',
+                  WebkitOverflowScrolling: 'touch',
+                  msOverflowStyle: '-ms-autohiding-scrollbar'
+                }}>
+                  {Array.from({ length: Math.ceil(filteredBills.length / itemsPerPage) }).map((_, index) => {
+                    // Show 15 page numbers at a time
+                    const pageNumber = index + 1;
+                    const startPage = Math.max(1, currentPage - 7);
+                    const endPage = Math.min(Math.ceil(filteredBills.length / itemsPerPage), startPage + 14);
+                    
+                    if (pageNumber >= startPage && pageNumber <= endPage) {
+                      return (
+                        <li
+                          key={index}
+                          className={`page-item ${currentPage === pageNumber ? 'active' : ''}`}
+                          style={{ minWidth: 'fit-content' }}
+                        >
+                          <button 
+                            className="page-link" 
+                            onClick={() => paginate(pageNumber)}
+                            style={{ margin: '0', borderRadius: '0' }}
+                          >
+                            {pageNumber}
+                          </button>
+                        </li>
+                      );
+                    }
+                    return null;
+                  })}
+                </div>
+                <li
+                  className={`page-item ${
+                    currentPage === Math.ceil(filteredBills.length / itemsPerPage) ? 'disabled' : ''
+                  }`}
+                  style={{ minWidth: 'fit-content' }}
+                >
+                  <button
+                    className="page-link"
+                    onClick={() => paginate(currentPage + 1)}
+                    disabled={currentPage === Math.ceil(filteredBills.length / itemsPerPage)}
+                    style={{ borderRadius: '0 4px 4px 0' }}
+                  >
+                    Next
+                  </button>
+                </li>
+              </ul>
+            </div>
           </nav>
         </div>
       </div>

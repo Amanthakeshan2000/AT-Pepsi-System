@@ -51,9 +51,15 @@ const SummeryofmonthTable = () => {
       const productMargins = new Map();
       productsSnapshot.docs.forEach(doc => {
         const product = doc.data();
-        if (product.margin) {
-          productMargins.set(doc.id, parseFloat(product.margin) || 0);
-          console.log(`Product ${doc.id} margin:`, product.margin);
+        if (product.productOptions && Array.isArray(product.productOptions)) {
+          // Store margin values for each product option
+          product.productOptions.forEach(option => {
+            const optionId = option.name; // This is the optionId used in sales
+            if (option.margin) {
+              productMargins.set(optionId, parseFloat(option.margin) || 0);
+              console.log(`Product Option ${optionId} margin:`, option.margin);
+            }
+          });
         }
       });
       
@@ -126,22 +132,74 @@ const SummeryofmonthTable = () => {
           // Calculate Margin based on product margins
           bill.productOptions.forEach(opt => {
             const qty = parseFloat(opt.qty) || 0;
-            const price = parseFloat(opt.price) || 0;
-            // Get the product margin from the map using the productId
-            const productMargin = productMargins.get(opt.productId) || 0;
-            // Calculate margin for this product: quantity * price * margin percentage
-            const productMarginValue = qty * price * (productMargin / 100);
-            dailySummary.margin += productMarginValue;
+            const optionId = opt.optionId; // This is the product option ID
+            const marginValue = productMargins.get(optionId) || 0;
             
-            console.log(`Product ${opt.productId}:`, {
+            // Calculate margin: quantity * margin value (Rs.)
+            const productMarginTotal = qty * marginValue;
+            dailySummary.margin += productMarginTotal;
+            
+            console.log(`Product ${optionId}:`, {
               quantity: qty,
-              price: price,
-              marginPercentage: productMargin,
-              marginValue: productMarginValue,
-              totalMargin: dailySummary.margin
+              marginValue: marginValue,
+              marginTotal: productMarginTotal,
+              dailyTotal: dailySummary.margin
             });
           });
         });
+      });
+      
+      // Process Manual Bills
+      filteredManualBills.forEach(bill => {
+        if (!bill.customDate || !bill.options) return;
+        
+        const dateStr = bill.customDate;
+        
+        if (!dateMap.has(dateStr)) {
+          dateMap.set(dateStr, {
+            date: dateStr,
+            loadingValue: 0,
+            discountValue: 0,
+            expireValue: 0,
+            salesValue: 0,
+            margin: 0,
+          });
+        }
+        
+        const dailySummary = dateMap.get(dateStr);
+        
+        // Calculate values from manual bill options
+        if (Array.isArray(bill.options)) {
+          bill.options.forEach(option => {
+            const qty = parseFloat(option.qty) || 0;
+            const optionId = option.optionId;
+            const marginValue = productMargins.get(optionId) || 0;
+            
+            // Calculate margin: quantity * margin value (Rs.)
+            const productMarginTotal = qty * marginValue;
+            dailySummary.margin += productMarginTotal;
+            
+            console.log(`Manual Bill ${dateStr} - Product ${optionId}:`, {
+              quantity: qty,
+              marginValue: marginValue,
+              marginTotal: productMarginTotal
+            });
+            
+            // Calculate gross sale
+            const price = parseFloat(option.price) || 0;
+            const grossSale = qty * price;
+            dailySummary.loadingValue += grossSale;
+          });
+        }
+        
+        // Add discount and expire values
+        dailySummary.discountValue += parseFloat(bill.discount) || 0;
+        dailySummary.expireValue += parseFloat(bill.expire) || 0;
+        
+        // Calculate net sales
+        dailySummary.salesValue = dailySummary.loadingValue - 
+                                 dailySummary.discountValue - 
+                                 dailySummary.expireValue;
       });
       
       // Convert map to array and sort by date

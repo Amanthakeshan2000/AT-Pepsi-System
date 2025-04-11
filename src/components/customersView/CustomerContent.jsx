@@ -16,6 +16,7 @@ const BillAdd = () => {
   const [discountOptions, setDiscountOptions] = useState([]);
   const [freeIssueOptions, setFreeIssueOptions] = useState([]);
   const [expireOptions, setExpireOptions] = useState([]);
+  const [goodReturnOptions, setGoodReturnOptions] = useState([]); // Add state for good return options
   const [percentageDiscount, setPercentageDiscount] = useState("");
   const [products, setProducts] = useState([]);
   const [bills, setBills] = useState([]);
@@ -199,6 +200,7 @@ const BillAdd = () => {
     setDiscountOptions(bill.discountOptions || []);
     setFreeIssueOptions(bill.freeIssueOptions || []);
     setExpireOptions(bill.expireOptions || []);
+    setGoodReturnOptions(bill.goodReturnOptions || []); // Add this line
     setPercentageDiscount(bill.percentageDiscount || "");
     
     // Scroll to the top of the page
@@ -1265,6 +1267,80 @@ const BillAdd = () => {
     }
   };
 
+  const addGoodReturnOption = () => {
+    // Get all distinct product options from all products in the system
+    const allOptions = [];
+    const uniqueOptionNames = new Set();
+    
+    products.forEach(product => {
+      if (product.options && product.options.length > 0) {
+        product.options.forEach(option => {
+          if (option.name) {
+            // Extract the base option name (e.g., "200 ML" from "200 ML - OLE")
+            const optionName = option.name.split(' - ')[0].trim();
+            
+            // Only add if this base option name hasn't been seen before
+            if (!uniqueOptionNames.has(optionName)) {
+              uniqueOptionNames.add(optionName);
+              
+              // Create a good return option record for the option
+              allOptions.push({
+                productId: product.id,
+                optionId: optionName,
+                name: `${product.name} - ${option.name}`,
+                case: "",
+                perCaseRate: "",
+                total: ""
+              });
+            }
+          }
+        });
+      }
+    });
+    
+    // Add only options that don't already exist in goodReturnOptions
+    const existingOptionIds = new Set(goodReturnOptions.map(opt => {
+      const optionName = (opt.optionId || '').split(' - ')[0].trim();
+      return optionName;
+    }));
+    
+    const newOptions = allOptions.filter(opt => {
+      const optionName = (opt.optionId || '').split(' - ')[0].trim();
+      return !existingOptionIds.has(optionName);
+    });
+    
+    // If all options already exist, add a single blank option
+    if (newOptions.length === 0) {
+      setGoodReturnOptions([...goodReturnOptions, {
+        productId: "",
+        optionId: "",
+        name: "",
+        case: "",
+        perCaseRate: "",
+        total: ""
+      }]);
+    } else {
+      setGoodReturnOptions([...goodReturnOptions, ...newOptions]);
+    }
+  };
+
+  const removeGoodReturnOption = (index) => {
+    setGoodReturnOptions(goodReturnOptions.filter((_, i) => i !== index));
+  };
+
+  const handleGoodReturnChange = (index, field, value) => {
+    const newOptions = [...goodReturnOptions];
+    newOptions[index][field] = value;
+    const caseVal = parseFloat(newOptions[index].case) || 0;
+    const perCaseRateVal = parseFloat(newOptions[index].perCaseRate) || 0;
+    if (caseVal && perCaseRateVal) {
+      newOptions[index].total = (caseVal * perCaseRateVal).toFixed(2);
+    } else {
+      newOptions[index].total = "";
+    }
+    setGoodReturnOptions(newOptions);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -1338,6 +1414,7 @@ const BillAdd = () => {
           discountOptions,
           freeIssueOptions,
           expireOptions,
+          goodReturnOptions, // Add good return options
           percentageDiscount,
           updatedAt: serverTimestamp(),
           updatedBy: userEmail, // Add the user who updated the bill
@@ -1357,6 +1434,7 @@ const BillAdd = () => {
           discountOptions,
           freeIssueOptions,
           expireOptions,
+          goodReturnOptions, // Add good return options
           percentageDiscount,
           printStatus: false, // Default to false if not set
           createdAt: serverTimestamp(),
@@ -2055,6 +2133,96 @@ const BillAdd = () => {
         </div>
 
         <div className="card shadow-sm mb-4">
+          <div className="card-header bg-info text-white d-flex justify-content-between align-items-center">
+            <h5 className="mb-0 text-white">Good Return Options</h5>
+            <button type="button" className="btn btn-light btn-sm" onClick={addGoodReturnOption}>
+              <i className="bi bi-plus-circle"></i> Add Good Return
+            </button>
+          </div>
+          <div className="card-body">
+            {goodReturnOptions.length > 0 && (
+              <table className="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Option Name</th>
+                    <th>Case</th>
+                    <th>Per Case Rate</th>
+                    <th>Total</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {goodReturnOptions.map((option, index) => (
+                    <tr key={index}>
+                      <td>{option.optionId}</td>
+                      <td>
+                        <input
+                          type="number"
+                          className="form-control"
+                          value={option.case}
+                          onChange={(e) => handleGoodReturnChange(index, "case", e.target.value)}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          className="form-control"
+                          value={option.perCaseRate}
+                          onChange={(e) => handleGoodReturnChange(index, "perCaseRate", e.target.value)}
+                        />
+                      </td>
+                      <td><strong>Rs: {option.total || "0.00"}</strong></td>
+                      <td>
+                        <button 
+                          type="button" 
+                          className="btn btn-danger btn-sm" 
+                          onClick={() => removeGoodReturnOption(index)}
+                        >
+                          <i className="bi bi-trash"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="table-info">
+                    <td colSpan="3" className="text-end fw-bold">Good Return Total</td>
+                    <td className="fw-bold" colSpan="2">Rs. {calculateTotal(goodReturnOptions)}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            )}
+            {goodReturnOptions.length > 0 && (
+              <div className="row mt-3">
+                <div className="col-12">
+                  <div className="alert alert-info d-flex align-items-center justify-content-between">
+                    <div className="d-flex align-items-center">
+                      <i className="bi bi-arrow-return-left me-2" style={{ fontSize: "1.5rem" }}></i>
+                      <span className="fw-bold">Good Return Summary</span>
+                    </div>
+                    <div className="d-flex flex-column align-items-end">
+                      <div className="d-flex align-items-center">
+                        <span className="me-2">Total Good Return:</span>
+                        <span className="fw-bold" style={{ 
+                          fontSize: "1.25rem",
+                          color: "#0dcaf0",
+                          textShadow: "1px 1px 2px rgba(0,0,0,0.1)"
+                        }}>
+                          Rs. {calculateTotal(goodReturnOptions)}
+                        </span>
+                      </div>
+                      <small className="text-muted">
+                        {goodReturnOptions.length} good return items applied
+                      </small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="card shadow-sm mb-4">
           <div className="card-header bg-secondary text-white">
             <h5 className="mb-0 text-white">Percentage Discount</h5>
           </div>
@@ -2284,42 +2452,71 @@ const BillAdd = () => {
 
           {/* Pagination */}
           {filteredBills.length > itemsPerPage && (
-        <nav>
-              <ul className="pagination justify-content-center">
-                <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
-                  <button
-                    className="page-link"
-                    onClick={() => paginate(currentPage - 1)}
-                    disabled={currentPage === 1}
-                  >
-                    Previous
-                  </button>
-                </li>
-                {Array.from({ length: Math.ceil(filteredBills.length / itemsPerPage) }).map((_, index) => (
-                  <li
-                    key={index}
-                    className={`page-item ${currentPage === index + 1 ? 'active' : ''}`}
-                  >
-                    <button className="page-link" onClick={() => paginate(index + 1)}>
-                      {index + 1}
+            <nav className="mt-3">
+              <div className="d-flex align-items-center justify-content-center">
+                <ul className="pagination mb-0" style={{ maxWidth: '100%', overflowX: 'auto', display: 'flex', margin: '0 10px' }}>
+                  <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`} style={{ minWidth: 'fit-content' }}>
+                    <button
+                      className="page-link"
+                      onClick={() => paginate(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      style={{ borderRadius: '4px 0 0 4px' }}
+                    >
+                      Previous
                     </button>
-              </li>
-            ))}
-                <li
-                  className={`page-item ${
-                    currentPage === Math.ceil(filteredBills.length / itemsPerPage) ? 'disabled' : ''
-                  }`}
-                >
-                  <button
-                    className="page-link"
-                    onClick={() => paginate(currentPage + 1)}
-                    disabled={currentPage === Math.ceil(filteredBills.length / itemsPerPage)}
+                  </li>
+                  <div style={{ 
+                    display: 'flex', 
+                    overflowX: 'auto',
+                    maxWidth: 'calc(100% - 200px)', // Adjust based on Previous/Next button widths
+                    margin: '0',
+                    WebkitOverflowScrolling: 'touch',
+                    msOverflowStyle: '-ms-autohiding-scrollbar'
+                  }}>
+                    {Array.from({ length: Math.ceil(filteredBills.length / itemsPerPage) }).map((_, index) => {
+                      // Show 15 page numbers at a time
+                      const pageNumber = index + 1;
+                      const startPage = Math.max(1, currentPage - 7);
+                      const endPage = Math.min(Math.ceil(filteredBills.length / itemsPerPage), startPage + 14);
+                      
+                      if (pageNumber >= startPage && pageNumber <= endPage) {
+                        return (
+                          <li
+                            key={index}
+                            className={`page-item ${currentPage === pageNumber ? 'active' : ''}`}
+                            style={{ minWidth: 'fit-content' }}
+                          >
+                            <button 
+                              className="page-link" 
+                              onClick={() => paginate(pageNumber)}
+                              style={{ margin: '0', borderRadius: '0' }}
+                            >
+                              {pageNumber}
+                            </button>
+                          </li>
+                        );
+                      }
+                      return null;
+                    })}
+                  </div>
+                  <li
+                    className={`page-item ${
+                      currentPage === Math.ceil(filteredBills.length / itemsPerPage) ? 'disabled' : ''
+                    }`}
+                    style={{ minWidth: 'fit-content' }}
                   >
-                    Next
-                  </button>
-                </li>
-          </ul>
-        </nav>
+                    <button
+                      className="page-link"
+                      onClick={() => paginate(currentPage + 1)}
+                      disabled={currentPage === Math.ceil(filteredBills.length / itemsPerPage)}
+                      style={{ borderRadius: '0 4px 4px 0' }}
+                    >
+                      Next
+                    </button>
+                  </li>
+                </ul>
+              </div>
+            </nav>
           )}
         </div>
       </div>
@@ -2620,6 +2817,137 @@ const BillAdd = () => {
                                 (parseFloat(selectedBill.discountOptions ? calculateTotal(selectedBill.discountOptions) : 0) + 
                                  parseFloat(selectedBill.freeIssueOptions ? calculateTotal(selectedBill.freeIssueOptions) : 0) + 
                                  parseFloat(selectedBill.expireOptions ? calculateTotal(selectedBill.expireOptions) : 0) + 
+                                 parseFloat(selectedBill.percentageDiscount ? calculatePercentageDiscountTotal(calculateProductTotal(selectedBill.productOptions), selectedBill.percentageDiscount) : 0)
+                                )
+                  ).toFixed(2)}
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                </div>
+                  </div>
+                </div>
+
+                {/* Add Good Return Options Section */}
+                <h6 className="fw-bold mt-4">Good Return Options</h6>
+                <div className="table-responsive">
+                  <table className="table table-bordered">
+                    <thead className="table-light">
+                      <tr>
+                        <th>Name</th>
+                        <th>Case</th>
+                        <th>Per Case Rate</th>
+                        <th>Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedBill.goodReturnOptions && selectedBill.goodReturnOptions.length > 0 ? (
+                        Object.values(selectedBill.goodReturnOptions.reduce((acc, option) => {
+                          const baseOptionName = (option.optionId || option.name || '').split(' - ')[0].trim();
+                          
+                          if (!acc[baseOptionName]) {
+                            acc[baseOptionName] = { 
+                              ...option,
+                              optionId: baseOptionName
+                            };
+                          } else {
+                            acc[baseOptionName].case = (parseFloat(acc[baseOptionName].case) + parseFloat(option.case || 0)).toString();
+                            acc[baseOptionName].total = (parseFloat(acc[baseOptionName].total) + parseFloat(option.total || 0)).toString();
+                          }
+                          return acc;
+                        }, {})).map((option, index) => (
+                          <tr key={index}>
+                            <td>{option.optionId || option.name}</td>
+                            <td>{option.case}</td>
+                            <td>{option.perCaseRate}</td>
+                            <td>Rs. {option.total || "0.00"}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="4" className="text-center">No good return options applied</td>
+                        </tr>
+                      )}
+                    </tbody>
+                    <tfoot>
+                      <tr className="table-info">
+                        <td colSpan="3" className="text-end fw-bold">Good Return Total</td>
+                        <td className="fw-bold">Rs. {selectedBill.goodReturnOptions ? calculateTotal(selectedBill.goodReturnOptions) : "0.00"}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+
+                {/* Update Bill Summary Section to include Good Return */}
+                <div className="card mt-4 border-danger">
+                  <div className="card-header bg-danger text-white">
+                    <h6 className="mb-0">Bill Summary</h6>
+                  </div>
+                  <div className="card-body">
+                    <div className="table-responsive">
+                      <table className="table table-borderless">
+                        <tbody>
+                          <tr>
+                            <td className="text-end fw-bold">Product Total:</td>
+                            <td className="text-end fw-bold" style={{ width: "150px", color: "#0d6efd" }}>
+                              Rs. {calculateProductTotal(selectedBill.productOptions)}
+                            </td>
+                          </tr>
+                          
+                          {selectedBill.discountOptions && selectedBill.discountOptions.length > 0 && (
+                            <tr>
+                              <td className="text-end fw-bold">Discount Total:</td>
+                              <td className="text-end fw-bold" style={{ color: "#198754" }}>
+                                - Rs. {calculateTotal(selectedBill.discountOptions)}
+                              </td>
+                            </tr>
+                          )}
+                          
+                          {selectedBill.freeIssueOptions && selectedBill.freeIssueOptions.length > 0 && (
+                            <tr>
+                              <td className="text-end fw-bold">Free Issue Total:</td>
+                              <td className="text-end fw-bold" style={{ color: "#0dcaf0" }}>
+                                - Rs. {calculateTotal(selectedBill.freeIssueOptions)}
+                              </td>
+                            </tr>
+                          )}
+                          
+                          {selectedBill.expireOptions && selectedBill.expireOptions.length > 0 && (
+                            <tr>
+                              <td className="text-end fw-bold">Expire Total:</td>
+                              <td className="text-end fw-bold" style={{ color: "#664d03" }}>
+                                - Rs. {calculateTotal(selectedBill.expireOptions)}
+                              </td>
+                            </tr>
+                          )}
+                          
+                          {selectedBill.percentageDiscount && parseFloat(selectedBill.percentageDiscount) > 0 && (
+                            <tr>
+                              <td className="text-end fw-bold">Percentage Discount ({selectedBill.percentageDiscount}%):</td>
+                              <td className="text-end fw-bold" style={{ color: "#6c757d" }}>
+                                - Rs. {calculatePercentageDiscountTotal(calculateProductTotal(selectedBill.productOptions), selectedBill.percentageDiscount)}
+                              </td>
+                            </tr>
+                          )}
+                          
+                          {selectedBill.goodReturnOptions && selectedBill.goodReturnOptions.length > 0 && (
+                            <tr>
+                              <td className="text-end fw-bold">Good Return Total:</td>
+                              <td className="text-end fw-bold" style={{ color: "#0dcaf0" }}>
+                                - Rs. {calculateTotal(selectedBill.goodReturnOptions)}
+                              </td>
+                            </tr>
+                          )}
+                          
+                          <tr style={{ borderTop: "1px solid #dee2e6" }}>
+                            <td className="text-end fw-bold fs-5">Final Total:</td>
+                            <td className="text-end fw-bold fs-5" style={{ color: "#dc3545" }}>
+                              Rs. {(
+                    parseFloat(calculateProductTotal(selectedBill.productOptions)) -
+                                (parseFloat(selectedBill.discountOptions ? calculateTotal(selectedBill.discountOptions) : 0) + 
+                                 parseFloat(selectedBill.freeIssueOptions ? calculateTotal(selectedBill.freeIssueOptions) : 0) + 
+                                 parseFloat(selectedBill.expireOptions ? calculateTotal(selectedBill.expireOptions) : 0) + 
+                                 parseFloat(selectedBill.goodReturnOptions ? calculateTotal(selectedBill.goodReturnOptions) : 0) +
                                  parseFloat(selectedBill.percentageDiscount ? calculatePercentageDiscountTotal(calculateProductTotal(selectedBill.productOptions), selectedBill.percentageDiscount) : 0)
                                 )
                   ).toFixed(2)}
