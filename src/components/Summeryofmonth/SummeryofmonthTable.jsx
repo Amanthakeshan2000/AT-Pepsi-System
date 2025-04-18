@@ -8,6 +8,8 @@ const SummeryofmonthTable = () => {
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // Default to current month (YYYY-MM)
   const [printMode, setPrintMode] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
 
   const billReviewsCollectionRef = collection(db, "BillReviews");
 
@@ -51,9 +53,15 @@ const SummeryofmonthTable = () => {
       const productMargins = new Map();
       productsSnapshot.docs.forEach(doc => {
         const product = doc.data();
-        if (product.margin) {
-          productMargins.set(doc.id, parseFloat(product.margin) || 0);
-          console.log(`Product ${doc.id} margin:`, product.margin);
+        if (product.productOptions && Array.isArray(product.productOptions)) {
+          // Store margin values for each product option
+          product.productOptions.forEach(option => {
+            const optionId = option.name; // This is the optionId used in sales
+            if (option.margin) {
+              productMargins.set(optionId, parseFloat(option.margin) || 0);
+              console.log(`Product Option ${optionId} margin:`, option.margin);
+            }
+          });
         }
       });
       
@@ -126,22 +134,74 @@ const SummeryofmonthTable = () => {
           // Calculate Margin based on product margins
           bill.productOptions.forEach(opt => {
             const qty = parseFloat(opt.qty) || 0;
-            const price = parseFloat(opt.price) || 0;
-            // Get the product margin from the map using the productId
-            const productMargin = productMargins.get(opt.productId) || 0;
-            // Calculate margin for this product: quantity * price * margin percentage
-            const productMarginValue = qty * price * (productMargin / 100);
-            dailySummary.margin += productMarginValue;
+            const optionId = opt.optionId; // This is the product option ID
+            const marginValue = productMargins.get(optionId) || 0;
             
-            console.log(`Product ${opt.productId}:`, {
+            // Calculate margin: quantity * margin value (Rs.)
+            const productMarginTotal = qty * marginValue;
+            dailySummary.margin += productMarginTotal;
+            
+            console.log(`Product ${optionId}:`, {
               quantity: qty,
-              price: price,
-              marginPercentage: productMargin,
-              marginValue: productMarginValue,
-              totalMargin: dailySummary.margin
+              marginValue: marginValue,
+              marginTotal: productMarginTotal,
+              dailyTotal: dailySummary.margin
             });
           });
         });
+      });
+      
+      // Process Manual Bills
+      filteredManualBills.forEach(bill => {
+        if (!bill.customDate || !bill.options) return;
+        
+        const dateStr = bill.customDate;
+        
+        if (!dateMap.has(dateStr)) {
+          dateMap.set(dateStr, {
+            date: dateStr,
+            loadingValue: 0,
+            discountValue: 0,
+            expireValue: 0,
+            salesValue: 0,
+            margin: 0,
+          });
+        }
+        
+        const dailySummary = dateMap.get(dateStr);
+        
+        // Calculate values from manual bill options
+        if (Array.isArray(bill.options)) {
+          bill.options.forEach(option => {
+            const qty = parseFloat(option.qty) || 0;
+            const optionId = option.optionId;
+            const marginValue = productMargins.get(optionId) || 0;
+            
+            // Calculate margin: quantity * margin value (Rs.)
+            const productMarginTotal = qty * marginValue;
+            dailySummary.margin += productMarginTotal;
+            
+            console.log(`Manual Bill ${dateStr} - Product ${optionId}:`, {
+              quantity: qty,
+              marginValue: marginValue,
+              marginTotal: productMarginTotal
+            });
+            
+            // Calculate gross sale
+            const price = parseFloat(option.price) || 0;
+            const grossSale = qty * price;
+            dailySummary.loadingValue += grossSale;
+          });
+        }
+        
+        // Add discount and expire values
+        dailySummary.discountValue += parseFloat(bill.discount) || 0;
+        dailySummary.expireValue += parseFloat(bill.expire) || 0;
+        
+        // Calculate net sales
+        dailySummary.salesValue = dailySummary.loadingValue - 
+                                 dailySummary.discountValue - 
+                                 dailySummary.expireValue;
       });
       
       // Convert map to array and sort by date
@@ -200,6 +260,29 @@ const SummeryofmonthTable = () => {
   };
 
   const totals = calculateTotals();
+
+  const paginate = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
+
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = summaryData.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(summaryData.length / itemsPerPage);
+
+  // Calculate the range of page numbers to display
+  const getPageNumbers = () => {
+    const maxVisiblePages = 15;
+    const halfVisible = Math.floor(maxVisiblePages / 2);
+    let startPage = Math.max(currentPage - halfVisible, 1);
+    let endPage = Math.min(startPage + maxVisiblePages - 1, totalPages);
+
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(endPage - maxVisiblePages + 1, 1);
+    }
+
+    return Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i);
+  };
 
   return (
     <div className="container">
@@ -261,9 +344,9 @@ const SummeryofmonthTable = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {summaryData.map((item, index) => (
+                  {currentItems.map((item, index) => (
                     <tr key={index}>
-                      <td>{new Date(item.date).toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' })}</td>
+                      <td>{new Date(item.date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}</td>
                       <td className="text-end">{formatCurrency(item.loadingValue)}</td>
                       <td className="text-end">{formatCurrency(item.discountValue)}</td>
                       <td className="text-end">{formatCurrency(item.expireValue)}</td>
@@ -283,6 +366,58 @@ const SummeryofmonthTable = () => {
                   </tr>
                 </tfoot>
               </table>
+
+              {/* Pagination */}
+              {summaryData.length > itemsPerPage && (
+                <nav className="mt-3">
+                  <div className="d-flex align-items-center justify-content-center">
+                    <ul className="pagination mb-0" style={{ maxWidth: '100%', overflowX: 'auto', display: 'flex', margin: '0 10px' }}>
+                      <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`} style={{ minWidth: 'fit-content' }}>
+                        <button
+                          className="page-link"
+                          onClick={() => paginate(currentPage - 1)}
+                          disabled={currentPage === 1}
+                          style={{ borderRadius: '4px 0 0 4px' }}
+                        >
+                          Previous
+                        </button>
+                      </li>
+                      
+                      <div style={{ display: 'flex', overflowX: 'auto', margin: '0 5px' }}>
+                        {getPageNumbers().map(number => (
+                          <li
+                            key={number}
+                            className={`page-item ${currentPage === number ? 'active' : ''}`}
+                            style={{ minWidth: 'fit-content' }}
+                          >
+                            <button
+                              className="page-link"
+                              onClick={() => paginate(number)}
+                              style={{
+                                margin: '0 2px',
+                                borderRadius: '0'
+                              }}
+                            >
+                              {number}
+                            </button>
+                          </li>
+                        ))}
+                      </div>
+
+                      <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`} style={{ minWidth: 'fit-content' }}>
+                        <button
+                          className="page-link"
+                          onClick={() => paginate(currentPage + 1)}
+                          disabled={currentPage === totalPages}
+                          style={{ borderRadius: '0 4px 4px 0' }}
+                        >
+                          Next
+                        </button>
+                      </li>
+                    </ul>
+                  </div>
+                </nav>
+              )}
             </div>
 
             <div className="d-none d-print-flex mt-5" style={{ display: "flex", justifyContent: "space-between" }}>

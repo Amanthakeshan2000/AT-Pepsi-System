@@ -336,6 +336,19 @@ const ManualInvoice = () => {
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
+  const getPageNumbers = () => {
+    const maxVisiblePages = 15;
+    const halfVisible = Math.floor(maxVisiblePages / 2);
+    let startPage = Math.max(currentPage - halfVisible, 1);
+    let endPage = Math.min(startPage + maxVisiblePages - 1, totalPages);
+
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(endPage - maxVisiblePages + 1, 1);
+    }
+
+    return Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i);
+  };
+
   const handlePrintSalesSummary = async (invoice) => {
     try {
     const existingSummary = salesSummaries.find((summary) => summary.invoiceId === (invoice.invoiceId || invoice.id));
@@ -803,7 +816,7 @@ const ManualInvoice = () => {
             {currentBills.length > 0 ? (
               currentBills.map((bill) => (
                 <tr key={bill.id}>
-                  <td>{bill.billNo}</td>
+                  <td className="fw-bold">{bill.billNo}</td>
                   <td>{bill.outletName}</td>
                   <td>{bill.salesRef}</td>
                   <td>{bill.refContact}</td>
@@ -829,13 +842,52 @@ const ManualInvoice = () => {
         </table>
         <div className="d-flex justify-content-center">
           <nav>
-            <ul className="pagination">
-              {Array.from({ length: totalPages }, (_, index) => (
-                <li key={index} className={`page-item ${currentPage === index + 1 ? "active" : ""}`}>
-                  <button className="page-link" onClick={() => paginate(index + 1)}>{index + 1}</button>
+            <div className="d-flex align-items-center justify-content-center">
+              <ul className="pagination mb-0" style={{ maxWidth: '100%', overflowX: 'auto', display: 'flex', margin: '0 10px' }}>
+                <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`} style={{ minWidth: 'fit-content' }}>
+                  <button
+                    className="page-link"
+                    onClick={() => paginate(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    style={{ borderRadius: '4px 0 0 4px' }}
+                  >
+                    Previous
+                  </button>
                 </li>
-              ))}
-            </ul>
+                
+                <div style={{ display: 'flex', overflowX: 'auto', margin: '0 5px' }}>
+                  {getPageNumbers().map(number => (
+                    <li
+                      key={number}
+                      className={`page-item ${currentPage === number ? 'active' : ''}`}
+                      style={{ minWidth: 'fit-content' }}
+                    >
+                      <button
+                        className="page-link"
+                        onClick={() => paginate(number)}
+                        style={{
+                          margin: '0 2px',
+                          borderRadius: '0'
+                        }}
+                      >
+                        {number}
+                      </button>
+                    </li>
+                  ))}
+                </div>
+
+                <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`} style={{ minWidth: 'fit-content' }}>
+                  <button
+                    className="page-link"
+                    onClick={() => paginate(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    style={{ borderRadius: '0 4px 4px 0' }}
+                  >
+                    Next
+                  </button>
+                </li>
+              </ul>
+            </div>
           </nav>
         </div>
       </div>
