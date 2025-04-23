@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { db } from "../../utilities/firebaseConfig";
-import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, serverTimestamp, query, orderBy } from "firebase/firestore";
+import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, serverTimestamp, query, orderBy, getDoc, where } from "firebase/firestore";
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
 const BillManagement = () => {
@@ -20,8 +20,6 @@ const BillManagement = () => {
   const [route, setRoute] = useState("");
   const [creatorFilter, setCreatorFilter] = useState("");
   const [creators, setCreators] = useState([]);
-  const [showMarginDetails, setShowMarginDetails] = useState(false);
-  const [marginDetails, setMarginDetails] = useState(null);
 
   const billsCollectionRef = collection(db, "Bill");
   const productsCollectionRef = collection(db, "Product");
@@ -143,8 +141,31 @@ const BillManagement = () => {
   const handleDeleteProcessedUnit = async (id) => {
     if (window.confirm("Are you sure you want to delete this processed unit?")) {
       try {
-        await deleteDoc(doc(db, "ProcessedBills", id));
-        setProcessedUnits(processedUnits.filter(unit => unit.id !== id));
+        // First get the unit details to get the unitId
+        const unitDoc = await getDoc(doc(db, "ProcessedBills", id));
+        if (unitDoc.exists()) {
+          const unitData = unitDoc.data();
+          const unitId = unitData.unitId;
+          
+          // Delete from ProcessedBills collection
+          await deleteDoc(doc(db, "ProcessedBills", id));
+          
+          // Find and delete corresponding document in BillReviews collection
+          const billReviewsCollectionRef = collection(db, "BillReviews");
+          const q = query(billReviewsCollectionRef, where("unitId", "==", unitId));
+          const querySnapshot = await getDocs(q);
+          
+          // Delete each matching document
+          const deletePromises = querySnapshot.docs.map((doc) => deleteDoc(doc.ref));
+          await Promise.all(deletePromises);
+          
+          if (querySnapshot.docs.length > 0) {
+            console.log(`Deleted ${querySnapshot.docs.length} matching BillReview document(s)`);
+          }
+          
+          // Update UI by removing the deleted unit
+          setProcessedUnits(processedUnits.filter(unit => unit.id !== id));
+        }
       } catch (error) {
         console.error("Error deleting processed unit:", error.message);
       }
@@ -880,166 +901,6 @@ const BillManagement = () => {
     printWindow.document.close();
   };
 
-  const handleFindMargin = async (unit) => {
-    try {
-      // Get all products with their margins
-      const productsSnapshot = await getDocs(productsCollectionRef);
-      const productMargins = new Map();
-      
-      // Store margins by optionId and productId
-      productsSnapshot.docs.forEach(doc => {
-        const product = doc.data();
-        if (product.productOptions && Array.isArray(product.productOptions)) {
-          product.productOptions.forEach(option => {
-            if (option.optionId) {
-              productMargins.set(option.optionId, {
-                margin: parseFloat(option.margin) || 0,
-                name: product.name,
-                optionName: option.name || option.optionId,
-                productId: doc.id
-              });
-            }
-          });
-        }
-      });
-
-      // Get the consolidated products from the unit
-      const consolidatedProducts = unit.consolidatedProducts || [];
-      
-      // Calculate margins for each product
-      const marginData = {
-        unitId: unit.unitId,
-        date: unit.date,
-        products: [],
-        totalMargin: 0
-      };
-
-      // Sort consolidated products by optionId
-      consolidatedProducts.sort((a, b) => {
-        const numA = parseInt(a.optionId.match(/\\d+/)?.[0] || 0);
-        const numB = parseInt(b.optionId.match(/\\d+/)?.[0] || 0);
-        return numA - numB;
-      });
-
-      let hasMargins = false;
-
-      // Process each product
-      consolidatedProducts.forEach(product => {
-        const marginInfo = productMargins.get(product.optionId);
-        
-        if (marginInfo) {
-          const qty = parseFloat(product.totalQty) || 0;
-          const marginValue = marginInfo.margin;
-          const totalMargin = qty * marginValue;
-
-          marginData.products.push({
-            productName: product.productName,
-            optionId: product.optionId,
-            qty: qty,
-            marginValue: marginValue,
-            totalMargin: totalMargin
-          });
-
-          marginData.totalMargin += totalMargin;
-          hasMargins = true;
-        }
-      });
-
-      if (!hasMargins) {
-        alert("No margin data found. Please check if margins are set in the Product table for these options.");
-        return;
-      }
-
-      setMarginDetails(marginData);
-      setShowMarginDetails(true);
-    } catch (error) {
-      console.error("Error calculating margins:", error);
-      alert("Failed to calculate margins. Please check the console for details.");
-    }
-  };
-
-  const renderMarginDetailsModal = () => {
-    if (!showMarginDetails || !marginDetails) return null;
-
-    return (
-      <div className="modal" style={{ display: "block", position: "fixed", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.7)" }}>
-        <div className="modal-content" style={{ 
-          backgroundColor: "#fff", 
-          margin: "5% auto", 
-          padding: "20px", 
-          width: "90%", 
-          maxWidth: "800px", 
-          borderRadius: "8px", 
-          maxHeight: "80vh", 
-          overflowY: "auto"
-        }}>
-          <div style={{ 
-            display: "flex", 
-            justifyContent: "space-between", 
-            alignItems: "center", 
-            marginBottom: "20px",
-            borderBottom: "2px solid #eee",
-            paddingBottom: "10px"
-          }}>
-            <div>
-              <h4 style={{ margin: "0 0 5px 0" }}>Margin Details</h4>
-              <div style={{ fontSize: "14px", color: "#666" }}>
-                <strong>Unit ID:</strong> {marginDetails.unitId} | 
-                <strong> Date:</strong> {marginDetails.date}
-              </div>
-            </div>
-            <button 
-              className="btn btn-outline-secondary" 
-              onClick={() => setShowMarginDetails(false)}
-            >
-              <i className="bi bi-x-lg"></i>
-            </button>
-          </div>
-
-          <div className="table-responsive">
-            <table className="table table-bordered table-hover">
-              <thead className="table-light">
-                <tr>
-                  <th>Product Name</th>
-                  <th>Option ID</th>
-                  <th style={{ textAlign: 'center' }}>Quantity (BT)</th>
-                  <th style={{ textAlign: 'right' }}>Margin (Rs.)</th>
-                  <th style={{ textAlign: 'right' }}>Total Margin (Rs.)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {marginDetails.products.map((product, idx) => (
-                  <tr key={idx}>
-                    <td>{product.productName}</td>
-                    <td>{product.optionId}</td>
-                    <td style={{ textAlign: 'center' }}>{product.qty}</td>
-                    <td style={{ textAlign: 'right' }}>{product.marginValue.toFixed(2)}</td>
-                    <td style={{ textAlign: 'right' }}>{product.totalMargin.toFixed(2)}</td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr className="table-success">
-                  <td colSpan="4" style={{ textAlign: 'right' }}><strong>Total Margin:</strong></td>
-                  <td style={{ textAlign: 'right' }}><strong>Rs. {marginDetails.totalMargin.toFixed(2)}</strong></td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-
-          <div className="text-center mt-3">
-            <button 
-              className="btn btn-secondary" 
-              onClick={() => setShowMarginDetails(false)}
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div className="container">
       <h3>Bill Management</h3>
@@ -1174,7 +1035,7 @@ const BillManagement = () => {
                     Next
                   </button>
                 </li>
-            </ul>
+              </ul>
             </div>
           </nav>
         </div>
@@ -1517,13 +1378,6 @@ const BillManagement = () => {
                       onClick={() => handlePrintUnit(unit)}
                     >
                       <i className="bi bi-printer"></i> Print
-                    </button>
-                    <button 
-                      className="btn btn-info btn-sm" 
-                      onClick={() => handleFindMargin(unit)}
-                      title="Find Margin"
-                    >
-                      <i className="bi bi-calculator"></i>
                     </button>
                   </div>
                 </td>
@@ -1874,8 +1728,6 @@ const BillManagement = () => {
           </div>
         </div>
       )}
-
-      {renderMarginDetailsModal()}
 
       <style>
         {`

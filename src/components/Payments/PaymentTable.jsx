@@ -246,6 +246,12 @@ const PaymentTable = () => {
     if (bill.expireOptions && bill.expireOptions.length > 0) {
       total -= bill.expireOptions.reduce((sum, option) => sum + (parseFloat(option.total) || 0), 0);
     }
+
+    // Subtract percentage discount if applicable
+    if (bill.percentageDiscount && parseFloat(bill.percentageDiscount) > 0) {
+      const discountAmount = (total * parseFloat(bill.percentageDiscount)) / 100;
+      total -= discountAmount;
+    }
     
     return parseFloat(total.toFixed(2));
   };
