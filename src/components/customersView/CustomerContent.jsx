@@ -232,13 +232,17 @@ const BillAdd = () => {
 
     // Check if sections have data with non-empty case values
     const filteredDiscountOptions = bill.discountOptions?.filter(option => option.case && option.case.trim() !== '') || [];
-    const filteredFreeIssueOptions = bill.freeIssueOptions?.filter(option => option.case && option.case.trim() !== '') || [];
+    const filteredGoodReturnOptions = bill.goodReturnOptions?.filter(option => option.case && option.case.trim() !== '') || [];
     const filteredExpireOptions = bill.expireOptions?.filter(option => option.case && option.case.trim() !== '') || [];
     
     const hasDiscounts = filteredDiscountOptions.length > 0;
-    const hasFreeIssues = filteredFreeIssueOptions.length > 0;
+    const hasGoodReturn = filteredGoodReturnOptions.length > 0;
     const hasExpires = filteredExpireOptions.length > 0;
     const hasPercentageDiscount = bill.percentageDiscount && parseFloat(bill.percentageDiscount) > 0;
+
+    // Determine how many discount sections to display
+    const activeDiscountSections = [hasDiscounts, hasGoodReturn, hasExpires].filter(Boolean).length;
+    const discountSectionWidth = activeDiscountSections === 0 ? "100%" : (activeDiscountSections === 1 ? "100%" : activeDiscountSections === 2 ? "50%" : "32%");
 
     const productTotal = calculateProductTotal(bill.productOptions);
     const percentageDiscountAmount = hasPercentageDiscount ? 
@@ -349,15 +353,15 @@ const BillAdd = () => {
             }
             .discounts { 
               display: flex; 
-              justify-content: space-between; 
+              justify-content: ${activeDiscountSections === 0 ? 'center' : 'space-between'}; 
               margin: 2mm 0 0.5mm; 
-              border: 0.25px solid #000;
+              ${activeDiscountSections > 0 ? 'border: 0.25px solid #000;' : ''}
               padding: 0.5mm;
             }
             .discounts div { 
-              width: 32%; 
+              width: ${discountSectionWidth}; 
               padding: 0.5mm; 
-              border-right: 0.25px solid #000;
+              ${activeDiscountSections > 1 ? 'border-right: 0.25px solid #000;' : ''}
               color: #000;
             }
             .discounts div:last-child {
@@ -449,305 +453,76 @@ const BillAdd = () => {
               font-weight: bold; 
               color: #000;
             }
-            .total-section tr:last-child td { 
-              font-size: 18px;
-              border-top: 0.25px solid #000;
-              color: #000;
+            .total-section td:first-child {
+              width: 70%;
+              border-right: 0.25px solid #000;
             }
             .signature-area {
-              width: 100%;
               display: flex;
               justify-content: space-between;
-              margin-top: 10mm;
-              font-size: 15px;
-              font-weight: bold;
-              padding-top: 3mm;
+              margin-top: 5mm;
+              font-size: 14px;
               color: #000;
             }
-            
-            .signature-area p {
-              padding-bottom: 1mm;
-              margin-bottom: 0;
-            }
-            
             .signature-line {
-              border-bottom: 0.25px solid #000;
               display: inline-block;
-              width: 60mm;
+              width: 40mm;
+              border-bottom: 0.25px solid #000;
               margin-left: 2mm;
             }
             .footer {
-              text-align: center;
-              margin-top: 1mm;
+              margin-top: 5mm;
               font-size: 14px;
+              text-align: center;
               border-top: 0.25px solid #000;
-              padding-top: 0.5mm;
+              padding-top: 1mm;
               color: #000;
-            }
-            @media print {
-              @page { 
-                size: A4 portrait; 
-                margin: 3mm 6mm; 
-              }
-              .no-print { 
-                display: none !important; 
-              }
-              body { 
-              background-color: #fff; 
-                margin: 0;
-                padding: 0;
-                display: block;
-                width: 100%;
-              }
-              .page {
-                width: 100%;
-                max-width: none;
-                padding: 2mm;
-                margin: 0;
-                box-shadow: none;
-                position: relative;
-              }
-              .invoice-container {
-              border: none; 
-              }
-              .print-buttons {
-                display: none !important;
-              }
-              .products-table { page-break-inside: avoid; }
-              .products-table tbody tr { page-break-inside: avoid; }
-              .footer-content { page-break-before: always; }
-              .header { page-break-after: avoid; }
             }
             .print-buttons {
               display: flex;
               justify-content: center;
-              margin-top: 4mm;
+              margin-top: 10mm;
             }
             .print-button {
-              padding: 2mm 4mm;
-              margin: 0 2mm;
+              padding: 10px 20px;
               background-color: #4CAF50;
               color: white;
               border: none;
-              border-radius: 1mm;
+              border-radius: 5px;
               cursor: pointer;
-              font-size: 12px;
+              margin: 0 5px;
+              font-size: 16px;
             }
-            .totals {
-              width: 60%;
-              margin-left: auto;
-              border: 0.25px solid #000;
-              padding: 0.5mm;
-              color: #000;
+            @media print {
+              .no-print { display: none !important; }
+              body { margin: 0; background-color: #fff; }
+              .page { box-shadow: none; }
+              @page { size: A4; margin: 0; }
             }
-            .totals p {
-              display: flex;
-              justify-content: space-between;
-              margin: 0;
-              padding: 0.3mm 0;
-              border-bottom: 0.25px solid #eee;
-              font-size: 15px;
-              color: #000;
-            }
-            .totals p:last-child {
-              font-weight: bold;
-              font-size: 18px;
-              border-top: 0.25px solid #000;
-              border-bottom: none;
-              padding-top: 0.5mm;
-              margin-top: 0.5mm;
-              color: #000;
-            }
-            h1, h2, h3, h4, h5, h6 {
-              color: #000;
-              margin: 2mm 0;
+            .print-bold {
               font-weight: bold;
             }
-            h1 {
-              font-size: 22px;
-              text-align: center; 
-            }
-            .customer-details, .invoice-details {
-              font-size: 14px;
-              font-weight: bold;
-              color: #000;
-            }
-            .customer-details strong, .invoice-details strong {
-              font-weight: bolder;
-              color: #000;
-            }
-            .totals strong {
-              font-weight: bold;
-              color: #000;
-            }
-            .totals p:last-child {
-              font-weight: bold;
-              font-size: 18px;
-              border-top: 0.25px solid #000;
-              border-bottom: none;
-              padding-top: 2mm;
-              margin-top: 2mm;
-              color: #000;
-            }
-            /* Font adjustments for print */
             .print-normal-weight {
-              font-weight: normal !important;
+              font-weight: normal;
             }
-            .text-black {
-              color: #000 !important;
+            .products-wrapper {
+              /* Products table wrapper styles */
             }
-            .page-number {
-              display: none;
-            }
-            /* Adjustments for dot matrix printing */
-            @media print {
-              * {
-                font-weight: normal !important;
-              }
-              
-              .print-bold {
-                font-weight: bold !important;
-              }
-              
-              /* Ensure page breaks happen at appropriate places */
-              .products-table tr {
-                page-break-inside: avoid;
-              }
-              
-              .footer-content {
-                page-break-before: auto;
-              }
-              
-              /* Force footer to last page */
-              .multi-page .footer-content {
-                page-break-before: always;
-              }
-            }
-            
-            .running-total {
-              display: none;
-            }
-            
-            /* When invoice spans multiple pages, show running total at bottom of each page */
+            /* Special styling for multi-page documents */
             .multi-page .running-total {
-              display: block;
               text-align: right;
-              margin-top: 10px;
-              border-top: 0.25px solid #000;
-              padding-top: 3px;
+              padding: 1mm;
+              font-style: italic;
+              border-top: 0.25px dashed #000;
+              margin-top: 5mm;
             }
-            
-            /* Helper classes for print layout */
-            .print-flex {
-              display: flex;
-              justify-content: space-between;
+            .last-row td {
+              border-bottom: 0.25px solid #000;
             }
-            
-            .bottom-spacer {
-              margin-bottom: 5mm;
-            }
-            /* Compact print layout */
-            @media print {
-              * {
-                font-weight: normal !important;
-                margin: 0;
-                padding: 0;
-              }
-              
-              body {
-                line-height: 1;
-              }
-              
-              .print-bold {
-                font-weight: bold !important;
-              }
-              
-              /* Ensure page breaks happen at appropriate places */
-              .products-table tr {
-                page-break-inside: avoid;
-              }
-              
-              .footer-content {
-                page-break-before: auto;
-              }
-              
-              /* Force footer to last page */
-              .multi-page .footer-content {
-                page-break-before: always;
-              }
-              
-              /* Tighter spacing for print */
-              .products-table td, .products-table th {
-                padding: 0.3mm !important;
-              }
-              
-              .details td {
-                padding: 0.3mm 0.5mm !important;
-              }
-              
-              .discounts div {
-                padding: 0.3mm !important;
-              }
-              
-              .total-section td {
-                padding: 0.3mm !important;
-              }
-              
-              h1, h2, h3, h4, h5, h6 {
-                margin: 0.5mm 0 !important;
-              }
-              
-              .page {
-                padding: 1mm !important;
-                width: 98% !important;
-                max-width: 98% !important;
-                margin: 0 auto !important;
-              }
-              
-              /* Make smaller text for print */
-              .company-details {
-                font-size: 12px !important;
-                line-height: 1 !important;
-              }
-              
-              .customer-details, .invoice-details {
-                font-size: 12px !important;
-              }
-              
-              .signature-area {
-                margin-top: 10mm !important;
-                padding-top: 3mm !important;
-                border-top: none !important;
-              }
-              
-              .signature-line {
-                margin-left: 1mm !important;
-                border-bottom: 0.5px solid #000 !important;
-                width: 50mm !important;
-              }
-              
-              /* Optimize for full page printing */
-              .products-table {
-                width: 100% !important;
-              }
-              
-              .total-section table {
-                width: 65% !important;
-              }
-              
-              .signature-area {
-                width: 100% !important;
-              }
-              
-              .details table {
-                width: 100% !important;
-              }
-              
-              .invoice-container {
-                padding: 0 !important;
-                margin: 0 auto !important;
-                width: 98% !important;
-              }
+            /* Special styles to emulate dot-matrix printer */
+            .print-bold {
+              font-weight: bold;
+              color: #000;
             }
           </style>
         </head>
@@ -787,7 +562,7 @@ const BillAdd = () => {
                     <td class="print-normal-weight right-align">${bill.refContact}</td>
                 </tr>
               </table>
-            </div>
+            
               
               <div class="payment-options">
                 <div class="payment-option print-normal-weight"><input type="checkbox" name="payment" value="cash"> Cash</div>
@@ -819,7 +594,9 @@ const BillAdd = () => {
               </div>
               
               <div class="footer-content">
+                ${activeDiscountSections > 0 ? `
                 <div class="discounts">
+                  ${hasDiscounts ? `
                   <div>
                     <p class="print-bold">DISCOUNT</p>
                     ${Object.entries(bill.discountOptions
@@ -843,11 +620,13 @@ const BillAdd = () => {
                         <p class="print-normal-weight">${optionId}: ${entry.case} × ${entry.perCaseRate} = ${entry.total.toFixed(2)}</p>
                       `).join('')
                     }
-                    <p><strong class="print-normal-weight">Total: ${calculateTotal(bill.discountOptions)}</strong></p>
+                    <p><strong class="print-normal-weight">Total: ${calculateTotal(bill.discountOptions || [])}</strong></p>
                   </div>
+                  ` : ''}
+                  ${hasGoodReturn ? `
                   <div>
-                    <p class="print-bold">FREE ISSUE</p>
-                    ${Object.entries(bill.freeIssueOptions
+                    <p class="print-bold">GOOD RETURN</p>
+                    ${Object.entries((bill.goodReturnOptions || [])
                       .reduce((uniqueMap, option) => {
                         const optionId = option.optionId || '';
                         if (!uniqueMap[optionId]) {
@@ -868,11 +647,13 @@ const BillAdd = () => {
                         <p class="print-normal-weight">${optionId}: ${entry.case} × ${entry.perCaseRate} = ${entry.total.toFixed(2)}</p>
                       `).join('')
                     }
-                    <p><strong class="print-normal-weight">Total: ${calculateTotal(bill.freeIssueOptions)}</strong></p>
+                    <p><strong class="print-normal-weight">Total: ${calculateTotal(bill.goodReturnOptions || [])}</strong></p>
                   </div>
+                  ` : ''}
+                  ${hasExpires ? `
                   <div>
                     <p class="print-bold">EXPIRE</p>
-                    ${Object.entries(bill.expireOptions
+                    ${Object.entries((bill.expireOptions || [])
                       .reduce((uniqueMap, option) => {
                         // Extract the base option name (e.g., "200 ML" from "200 ML - OLE")
                         const baseOptionName = (option.optionId || option.name || '').split(' - ')[0].trim();
@@ -895,9 +676,11 @@ const BillAdd = () => {
                         <p class="print-normal-weight">${optionId}: ${entry.case} × ${entry.perCaseRate} = ${entry.total.toFixed(2)}</p>
                       `).join('')
                     }
-                    <p><strong class="print-normal-weight">Total: ${calculateTotal(bill.expireOptions)}</strong></p>
+                    <p><strong class="print-normal-weight">Total: ${calculateTotal(bill.expireOptions || [])}</strong></p>
                   </div>
+                  ` : ''}
                 </div>
+                ` : ''}
 <br/>
             <div class="total-section">
               <table>
@@ -910,25 +693,28 @@ const BillAdd = () => {
                       <td><strong class="print-normal-weight">PERCENTAGE DISCOUNT (${bill.percentageDiscount}%)</strong></td>
                       <td class="print-bold">Rs. ${percentageDiscountAmount}</td>
                 </tr>` : ''}
+                ${hasDiscounts ? `
                 <tr>
                       <td><strong class="print-normal-weight">DISCOUNT</strong></td>
-                      <td class="print-bold">Rs. ${calculateTotal(bill.discountOptions)}</td>
-                </tr>
+                      <td class="print-bold">Rs. ${calculateTotal(bill.discountOptions || [])}</td>
+                </tr>` : ''}
+                ${hasGoodReturn ? `
                 <tr>
-                      <td><strong class="print-normal-weight">FREE ISSUE</strong></td>
-                      <td class="print-bold">Rs. ${calculateTotal(bill.freeIssueOptions)}</td>
-                </tr>
+                      <td><strong class="print-normal-weight">GOOD RETURN</strong></td>
+                      <td class="print-bold">Rs. ${calculateTotal(bill.goodReturnOptions || [])}</td>
+                </tr>` : ''}
+                ${hasExpires ? `
                 <tr>
                       <td><strong class="print-normal-weight">EXPIRE</strong></td>
-                      <td class="print-bold">Rs. ${calculateTotal(bill.expireOptions)}</td>
-                </tr>
+                      <td class="print-bold">Rs. ${calculateTotal(bill.expireOptions || [])}</td>
+                </tr>` : ''}
                 <tr>
                       <td><strong class="print-bold">TOTAL</strong></td>
                       <td class="print-bold">Rs. ${(
                     parseFloat(calculateProductTotal(bill.productOptions)) -
-                    (parseFloat(calculateTotal(bill.discountOptions)) +
-                     parseFloat(calculateTotal(bill.freeIssueOptions)) +
-                     parseFloat(calculateTotal(bill.expireOptions)) +
+                    (parseFloat(calculateTotal(bill.discountOptions || [])) +
+                     parseFloat(calculateTotal(bill.goodReturnOptions || [])) +
+                     parseFloat(calculateTotal(bill.expireOptions || [])) +
                      (hasPercentageDiscount ? parseFloat(percentageDiscountAmount) : 0))
                   ).toFixed(2)}</td>
                 </tr>
@@ -1526,7 +1312,7 @@ const BillAdd = () => {
   const sortedBills = [...filteredBills].sort((a, b) => {
     const dateA = new Date(a.createDate || 0);
     const dateB = new Date(b.createDate || 0);
-    return dateB - dateA; // Descending order (newest first)
+    return dateB - dateA; // Descending order
   });
 
   const indexOfLastBill = currentPage * itemsPerPage;
@@ -2314,12 +2100,11 @@ const BillAdd = () => {
                         <td className="text-end fw-bold fs-5">Final Total:</td>
                         <td className="text-end fw-bold fs-5" style={{ color: "#dc3545" }}>
                           Rs. {(
-                            parseFloat(calculateProductTotal(productOptions)) - 
-                            (parseFloat(calculateTotal(discountOptions)) + 
-                             parseFloat(calculateTotal(freeIssueOptions)) + 
-                             parseFloat(calculateTotal(expireOptions)) + 
-                             parseFloat(percentageDiscount ? calculatePercentageDiscountTotal(calculateProductTotal(productOptions), percentageDiscount) : 0)
-                            )
+                            parseFloat(calculateProductTotal(productOptions)) -
+                            (parseFloat(calculateTotal(discountOptions || [])) +
+                             parseFloat(calculateTotal(freeIssueOptions || [])) +
+                             parseFloat(calculateTotal(expireOptions || [])) +
+                             parseFloat(percentageDiscount ? calculatePercentageDiscountTotal(calculateProductTotal(productOptions), percentageDiscount) : 0))
                           ).toFixed(2)}
                         </td>
                       </tr>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { db } from "../../utilities/firebaseConfig";
-import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, serverTimestamp, query, orderBy } from "firebase/firestore";
+import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, serverTimestamp, query, orderBy, getDoc, where } from "firebase/firestore";
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
 const BillManagement = () => {
@@ -141,8 +141,31 @@ const BillManagement = () => {
   const handleDeleteProcessedUnit = async (id) => {
     if (window.confirm("Are you sure you want to delete this processed unit?")) {
       try {
-        await deleteDoc(doc(db, "ProcessedBills", id));
-        setProcessedUnits(processedUnits.filter(unit => unit.id !== id));
+        // First get the unit details to get the unitId
+        const unitDoc = await getDoc(doc(db, "ProcessedBills", id));
+        if (unitDoc.exists()) {
+          const unitData = unitDoc.data();
+          const unitId = unitData.unitId;
+          
+          // Delete from ProcessedBills collection
+          await deleteDoc(doc(db, "ProcessedBills", id));
+          
+          // Find and delete corresponding document in BillReviews collection
+          const billReviewsCollectionRef = collection(db, "BillReviews");
+          const q = query(billReviewsCollectionRef, where("unitId", "==", unitId));
+          const querySnapshot = await getDocs(q);
+          
+          // Delete each matching document
+          const deletePromises = querySnapshot.docs.map((doc) => deleteDoc(doc.ref));
+          await Promise.all(deletePromises);
+          
+          if (querySnapshot.docs.length > 0) {
+            console.log(`Deleted ${querySnapshot.docs.length} matching BillReview document(s)`);
+          }
+          
+          // Update UI by removing the deleted unit
+          setProcessedUnits(processedUnits.filter(unit => unit.id !== id));
+        }
       } catch (error) {
         console.error("Error deleting processed unit:", error.message);
       }
