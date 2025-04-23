@@ -19,6 +19,10 @@ const PaymentTable = () => {
   const [outlets, setOutlets] = useState([]);
   const [creatorFilter, setCreatorFilter] = useState("");
   const [creators, setCreators] = useState([]);
+  // Pagination state
+  const [myBillsCurrentPage, setMyBillsCurrentPage] = useState(1);
+  const [billsCurrentPage, setBillsCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const billsCollectionRef = collection(db, "Bill");
   const paymentsCollectionRef = collection(db, "Payments");
@@ -27,7 +31,19 @@ const PaymentTable = () => {
   useEffect(() => {
     fetchBills();
     fetchMyBills();
+    // Reset current page when outlet filter changes
+    setBillsCurrentPage(1);
   }, [selectedOutlet]);
+
+  // Reset my bills pagination when creator filter changes
+  useEffect(() => {
+    setMyBillsCurrentPage(1);
+  }, [creatorFilter]);
+
+  // Reset bills pagination when search term changes
+  useEffect(() => {
+    setBillsCurrentPage(1);
+  }, [searchTerm]);
 
   useEffect(() => {
     fetchOutlets();
@@ -707,12 +723,42 @@ const PaymentTable = () => {
 
   // Add filtered bills function
   const getFilteredMyBills = () => {
-    return myBills.filter(bill => {
+    const filtered = myBills.filter(bill => {
       if (creatorFilter && bill.createdBy !== creatorFilter) {
         return false;
       }
       return true;
     });
+    return filtered;
+  };
+
+  // Get paginated my bills
+  const getPaginatedMyBills = () => {
+    const filtered = getFilteredMyBills();
+    const indexOfLastItem = myBillsCurrentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    return filtered.slice(indexOfFirstItem, indexOfLastItem);
+  };
+
+  // Get paginated filtered bills
+  const getPaginatedBills = () => {
+    const filtered = filteredBills;
+    const indexOfLastItem = billsCurrentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    return filtered.slice(indexOfFirstItem, indexOfLastItem);
+  };
+
+  // Total pages calculation
+  const getMyBillsTotalPages = () => Math.ceil(getFilteredMyBills().length / itemsPerPage);
+  const getBillsTotalPages = () => Math.ceil(filteredBills.length / itemsPerPage);
+
+  // Handle page changes
+  const handleMyBillsPageChange = (pageNumber) => {
+    setMyBillsCurrentPage(pageNumber);
+  };
+
+  const handleBillsPageChange = (pageNumber) => {
+    setBillsCurrentPage(pageNumber);
   };
 
   return (
@@ -787,7 +833,7 @@ const PaymentTable = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {getFilteredMyBills().map((bill) => (
+                  {getPaginatedMyBills().map((bill) => (
                     <tr key={bill.id} className={bill.balance <= 0 ? "table-success" : ""}>
                       <td>{formatDate(bill.createDate)}</td>
                       <td>{bill.billNo}</td>
@@ -827,6 +873,47 @@ const PaymentTable = () => {
                 </tfoot>
               </table>
             </div>
+
+            {/* My Bills Pagination */}
+            {getFilteredMyBills().length > itemsPerPage && (
+              <div className="d-flex justify-content-center mt-3 d-print-none">
+                <nav aria-label="My Bills pagination">
+                  <ul className="pagination pagination-sm">
+                    <li className={`page-item ${myBillsCurrentPage === 1 ? 'disabled' : ''}`}>
+                      <button 
+                        className="page-link" 
+                        onClick={() => handleMyBillsPageChange(myBillsCurrentPage - 1)}
+                        aria-label="Previous"
+                      >
+                        <span aria-hidden="true">&laquo; Previous</span>
+                      </button>
+                    </li>
+                    {[...Array(getMyBillsTotalPages()).keys()].map(number => (
+                      <li 
+                        key={number + 1} 
+                        className={`page-item ${myBillsCurrentPage === number + 1 ? 'active' : ''}`}
+                      >
+                        <button
+                          className="page-link"
+                          onClick={() => handleMyBillsPageChange(number + 1)}
+                        >
+                          {number + 1}
+                        </button>
+                      </li>
+                    ))}
+                    <li className={`page-item ${myBillsCurrentPage === getMyBillsTotalPages() ? 'disabled' : ''}`}>
+                      <button 
+                        className="page-link" 
+                        onClick={() => handleMyBillsPageChange(myBillsCurrentPage + 1)}
+                        aria-label="Next"
+                      >
+                        <span aria-hidden="true">Next &raquo;</span>
+                      </button>
+                    </li>
+                  </ul>
+                </nav>
+              </div>
+            )}
 
             <div className="d-none d-print-flex mt-5" style={{ display: "flex", justifyContent: "space-between" }}>
               <div style={{ width: "30%", borderTop: "1px solid #000", textAlign: "center", paddingTop: "10px" }}>
@@ -924,7 +1011,7 @@ const PaymentTable = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredBills.map((bill) => (
+                  {getPaginatedBills().map((bill) => (
                     <tr key={bill.id} className={bill.balance <= 0 ? "table-success" : ""}>
                       <td>{formatDate(bill.createDate)}</td>
                       <td>{bill.billNo}</td>
@@ -962,6 +1049,47 @@ const PaymentTable = () => {
                 </tbody>
               </table>
             </div>
+
+            {/* Bills Pagination */}
+            {filteredBills.length > itemsPerPage && (
+              <div className="d-flex justify-content-center mt-3 d-print-none">
+                <nav aria-label="Bills pagination">
+                  <ul className="pagination pagination-sm">
+                    <li className={`page-item ${billsCurrentPage === 1 ? 'disabled' : ''}`}>
+                      <button 
+                        className="page-link" 
+                        onClick={() => handleBillsPageChange(billsCurrentPage - 1)}
+                        aria-label="Previous"
+                      >
+                        <span aria-hidden="true">&laquo; Previous</span>
+                      </button>
+                    </li>
+                    {[...Array(getBillsTotalPages()).keys()].map(number => (
+                      <li 
+                        key={number + 1} 
+                        className={`page-item ${billsCurrentPage === number + 1 ? 'active' : ''}`}
+                      >
+                        <button
+                          className="page-link"
+                          onClick={() => handleBillsPageChange(number + 1)}
+                        >
+                          {number + 1}
+                        </button>
+                      </li>
+                    ))}
+                    <li className={`page-item ${billsCurrentPage === getBillsTotalPages() ? 'disabled' : ''}`}>
+                      <button 
+                        className="page-link" 
+                        onClick={() => handleBillsPageChange(billsCurrentPage + 1)}
+                        aria-label="Next"
+                      >
+                        <span aria-hidden="true">Next &raquo;</span>
+                      </button>
+                    </li>
+                  </ul>
+                </nav>
+              </div>
+            )}
 
             <div className="d-none d-print-flex mt-5" style={{ display: "flex", justifyContent: "space-between" }}>
               <div style={{ width: "30%", borderTop: "1px solid #000", textAlign: "center", paddingTop: "10px" }}>
@@ -1179,6 +1307,33 @@ const PaymentTable = () => {
           /* Additional styles for non-print view */
           .table-dark th {
             color: white !important;
+          }
+          
+          /* Pagination responsive styles */
+          .pagination {
+            flex-wrap: wrap;
+            margin-bottom: 0;
+          }
+          
+          @media (max-width: 768px) {
+            .pagination .page-item:not(:first-child):not(:last-child):not(.active) {
+              display: none;
+            }
+            
+            .pagination .page-item.active {
+              display: inline-block;
+            }
+          }
+          
+          @media (max-width: 576px) {
+            .pagination {
+              justify-content: center;
+            }
+            
+            .pagination .page-link {
+              padding: 0.25rem 0.5rem;
+              font-size: 0.875rem;
+            }
           }
         `}
       </style>
