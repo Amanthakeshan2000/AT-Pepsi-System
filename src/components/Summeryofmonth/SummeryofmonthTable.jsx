@@ -8,8 +8,6 @@ const SummeryofmonthTable = () => {
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // Default to current month (YYYY-MM)
   const [printMode, setPrintMode] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
 
   const billReviewsCollectionRef = collection(db, "BillReviews");
 
@@ -261,29 +259,6 @@ const SummeryofmonthTable = () => {
 
   const totals = calculateTotals();
 
-  const paginate = (pageNumber) => {
-    setCurrentPage(pageNumber);
-  };
-
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = summaryData.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(summaryData.length / itemsPerPage);
-
-  // Calculate the range of page numbers to display
-  const getPageNumbers = () => {
-    const maxVisiblePages = 15;
-    const halfVisible = Math.floor(maxVisiblePages / 2);
-    let startPage = Math.max(currentPage - halfVisible, 1);
-    let endPage = Math.min(startPage + maxVisiblePages - 1, totalPages);
-
-    if (endPage - startPage + 1 < maxVisiblePages) {
-      startPage = Math.max(endPage - maxVisiblePages + 1, 1);
-    }
-
-    return Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i);
-  };
-
   return (
     <div className="container">
       <h3>Monthly Sales Summary</h3>
@@ -344,7 +319,7 @@ const SummeryofmonthTable = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {currentItems.map((item, index) => (
+                  {summaryData.map((item, index) => (
                     <tr key={index}>
                       <td>{new Date(item.date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}</td>
                       <td className="text-end">{formatCurrency(item.loadingValue)}</td>
@@ -366,58 +341,6 @@ const SummeryofmonthTable = () => {
                   </tr>
                 </tfoot>
               </table>
-
-              {/* Pagination */}
-              {summaryData.length > itemsPerPage && (
-                <nav className="mt-3">
-                  <div className="d-flex align-items-center justify-content-center">
-                    <ul className="pagination mb-0" style={{ maxWidth: '100%', overflowX: 'auto', display: 'flex', margin: '0 10px' }}>
-                      <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`} style={{ minWidth: 'fit-content' }}>
-                        <button
-                          className="page-link"
-                          onClick={() => paginate(currentPage - 1)}
-                          disabled={currentPage === 1}
-                          style={{ borderRadius: '4px 0 0 4px' }}
-                        >
-                          Previous
-                        </button>
-                      </li>
-                      
-                      <div style={{ display: 'flex', overflowX: 'auto', margin: '0 5px' }}>
-                        {getPageNumbers().map(number => (
-                          <li
-                            key={number}
-                            className={`page-item ${currentPage === number ? 'active' : ''}`}
-                            style={{ minWidth: 'fit-content' }}
-                          >
-                            <button
-                              className="page-link"
-                              onClick={() => paginate(number)}
-                              style={{
-                                margin: '0 2px',
-                                borderRadius: '0'
-                              }}
-                            >
-                              {number}
-                            </button>
-                          </li>
-                        ))}
-                      </div>
-
-                      <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`} style={{ minWidth: 'fit-content' }}>
-                        <button
-                          className="page-link"
-                          onClick={() => paginate(currentPage + 1)}
-                          disabled={currentPage === totalPages}
-                          style={{ borderRadius: '0 4px 4px 0' }}
-                        >
-                          Next
-                        </button>
-                      </li>
-                    </ul>
-                  </div>
-                </nav>
-              )}
             </div>
 
             <div className="d-none d-print-flex mt-5" style={{ display: "flex", justifyContent: "space-between" }}>
