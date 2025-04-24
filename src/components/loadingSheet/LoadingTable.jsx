@@ -27,27 +27,8 @@ const BillManagement = () => {
 
   useEffect(() => {
     fetchBills();
-    fetchProducts();
     fetchProcessedUnits();
   }, []);
-
-  const fetchBills = async () => {
-    try {
-      const q = query(billsCollectionRef, orderBy("createDate", "desc"));
-      const querySnapshot = await getDocs(q);
-      const billList = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setBills(billList);
-      
-      // Extract unique creators from bills
-      const uniqueCreators = [...new Set(billList.map(bill => bill.createdBy || "Unknown"))];
-      setCreators(uniqueCreators);
-    } catch (error) {
-      console.error("Error fetching bills:", error.message);
-    }
-  };
 
   const fetchProducts = async () => {
     try {
@@ -58,19 +39,171 @@ const BillManagement = () => {
         options: doc.data().productOptions || [],
       }));
       setProducts(productList);
+      return productList; // Return products to be used by fetchBills
     } catch (error) {
       console.error("Error fetching products:", error.message);
+      return [];
+    }
+  };
+
+  const fetchBills = async () => {
+    try {
+      // First fetch products to get accurate margin data
+      const productList = await fetchProducts();
+      console.log("Fetched products:", productList);
+      
+      const q = query(billsCollectionRef, orderBy("createDate", "desc"));
+      const querySnapshot = await getDocs(q);
+      let billList = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      
+      // Enrich bills with correct margin data
+      billList = billList.map(bill => {
+        if (bill.productOptions && bill.productOptions.length > 0) {
+          const enrichedOptions = bill.productOptions.map(option => {
+            console.log("Processing option:", option);
+            
+            // Find the corresponding product
+            const product = productList.find(p => p.id === option.productId);
+            if (product && product.options) {
+              console.log("Found product:", product.name);
+              // Find the matching option - handle both name match and direct optionId match
+              const productOption = product.options.find(po => 
+                (po.name && option.optionId && po.name.toString() === option.optionId.toString()) || 
+                (po.name && po.name.toString() === option.optionName)
+              );
+              
+              if (productOption) {
+                console.log("Found matching option:", productOption);
+                const retailPrice = parseFloat(productOption.retailPrice) || parseFloat(option.price) || 0;
+                const dbPrice = parseFloat(productOption.dbPrice) || 0;
+                
+                // Set margin to 0 if either retailPrice or dbPrice is 0 or missing
+                const calculatedMargin = (!retailPrice || !dbPrice) ? 0 : (retailPrice - dbPrice);
+                console.log(`Calculated margin: ${retailPrice} - ${dbPrice} = ${calculatedMargin}`);
+                
+                return {
+                  ...option,
+                  dbPrice: dbPrice,
+                  retailPrice: retailPrice,
+                  margin: calculatedMargin
+                };
+              } else {
+                console.log("No matching option found in product");
+              }
+            } else {
+              console.log("Product not found or has no options");
+            }
+            
+            // If no match found, calculate margin from option's own data
+            const retailPrice = parseFloat(option.retailPrice) || parseFloat(option.price) || 0;
+            const dbPrice = parseFloat(option.dbPrice) || 0;
+            
+            // Set margin to 0 if either retailPrice or dbPrice is 0 or missing
+            const calculatedMargin = (!retailPrice || !dbPrice) ? 0 : (retailPrice - dbPrice);
+            console.log(`Fallback margin calculation: ${retailPrice} - ${dbPrice} = ${calculatedMargin}`);
+            
+            return {
+              ...option,
+              margin: calculatedMargin
+            };
+          });
+          
+          return {
+            ...bill,
+            productOptions: enrichedOptions
+          };
+        }
+        return bill;
+      });
+      
+      console.log("Enriched bills:", billList);
+      setBills(billList);
+      
+      // Extract unique creators from bills
+      const uniqueCreators = [...new Set(billList.map(bill => bill.createdBy || "Unknown"))];
+      setCreators(uniqueCreators);
+    } catch (error) {
+      console.error("Error fetching bills:", error.message);
     }
   };
 
   const fetchProcessedUnits = async () => {
     try {
+      // First fetch products to get product data for margin calculations
+      const productList = await fetchProducts();
+      console.log("Fetched products for margin calculation:", productList);
+      
       const q = query(processedBillsCollectionRef, orderBy("unitId", "desc"));
       const querySnapshot = await getDocs(q);
-      const processedList = querySnapshot.docs.map((doc) => ({
+      let processedList = querySnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
+      
+      // Process units to ensure margin information
+      processedList = processedList.map(unit => {
+        console.log(`Processing unit ${unit.unitId} for margin calculation`);
+        
+        if (unit.bills && unit.bills.length > 0) {
+          const enrichedBills = unit.bills.map(bill => {
+            if (!bill.products || bill.products.length === 0) {
+              console.log(`Bill ${bill.billNo} has no products`);
+              return bill;
+            }
+            
+            const enrichedProducts = bill.products.map(product => {
+              console.log(`Processing product for margin in bill ${bill.billNo}`);
+              
+              // Find the matching product from the product list
+              const matchingProduct = productList.find(p => p.id === product.productId);
+              let dbPrice = parseFloat(product.dbPrice) || 0;
+              
+              // If we don't have dbPrice but have matching product, try to get it
+              if ((!dbPrice || dbPrice === 0) && matchingProduct && matchingProduct.options) {
+                const productOption = matchingProduct.options.find(po => 
+                  (po.name && product.optionId && po.name.toString() === product.optionId.toString()) || 
+                  (po.name && po.name.toString() === product.optionName)
+                );
+                
+                if (productOption) {
+                  dbPrice = parseFloat(productOption.dbPrice) || 0;
+                  console.log(`Found db price ${dbPrice} from product database`);
+                }
+              }
+              
+              // Calculate margin
+              const price = parseFloat(product.price) || 0;
+              const qty = parseFloat(product.qty) || 0;
+              
+              // Set margin to 0 if either retailPrice or dbPrice is 0 or missing
+              const calculatedMargin = (!price || !dbPrice) ? 0 : (price - dbPrice);
+              
+              return {
+                ...product,
+                dbPrice: dbPrice,
+                margin: calculatedMargin
+              };
+            });
+            
+            return {
+              ...bill,
+              products: enrichedProducts
+            };
+          });
+          
+          return {
+            ...unit,
+            bills: enrichedBills
+          };
+        }
+        
+        return unit;
+      });
+      
+      console.log("Processed units with margin data:", processedList);
       setProcessedUnits(processedList);
     } catch (error) {
       console.error("Error fetching processed units:", error.message);
@@ -790,10 +923,11 @@ const BillManagement = () => {
               <table class="product-table">
                 <thead>
                   <tr>
-                    <th style="width: 50%;">DESCRIPTION</th>
+                    <th style="width: 40%;">DESCRIPTION</th>
                     <th style="width: 15%; text-align: center;">QUANTITY</th>
                     <th style="width: 15%; text-align: right;">UNIT PRICE</th>
-                    <th style="width: 20%; text-align: right;">AMOUNT</th>
+                    <th style="width: 15%; text-align: right;">MARGIN</th>
+                    <th style="width: 15%; text-align: right;">AMOUNT</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -802,10 +936,57 @@ const BillManagement = () => {
                       <td>${products.find(p => p.id === option.productId)?.name || 'N/A'} ${option.optionId}</td>
                       <td style="text-align: center;">${option.qty || '0'}</td>
                       <td style="text-align: right;">${option.price || '0.00'}</td>
+                      <td style="text-align: right;">${(() => {
+                        // Get margin from the option, or calculate it
+                        const price = parseFloat(option.price) || 0;
+                        const dbPrice = parseFloat(option.dbPrice) || 0;
+                        
+                        // Return 0.00 if either price is missing or 0
+                        if (!price || !dbPrice) {
+                          return "0.00";
+                        }
+                        
+                        // Use existing margin or calculate from prices
+                        const margin = parseFloat(option.margin) || (price - dbPrice) || 0;
+                        
+                        return margin.toFixed(2);
+                      })()}</td>
                       <td style="text-align: right;">${((parseFloat(option.price) || 0) * (parseFloat(option.qty) || 0)).toFixed(2)}</td>
                     </tr>
                   `).join('')}
                 </tbody>
+                <tfoot>
+                  <tr>
+                    <td colspan="4" style="text-align: right; font-weight: bold;">TOTAL:</td>
+                    <td style="text-align: right; font-weight: bold;">${calculateProductTotal(bill.productOptions)}</td>
+                  </tr>
+                  <tr>
+                    <td colspan="3" style="text-align: right; font-weight: bold;">TOTAL MARGIN:</td>
+                    <td colspan="2" style="text-align: right; font-weight: bold; color: #ff9800;">Rs. ${(() => {
+                      // Make sure we have a valid number for the total margin
+                      if (!bill.productOptions || bill.productOptions.length === 0) return "0.00";
+                      
+                      const totalMargin = bill.productOptions.reduce((sum, option) => {
+                        // Get margin from the option, or calculate it
+                        const price = parseFloat(option.price) || 0;
+                        const dbPrice = parseFloat(option.dbPrice) || 0;
+                        const qty = parseFloat(option.qty) || 0;
+                        
+                        // Skip this item if either price is missing or 0
+                        if (!price || !dbPrice) {
+                          return sum;
+                        }
+                        
+                        // Use existing margin or calculate from prices
+                        const margin = parseFloat(option.margin) || (price - dbPrice) || 0;
+                        
+                        return sum + (margin * qty);
+                      }, 0);
+                      
+                      return totalMargin.toFixed(2);
+                    })()}</td>
+                  </tr>
+                </tfoot>
               </table>
             </div>
             
@@ -850,6 +1031,32 @@ const BillManagement = () => {
               <div class="summary-row">
                 <div class="summary-label">SUBTOTAL:</div>
                 <div class="summary-value">Rs. ${calculateProductTotal(bill.productOptions)}</div>
+              </div>
+              <div class="summary-row">
+                <div class="summary-label">TOTAL MARGIN:</div>
+                <div class="summary-value" style="color: #ff9800; font-weight: bold;">Rs. ${(() => {
+                  // Make sure we have a valid number for the total margin
+                  if (!bill.productOptions || bill.productOptions.length === 0) return "0.00";
+                  
+                  const totalMargin = bill.productOptions.reduce((sum, option) => {
+                    // Get margin from the option, or calculate it
+                    const price = parseFloat(option.price) || 0;
+                    const dbPrice = parseFloat(option.dbPrice) || 0;
+                    const qty = parseFloat(option.qty) || 0;
+                    
+                    // Skip this item if either price is missing or 0
+                    if (!price || !dbPrice) {
+                      return sum;
+                    }
+                    
+                    // Use existing margin or calculate from prices
+                    const margin = parseFloat(option.margin) || (price - dbPrice) || 0;
+                    
+                    return sum + (margin * qty);
+                  }, 0);
+                  
+                  return totalMargin.toFixed(2);
+                })()}</div>
               </div>
               <div class="summary-row">
                 <div class="summary-label">DISCOUNT:</div>
@@ -899,6 +1106,105 @@ const BillManagement = () => {
       </html>
     `);
     printWindow.document.close();
+  };
+
+  // Create a helper function to calculate unit margin to use in multiple places
+  const calculateUnitMargin = (unit) => {
+    console.log("Calculating margin for unit:", unit.unitId);
+    
+    // Calculate the total margin across all bills in this unit
+    if (!unit.bills || unit.bills.length === 0) {
+      console.log("No bills found in unit, returning 0");
+      return 0;
+    }
+    
+    console.log(`Found ${unit.bills.length} bills in unit`);
+    
+    const totalMargin = unit.bills.reduce((unitSum, bill) => {
+      console.log("Processing bill:", bill.billNo || "Unknown");
+      
+      // Check if this is a bill from the database or our own format
+      // When bills come from Firebase, they have 'productOptions'
+      // When bills are in the processed unit, they have 'products'
+      const productList = bill.products || bill.productOptions || [];
+      
+      if (!productList || productList.length === 0) {
+        console.log("No products found in bill, skipping");
+        return unitSum;
+      }
+      
+      console.log(`Found ${productList.length} products in bill`);
+      
+      const billMargin = productList.reduce((billSum, product) => {
+        // Get margin from the product, or calculate it
+        const price = parseFloat(product.price) || 0;
+        const dbPrice = parseFloat(product.dbPrice) || 0;
+        const qty = parseFloat(product.qty) || 0;
+        
+        console.log(`Product: Price=${price}, DBPrice=${dbPrice}, Qty=${qty}`);
+        
+        // Skip if either price is missing or 0
+        if (!price || !dbPrice) {
+          console.log("Missing price data, skipping product");
+          return billSum;
+        }
+        
+        // Use existing margin or calculate from prices
+        const productMargin = parseFloat(product.margin) || (price - dbPrice) || 0;
+        const totalProductMargin = productMargin * qty;
+        
+        console.log(`Calculated margin: ${productMargin}, Total: ${totalProductMargin}`);
+        
+        return billSum + totalProductMargin;
+      }, 0);
+      
+      console.log(`Bill total margin: ${billMargin}`);
+      
+      return unitSum + billMargin;
+    }, 0);
+    
+    console.log(`Unit total margin: ${totalMargin}`);
+    
+    return totalMargin;
+  };
+
+  // Create a helper function to calculate bill margin
+  const calculateBillMargin = (bill) => {
+    console.log("Calculating margin for bill:", bill.billNo || "Unknown");
+    
+    // Check if this is a bill from the database or our own format
+    // When bills come from Firebase, they have 'productOptions'
+    // When bills are in the processed unit, they have 'products'
+    const productList = bill.products || bill.productOptions || [];
+    
+    if (!productList || productList.length === 0) {
+      console.log("No products found in bill, returning 0");
+      return 0;
+    }
+    
+    console.log(`Found ${productList.length} products in bill`);
+    
+    return productList.reduce((sum, product) => {
+      const price = parseFloat(product.price) || 0;
+      const dbPrice = parseFloat(product.dbPrice) || 0;
+      const qty = parseFloat(product.qty) || 0;
+      
+      console.log(`Product: Price=${price}, DBPrice=${dbPrice}, Qty=${qty}`);
+      
+      // Skip if either price is missing or 0
+      if (!price || !dbPrice) {
+        console.log("Missing price data, skipping product");
+        return sum;
+      }
+      
+      // Use existing margin or calculate from prices
+      const productMargin = parseFloat(product.margin) || (price - dbPrice) || 0;
+      const totalProductMargin = productMargin * qty;
+      
+      console.log(`Calculated margin: ${productMargin}, Total: ${totalProductMargin}`);
+      
+      return sum + totalProductMargin;
+    }, 0);
   };
 
   return (
@@ -951,6 +1257,7 @@ const BillManagement = () => {
               <th>Sales Ref</th>
               <th>Ref Contact</th>
               <th>Create Date</th>
+              <th>Total Margin (Rs.)</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -962,6 +1269,31 @@ const BillManagement = () => {
                 <td>{bill.salesRef}</td>
                 <td>{bill.refContact}</td>
                 <td>{bill.createDate}</td>
+                <td style={{ fontWeight: "bold", color: "#ff9800" }}>
+                  Rs. {(() => {
+                    // Make sure we have a valid number for the total margin
+                    if (!bill.productOptions || bill.productOptions.length === 0) return "0.00";
+                    
+                    const totalMargin = bill.productOptions.reduce((sum, option) => {
+                      // Get margin from the option, or calculate it
+                      const price = parseFloat(option.price) || 0;
+                      const dbPrice = parseFloat(option.dbPrice) || 0;
+                      const qty = parseFloat(option.qty) || 0;
+                      
+                      // Skip this item if either price is missing or 0
+                      if (!price || !dbPrice) {
+                        return sum;
+                      }
+                      
+                      // Use existing margin or calculate from prices
+                      const margin = parseFloat(option.margin) || (price - dbPrice) || 0;
+                      
+                      return sum + (margin * qty);
+                    }, 0);
+                    
+                    return totalMargin.toFixed(2);
+                  })()}
+                </td>
                 <td>
                   <div className="d-flex gap-2">
                     <button className="btn btn-info btn-sm" onClick={() => handleViewBill(bill)}>View</button>
@@ -1343,6 +1675,7 @@ const BillManagement = () => {
               <th>Date</th>
               <th>Driver Name</th>
               <th>Route</th>
+              <th>Total Margin (Rs.)</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -1353,6 +1686,9 @@ const BillManagement = () => {
                 <td>{unit.date}</td>
                 <td>{unit.driverName || 'N/A'}</td>
                 <td>{unit.route || 'N/A'}</td>
+                <td style={{ fontWeight: "bold", color: "#ff9800" }}>
+                  Rs. {calculateUnitMargin(unit).toFixed(2)}
+                </td>
                 <td>
                   <div className="d-flex gap-2">
                     <button 
@@ -1409,6 +1745,7 @@ const BillManagement = () => {
                 // View for Processed Unit
                 <>
                   <p><strong>Date:</strong> {selectedBill.date}</p>
+                  <p><strong>Total Margin:</strong> <span style={{ fontWeight: "bold", color: "#ff9800" }}>Rs. {calculateUnitMargin(selectedBill).toFixed(2)}</span></p>
                   
                   <h5>Consolidated Products</h5>
                   <table className="table table-bordered">
@@ -1461,10 +1798,87 @@ const BillManagement = () => {
                         <div className="card-body">
                           <h6 className="card-title">{bill.billNo}</h6>
                           <p className="card-text">{bill.outletName}</p>
+                          <p className="card-text" style={{ fontWeight: "bold", color: "#ff9800" }}>
+                            Margin: Rs. {calculateBillMargin(bill).toFixed(2)}
+                          </p>
                         </div>
                       </div>
                     ))}
                   </div>
+                  
+                  <h5>Bill Details</h5>
+                  <table className="table table-bordered">
+                    <thead>
+                      <tr>
+                        <th>Bill No</th>
+                        <th>Outlet Name</th>
+                        <th>Total Margin (Rs.)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedBill.bills.map((bill, idx) => (
+                        <tr key={idx}>
+                          <td>{bill.billNo}</td>
+                          <td>{bill.outletName}</td>
+                          <td style={{ fontWeight: "bold", color: "#ff9800" }}>
+                            Rs. {calculateBillMargin(bill).toFixed(2)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr>
+                        <td colSpan="2" style={{ textAlign: "right", fontWeight: "bold" }}>Total Margin:</td>
+                        <td style={{ fontWeight: "bold", color: "#ff9800" }}>
+                          Rs. {calculateUnitMargin(selectedBill).toFixed(2)}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                  
+                  <h5>Consolidated Products</h5>
+                  <table className="table table-bordered">
+                    <thead>
+                      <tr>
+                        <th>Option</th>
+                        <th>Product Name</th>
+                        <th>Qty (BT)</th>
+                        <th>Bottles/Case</th>
+                        <th>Case</th>
+                        <th>Extra Bottles</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {/* Group consolidated products by optionId */}
+                      {(selectedBill.consolidatedProducts || [])
+                        .sort((a, b) => a.optionId.localeCompare(b.optionId))
+                        .reduce((result, product, index, array) => {
+                          // Add the current product to the result
+                          result.push(
+                            <tr key={`product-${index}`}>
+                              <td>{product.optionId}</td>
+                              <td>{product.productName || products.find(p => p.id === product.productId)?.name}</td>
+                              <td>{product.totalQty}</td>
+                              <td>{product.bottlesPerCase || '-'}</td>
+                              <td>{product.caseCount || '-'}</td>
+                              <td>{product.extraBottles || '-'}</td>
+                            </tr>
+                          );
+                          
+                          // If the next product has a different optionId, add a separator row
+                          if (index < array.length - 1 && product.optionId !== array[index + 1].optionId) {
+                            result.push(
+                              <tr key={`separator-${index}`} style={{ height: "20px", backgroundColor: "#f8f9fa" }}>
+                                <td colSpan="6"></td>
+                              </tr>
+                            );
+                          }
+                          
+                          return result;
+                        }, [])
+                      }
+                    </tbody>
+                  </table>
                 </>
               ) : (
                 // View for Available Bill
@@ -1489,7 +1903,9 @@ const BillManagement = () => {
                         <th>Name</th>
                         <th>Price (Rs.)</th>
                         <th>Quantity</th>
+                        <th>Margin (Rs.)</th>
                         <th>Total Price (Rs.)</th>
+                        <th>Total Margin (Rs.)</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1498,14 +1914,68 @@ const BillManagement = () => {
                           <td>{products.find(p => p.id === option.productId)?.name} - {option.optionId}</td>
                           <td>Rs. {option.price}</td>
                           <td>{option.qty}</td>
+                          <td style={{ fontWeight: "bold", color: "#ff9800" }}>Rs. {(() => {
+                            // Get margin from the option, or calculate it
+                            const price = parseFloat(option.price) || 0;
+                            const dbPrice = parseFloat(option.dbPrice) || 0;
+                            
+                            // Return 0.00 if either price is missing or 0
+                            if (!price || !dbPrice) {
+                              return "0.00";
+                            }
+                            
+                            // Use existing margin or calculate from prices
+                            const margin = parseFloat(option.margin) || (price - dbPrice) || 0;
+                            
+                            return margin.toFixed(2);
+                          })()}</td>
                           <td>Rs. {((parseFloat(option.price) || 0) * (parseFloat(option.qty) || 0)).toFixed(2)}</td>
+                          <td style={{ fontWeight: "bold", color: "#ff9800" }}>Rs. {(() => {
+                            // Get margin from the option, or calculate it
+                            const price = parseFloat(option.price) || 0;
+                            const dbPrice = parseFloat(option.dbPrice) || 0;
+                            const qty = parseFloat(option.qty) || 0;
+                            
+                            // Return 0.00 if either price is missing or 0
+                            if (!price || !dbPrice) {
+                              return "0.00";
+                            }
+                            
+                            // Use existing margin or calculate from prices
+                            const margin = parseFloat(option.margin) || (price - dbPrice) || 0;
+                            
+                            return (margin * qty).toFixed(2);
+                          })()}</td>
                         </tr>
                       ))}
                     </tbody>
                     <tfoot>
                       <tr>
-                        <td colSpan="3" style={{ textAlign: "right", fontWeight: "bold" }}>Total:</td>
+                        <td colSpan="4" style={{ textAlign: "right", fontWeight: "bold" }}>Total:</td>
                         <td>Rs. {calculateProductTotal(selectedBill.productOptions)}</td>
+                        <td style={{ fontWeight: "bold", color: "#ff9800" }}>Rs. {(() => {
+                          // Make sure we have a valid number for the total margin
+                          if (!selectedBill.productOptions || selectedBill.productOptions.length === 0) return "0.00";
+                          
+                          const totalMargin = selectedBill.productOptions.reduce((sum, option) => {
+                            // Get margin from the option, or calculate it
+                            const price = parseFloat(option.price) || 0;
+                            const dbPrice = parseFloat(option.dbPrice) || 0;
+                            const qty = parseFloat(option.qty) || 0;
+                            
+                            // Skip this item if either price is missing or 0
+                            if (!price || !dbPrice) {
+                              return sum;
+                            }
+                            
+                            // Use existing margin or calculate from prices
+                            const margin = parseFloat(option.margin) || (price - dbPrice) || 0;
+                            
+                            return sum + (margin * qty);
+                          }, 0);
+                          
+                          return totalMargin.toFixed(2);
+                        })()}</td>
                       </tr>
                     </tfoot>
                   </table>
@@ -1654,6 +2124,38 @@ const BillManagement = () => {
                   <p style={{ fontSize: "18px", marginTop:"-15px", color: "#000000" }}><strong>Route:</strong> {selectedBill.route || 'N/A'}</p>
                 </div>
               </div>
+              
+              <p style={{ fontSize: "18px", color: "#ff9800", fontWeight: "bold" }}><strong>Total Margin:</strong> Rs. {calculateUnitMargin(selectedBill).toFixed(2)}</p>
+              
+              <h5 style={{ borderBottom: "2px solid #000", paddingBottom: "3px", marginBottom: "3px", color: "#000000", fontWeight: "bold" }}>Bills</h5>
+              <table className="table table-bordered" style={{ marginBottom: "15px", border: "1.5px solid #000" }}>
+                <thead>
+                  <tr style={{ backgroundColor: "#f2f2f2" }}>
+                    <th style={{ color: "#000000", border: "1px solid #000", borderBottom: "1.5px solid #000" }}>Bill No</th>
+                    <th style={{ color: "#000000", border: "1px solid #000", borderBottom: "1.5px solid #000" }}>Outlet Name</th>
+                    <th style={{ color: "#000000", border: "1px solid #000", borderBottom: "1.5px solid #000" }}>Total Margin (Rs.)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedBill.bills.map((bill, idx) => (
+                    <tr key={idx} style={{ lineHeight: "1" }}>
+                      <td style={{ color: "#000000", border: "1px solid #000" }}>{bill.billNo}</td>
+                      <td style={{ color: "#000000", border: "1px solid #000" }}>{bill.outletName}</td>
+                      <td style={{ color: "#ff9800", fontWeight: "bold", border: "1px solid #000" }}>
+                        Rs. {calculateBillMargin(bill).toFixed(2)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr style={{ fontWeight: "bold", backgroundColor: "#f2f2f2", borderTop: "2px solid #000" }}>
+                    <td colSpan="2" style={{ textAlign: "right", color: "#000000", border: "1px solid #000", borderTop: "2px solid #000" }}>Total Margin:</td>
+                    <td style={{ fontWeight: "bold", color: "#ff9800", border: "1px solid #000", borderTop: "2px solid #000" }}>
+                      Rs. {calculateUnitMargin(selectedBill).toFixed(2)}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
               
               <h5 style={{ borderBottom: "2px solid #000", paddingBottom: "3px", marginBottom: "3px", color: "#000000", fontWeight: "bold" }}>Consolidated Products</h5>
               <table className="table table-bordered" style={{ marginBottom: "5px", border: "1.5px solid #000" }}>
