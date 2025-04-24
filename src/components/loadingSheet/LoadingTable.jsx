@@ -404,17 +404,34 @@ const BillManagement = () => {
         });
       });
 
+      // Calculate margin for each bill
+      const billsWithMargins = newBillItems.map(bill => {
+        // Calculate the total margin for this bill
+        const totalMargin = calculateBillMargin(bill);
+        return {
+          ...bill,
+          totalMargin: totalMargin
+        };
+      });
+
+      // Calculate total unit margin
+      const totalUnitMargin = billsWithMargins.reduce((sum, bill) => {
+        return sum + (parseFloat(bill.totalMargin) || 0);
+      }, 0);
+
       const unitId = generateUnitId();
       const unitData = {
         unitId,
         date: selectedDate,
         driverName,
         route,
-        bills: newBillItems,
+        bills: billsWithMargins,
         consolidatedProducts: consolidatedProducts,
+        totalMargin: totalUnitMargin,
         createdAt: serverTimestamp(),
       };
 
+      console.log("Saving unit data with margins:", unitData);
       const docRef = await addDoc(processedBillsCollectionRef, unitData);
       console.log("Unit written with ID: ", docRef.id);
 
@@ -1112,6 +1129,12 @@ const BillManagement = () => {
   const calculateUnitMargin = (unit) => {
     console.log("Calculating margin for unit:", unit.unitId);
     
+    // Direct margin accessor - if unit has a precalculated total margin
+    if (unit.totalMargin !== undefined && unit.totalMargin !== null) {
+      console.log(`Using pre-calculated total margin: ${unit.totalMargin}`);
+      return parseFloat(unit.totalMargin) || 0;
+    }
+    
     // Calculate the total margin across all bills in this unit
     if (!unit.bills || unit.bills.length === 0) {
       console.log("No bills found in unit, returning 0");
@@ -1122,6 +1145,13 @@ const BillManagement = () => {
     
     const totalMargin = unit.bills.reduce((unitSum, bill) => {
       console.log("Processing bill:", bill.billNo || "Unknown");
+      
+      // Handle case where bill has a precalculated margin
+      if (bill.totalMargin !== undefined && bill.totalMargin !== null) {
+        const margin = parseFloat(bill.totalMargin) || 0;
+        console.log(`Using pre-calculated bill margin: ${margin}`);
+        return unitSum + margin;
+      }
       
       // Check if this is a bill from the database or our own format
       // When bills come from Firebase, they have 'productOptions'
@@ -2125,7 +2155,10 @@ const BillManagement = () => {
                 </div>
               </div>
               
-              <p style={{ fontSize: "18px", color: "#ff9800", fontWeight: "bold" }}><strong>Total Margin:</strong> Rs. {calculateUnitMargin(selectedBill).toFixed(2)}</p>
+              <p style={{ fontSize: "18px", color: "#ff9800", fontWeight: "bold" }}>
+                <strong>Total Margin:</strong> 
+                <span className="margin-highlight">Rs. {calculateUnitMargin(selectedBill).toFixed(2)}</span>
+              </p>
               
               <h5 style={{ borderBottom: "2px solid #000", paddingBottom: "3px", marginBottom: "3px", color: "#000000", fontWeight: "bold" }}>Bills</h5>
               <table className="table table-bordered" style={{ marginBottom: "15px", border: "1.5px solid #000" }}>
@@ -2283,6 +2316,14 @@ const BillManagement = () => {
             .print-content p strong {
               color: #000000 !important;
               font-weight: bold !important;
+            }
+            .margin-highlight {
+              color: #ff9800 !important;
+              font-weight: bold !important;
+              border: 1px dashed #ff9800;
+              padding: 2px 5px;
+              display: inline-block;
+              margin-left: 5px;
             }
             @page {
               size: A4;
