@@ -65,10 +65,6 @@ const BillManagement = () => {
           const enrichedOptions = bill.productOptions.map(option => {
             console.log("Processing option:", option);
             
-            let calculatedMargin = 0;
-            let retailPrice = 0;
-            let dbPrice = 0;
-            
             // Find the corresponding product
             const product = productList.find(p => p.id === option.productId);
             if (product && product.options) {
@@ -81,10 +77,11 @@ const BillManagement = () => {
               
               if (productOption) {
                 console.log("Found matching option:", productOption);
-                retailPrice = parseFloat(productOption.retailPrice) || parseFloat(option.price) || 0;
-                dbPrice = parseFloat(productOption.dbPrice) || 0;
-                calculatedMargin = (retailPrice - dbPrice) || 0;
+                const retailPrice = parseFloat(productOption.retailPrice) || parseFloat(option.price) || 0;
+                const dbPrice = parseFloat(productOption.dbPrice) || 0;
                 
+                // Set margin to 0 if either retailPrice or dbPrice is 0 or missing
+                const calculatedMargin = (!retailPrice || !dbPrice) ? 0 : (retailPrice - dbPrice);
                 console.log(`Calculated margin: ${retailPrice} - ${dbPrice} = ${calculatedMargin}`);
                 
                 return {
@@ -101,10 +98,11 @@ const BillManagement = () => {
             }
             
             // If no match found, calculate margin from option's own data
-            retailPrice = parseFloat(option.retailPrice) || parseFloat(option.price) || 0;
-            dbPrice = parseFloat(option.dbPrice) || 0;
-            calculatedMargin = (retailPrice - dbPrice) || 0;
+            const retailPrice = parseFloat(option.retailPrice) || parseFloat(option.price) || 0;
+            const dbPrice = parseFloat(option.dbPrice) || 0;
             
+            // Set margin to 0 if either retailPrice or dbPrice is 0 or missing
+            const calculatedMargin = (!retailPrice || !dbPrice) ? 0 : (retailPrice - dbPrice);
             console.log(`Fallback margin calculation: ${retailPrice} - ${dbPrice} = ${calculatedMargin}`);
             
             return {
@@ -877,6 +875,11 @@ const BillManagement = () => {
                         const price = parseFloat(option.price) || 0;
                         const dbPrice = parseFloat(option.dbPrice) || 0;
                         
+                        // Return 0.00 if either price is missing or 0
+                        if (!price || !dbPrice) {
+                          return "0.00";
+                        }
+                        
                         // Use existing margin or calculate from prices
                         const margin = parseFloat(option.margin) || (price - dbPrice) || 0;
                         
@@ -902,6 +905,11 @@ const BillManagement = () => {
                         const price = parseFloat(option.price) || 0;
                         const dbPrice = parseFloat(option.dbPrice) || 0;
                         const qty = parseFloat(option.qty) || 0;
+                        
+                        // Skip this item if either price is missing or 0
+                        if (!price || !dbPrice) {
+                          return sum;
+                        }
                         
                         // Use existing margin or calculate from prices
                         const margin = parseFloat(option.margin) || (price - dbPrice) || 0;
@@ -969,6 +977,11 @@ const BillManagement = () => {
                     const price = parseFloat(option.price) || 0;
                     const dbPrice = parseFloat(option.dbPrice) || 0;
                     const qty = parseFloat(option.qty) || 0;
+                    
+                    // Skip this item if either price is missing or 0
+                    if (!price || !dbPrice) {
+                      return sum;
+                    }
                     
                     // Use existing margin or calculate from prices
                     const margin = parseFloat(option.margin) || (price - dbPrice) || 0;
@@ -1101,6 +1114,11 @@ const BillManagement = () => {
                       const price = parseFloat(option.price) || 0;
                       const dbPrice = parseFloat(option.dbPrice) || 0;
                       const qty = parseFloat(option.qty) || 0;
+                      
+                      // Skip this item if either price is missing or 0
+                      if (!price || !dbPrice) {
+                        return sum;
+                      }
                       
                       // Use existing margin or calculate from prices
                       const margin = parseFloat(option.margin) || (price - dbPrice) || 0;
@@ -1654,6 +1672,11 @@ const BillManagement = () => {
                             const price = parseFloat(option.price) || 0;
                             const dbPrice = parseFloat(option.dbPrice) || 0;
                             
+                            // Return 0.00 if either price is missing or 0
+                            if (!price || !dbPrice) {
+                              return "0.00";
+                            }
+                            
                             // Use existing margin or calculate from prices
                             const margin = parseFloat(option.margin) || (price - dbPrice) || 0;
                             
@@ -1665,6 +1688,11 @@ const BillManagement = () => {
                             const price = parseFloat(option.price) || 0;
                             const dbPrice = parseFloat(option.dbPrice) || 0;
                             const qty = parseFloat(option.qty) || 0;
+                            
+                            // Return 0.00 if either price is missing or 0
+                            if (!price || !dbPrice) {
+                              return "0.00";
+                            }
                             
                             // Use existing margin or calculate from prices
                             const margin = parseFloat(option.margin) || (price - dbPrice) || 0;
@@ -1687,6 +1715,11 @@ const BillManagement = () => {
                             const price = parseFloat(option.price) || 0;
                             const dbPrice = parseFloat(option.dbPrice) || 0;
                             const qty = parseFloat(option.qty) || 0;
+                            
+                            // Skip this item if either price is missing or 0
+                            if (!price || !dbPrice) {
+                              return sum;
+                            }
                             
                             // Use existing margin or calculate from prices
                             const margin = parseFloat(option.margin) || (price - dbPrice) || 0;
