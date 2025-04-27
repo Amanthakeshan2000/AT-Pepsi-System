@@ -428,7 +428,7 @@ const ManualInvoice = () => {
           ${existingSummary.data.map((bill) => `
             <tr>
                 <td style="border: 0.5px solid #000000; padding: 3px; text-align: left; font-size: 9px; color: #000000; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${bill.billNo}</td>
-                <td style="border: 0.5px solid #000000; padding: 3px; text-align: left; font-size: 9px; color: #000000; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${bill.outletName}</td>
+                <td style="border: 0.5px solid #000000; padding: 3px; text-align: left; font-size: 9px; color: #000000; word-wrap: break-word; word-break: break-word; white-space: normal;">${bill.outletName}</td>
               ${uniqueOptions.map((opt) => {
                 const productOption = bill.productOptions.find(po => po.optionId === opt.optionId);
                 const qty = productOption ? (productOption.qty || 0) : 0;
@@ -505,15 +505,19 @@ const ManualInvoice = () => {
           word-break: break-word !important;
         }
         th, td {
-          padding: 4px !important; /* Slightly increased padding */
+          padding: 4px !important;
           color: #000000 !important;
-          font-weight: normal !important;
-          font-size: 11px !important; /* Increased font size */
-          max-width: 100% !important;
+          font-size: 11px !important;
         }
         th {
           font-weight: bold !important;
-          font-size: 12px !important; /* Increased for headers */
+          font-size: 12px !important;
+        }
+        /* Add specific styles for outlet name column */
+        td:nth-child(2) {
+          word-wrap: break-word !important;
+          word-break: break-word !important;
+          white-space: normal !important;
         }
         h2 {
           font-size: 20px !important; /* Increased heading size */
@@ -539,6 +543,9 @@ const ManualInvoice = () => {
       modifiedHtml = modifiedHtml.replace(/font-size: 14px/g, 'font-size: 16px'); // Increase font size
       modifiedHtml = modifiedHtml.replace(/font-size: 18px/g, 'font-size: 20px'); // Increase heading size
       modifiedHtml = modifiedHtml.replace(/padding: 3px/g, 'padding: 4px'); // Increase padding
+      
+      // Fix outlet name column text wrapping
+      modifiedHtml = modifiedHtml.replace(/overflow: hidden; text-overflow: ellipsis; white-space: nowrap;/g, 'word-wrap: break-word; word-break: break-word; white-space: normal;');
       
       // Set the content with our modified HTML
       tempDiv.innerHTML += modifiedHtml;
@@ -587,6 +594,13 @@ const ManualInvoice = () => {
                 }
                 if (el.tagName === 'TH') {
                   el.style.fontSize = '12px';
+                }
+                
+                // Special handling for outlet name cells (second column)
+                if (el.tagName === 'TD' && el === el.parentElement.children[1]) {
+                  el.style.whiteSpace = 'normal';
+                  el.style.wordWrap = 'break-word';
+                  el.style.wordBreak = 'break-word';
                 }
               }
             });
@@ -676,6 +690,12 @@ const ManualInvoice = () => {
               th {
                 font-weight: bold !important;
                 font-size: 12px !important;
+              }
+              /* Add specific styles for outlet name column */
+              td:nth-child(2) {
+                word-wrap: break-word !important;
+                word-break: break-word !important;
+                white-space: normal !important;
               }
               h2 {
                 font-size: 20px !important;
