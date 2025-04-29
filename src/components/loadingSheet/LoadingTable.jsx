@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { db } from "../../utilities/firebaseConfig";
-import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, serverTimestamp, query, orderBy, getDoc, where } from "firebase/firestore";
+import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, serverTimestamp, query, orderBy, getDoc, where, limit } from "firebase/firestore";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
 const BillManagement = () => {
@@ -306,11 +308,46 @@ const BillManagement = () => {
   };
 
   const handleEditProcessedUnit = async (unit) => {
-    const updatedBills = [...newBillItems, ...unit.bills]; // Combine current new bills with unit bills
-    setNewBillItems(updatedBills);
-    setDriverName(unit.driverName || ""); // Set driver name from the unit
-    setRoute(unit.route || ""); // Set route from the unit
-    await handleDeleteProcessedUnit(unit.id); // Remove the old unit
+    try {
+      console.log("Editing unit:", unit.unitId);
+      
+      // Set driver name and route from the unit
+      setDriverName(unit.driverName || "");
+      setRoute(unit.route || "");
+      
+      // Add the unit's bills to newBillItems
+      if (unit.bills && unit.bills.length > 0) {
+        // Convert unit bills to the format expected by newBillItems
+        const formattedBills = unit.bills.map(bill => {
+          return {
+            billId: bill.billId || bill.id || "",
+            billNo: bill.billNo || "",
+            outletName: bill.outletName || "",
+            products: (bill.products || []).map(product => ({
+              ...product,
+              bottlesPerCase: product.bottlesPerCase || null,
+              caseCount: product.caseCount || 0,
+              extraBottles: product.extraBottles || 0
+            })),
+            date: bill.date || selectedDate
+          };
+        });
+        
+        // Update newBillItems state
+        setNewBillItems(formattedBills);
+      }
+      
+      // Delete the old unit
+      await handleDeleteProcessedUnit(unit.id);
+      
+      // Refresh processed units to update the UI
+      await fetchProcessedUnits();
+      
+      console.log("Successfully prepared unit for editing:", unit.unitId);
+    } catch (error) {
+      console.error("Error editing processed unit:", error.message);
+      alert("Error editing unit. Please try again.");
+    }
   };
 
   const handleViewProcessedUnit = (unit) => {
@@ -325,7 +362,15 @@ const BillManagement = () => {
 
   const generateUnitId = () => {
     if (processedUnits.length === 0) return "UNIT1";
-    const lastUnitId = processedUnits[0].unitId; // Assuming sorted descending
+    
+    // Sort processedUnits by unitId in descending order to ensure we get the highest unitId
+    const sortedUnits = [...processedUnits].sort((a, b) => {
+      const numA = parseInt(a.unitId.replace("UNIT", "")) || 0;
+      const numB = parseInt(b.unitId.replace("UNIT", "")) || 0;
+      return numB - numA;
+    });
+    
+    const lastUnitId = sortedUnits[0].unitId;
     const lastNumber = parseInt(lastUnitId.replace("UNIT", ""));
     return `UNIT${lastNumber + 1}`;
   };
@@ -482,16 +527,98 @@ const BillManagement = () => {
     }, 300);
   };
 
-  const handleDownloadPDF = () => {
-    const printContent = document.querySelector('.print-content');
-    const originalContents = document.body.innerHTML;
-    
-    document.body.innerHTML = printContent.innerHTML;
-    
-    window.print();
-    
-    document.body.innerHTML = originalContents;
-    window.location.reload();
+  const handleDownloadPDF = async () => {
+    try {
+      const printContent = document.querySelector('.print-content');
+      if (!printContent) return;
+      
+      // Set loading state
+      setIsPrinting(true);
+      
+      // Create a temporary style element to increase font sizes for PDF export
+      const tempStyle = document.createElement('style');
+      tempStyle.setAttribute('id', 'pdf-export-styles');
+      tempStyle.innerHTML = `
+        .print-content * {
+          font-size: 115% !important;
+        }
+        .print-content table {
+          width: 100% !important;
+        }
+        .print-content table th {
+          font-weight: bold !important;
+          font-size: 120% !important;
+        }
+        .print-content table td {
+          font-size: 115% !important;
+          padding: 5px !important;
+        }
+        .print-content h2, .print-content h3, .print-content h4 {
+          font-size: 135% !important;
+          font-weight: bold !important;
+        }
+      `;
+      
+      // Add the style temporarily
+      document.head.appendChild(tempStyle);
+      
+      // Wait to ensure styles are applied
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Capture the print content as an image with higher resolution
+      const canvas = await html2canvas(printContent, {
+        scale: 2.5, // Higher scale for better quality and larger text
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
+      
+      // Remove temporary styles after capture
+      document.head.removeChild(tempStyle);
+      
+      // Create PDF with appropriate size
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+        compress: true
+      });
+      
+      // Calculate dimensions to fit content properly
+      const imgData = canvas.toDataURL('image/png', 1.0);
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 5; // mm
+      const imgWidth = pageWidth - (2 * margin);
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      // Add image to PDF
+      pdf.addImage(imgData, 'PNG', margin, margin, imgWidth, imgHeight, '', 'FAST');
+      
+      // Handle multiple pages if content is long
+      if (imgHeight > pageHeight - (2 * margin)) {
+        let heightLeft = imgHeight - (pageHeight - (2 * margin));
+        let position = -(pageHeight - (2 * margin));
+        
+        while (heightLeft > 0) {
+          pdf.addPage();
+          pdf.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight, '', 'FAST');
+          heightLeft -= (pageHeight - (2 * margin));
+          position -= (pageHeight - (2 * margin));
+        }
+      }
+      
+      // Create filename using unit ID
+      const filename = `Unit_${selectedBill.unitId}_${new Date().getTime()}.pdf`;
+      
+      // Save the PDF
+      pdf.save(filename);
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      alert("Error generating PDF. Please try again.");
+    } finally {
+      setIsPrinting(false);
+    }
   };
 
   const handlePrintBill = (bill) => {

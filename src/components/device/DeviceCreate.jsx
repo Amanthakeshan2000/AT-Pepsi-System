@@ -394,69 +394,67 @@ const ManualInvoice = () => {
         sums.credit += parseFloat(bill.credit) || 0;
       });
 
-      // Generate the HTML content for preview
+      // Generate the HTML content for preview - optimized for PDF printing
       const previewHtml = `
         <div style="margin-bottom: 5mm; text-align: center;">
-          <h2 style="font-size: 24px; margin: 0; font-weight: bold; color: #000000;">Sales Summary for Invoice ${invoice.invoiceId || invoice.id}</h2>
-          <p style="font-size: 16px; margin: 3mm 0; color: #000000;">
-            <strong style="color: #000000;">Custom Date:</strong> ${invoice.customDate} | 
+          <h2 style="font-size: 18px; margin: 0; font-weight: bold; color: #000000;">Sales Summary for Invoice ${invoice.invoiceId || invoice.id}</h2>
+          <p style="font-size: 14px; margin: 3mm 0; color: #000000;">
+            <strong style="color: #000000;">Date:</strong> ${invoice.customDate} | 
             <strong style="color: #000000;">Driver:</strong> ${invoice.driver || 'N/A'} | 
             <strong style="color: #000000;">Route:</strong> ${invoice.route || 'N/A'}
           </p>
       </div>
-        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed;">
         <thead>
           <tr style="background-color: #f2f2f2;">
-              <th style="border: 0.5px solid #000000; padding: 5px; text-align: left; width: 60px; color: #000000; font-weight: bold;">Invoice ID</th>
-              <th style="border: 0.5px solid #000000; padding: 5px; text-align: left; width: 60px; color: #000000; font-weight: bold;">Bill No</th>
-              <th style="border: 0.5px solid #000000; padding: 5px; text-align: left; width: 100px; color: #000000; font-weight: bold;">Outlet Name</th>
+              <th style="border: 0.5px solid #000000; padding: 3px; text-align: left; color: #000000; font-weight: bold; width: 5%;">Bill No</th>
+              <th style="border: 0.5px solid #000000; padding: 3px; text-align: left; color: #000000; font-weight: bold; width: 10%;">Outlet</th>
               ${uniqueOptions.map((opt) => `
-                <th style="border: 0.5px solid #000000; padding: 5px; text-align: right; width: 50px; font-size: 13px; color: #000000; font-weight: bold;">
+                <th style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 9px; color: #000000; font-weight: bold; width: ${Math.floor(45 / uniqueOptions.length)}%;">
                   ${opt.optionId}<br/>
-                  <span style="color: #000000;">Rs.${(parseFloat(opt.price) || 0).toFixed(2)}</span>
+                  <span style="color: #000000; font-size: 8px;">Rs.${(parseFloat(opt.price) || 0).toFixed(2)}</span>
                 </th>
               `).join("")}
-              <th style="border: 0.5px solid #000000; padding: 5px; text-align: right; width: 60px; background-color: #ffffe0; color: #000000; font-weight: bold;">Gross Sale</th>
-              <th style="border: 0.5px solid #000000; padding: 5px; text-align: right; width: 50px; color: #000000; font-weight: bold;">Discount</th>
-              <th style="border: 0.5px solid #000000; padding: 5px; text-align: right; width: 50px; color: #000000; font-weight: bold;">Expire</th>
-              <th style="border: 0.5px solid #000000; padding: 5px; text-align: right; width: 60px; background-color: #ffffe0; color: #000000; font-weight: bold;">Net Sale</th>
-              <th style="border: 0.5px solid #000000; padding: 5px; text-align: right; width: 50px; color: #000000; font-weight: bold;">Cash</th>
-              <th style="border: 0.5px solid #000000; padding: 5px; text-align: right; width: 50px; color: #000000; font-weight: bold;">Cheque</th>
-              <th style="border: 0.5px solid #000000; padding: 5px; text-align: right; width: 50px; color: #000000; font-weight: bold;">Credit</th>
+              <th style="border: 0.5px solid #000000; padding: 3px; text-align: center; background-color: #ffffe0; color: #000000; font-weight: bold; width: 5%;">Gross</th>
+              <th style="border: 0.5px solid #000000; padding: 3px; text-align: center; color: #000000; font-weight: bold; width: 5%;">Disc.</th>
+              <th style="border: 0.5px solid #000000; padding: 3px; text-align: center; color: #000000; font-weight: bold; width: 5%;">Exp.</th>
+              <th style="border: 0.5px solid #000000; padding: 3px; text-align: center; background-color: #ffffe0; color: #000000; font-weight: bold; width: 5%;">Net</th>
+              <th style="border: 0.5px solid #000000; padding: 3px; text-align: center; color: #000000; font-weight: bold; width: 5%;">Cash</th>
+              <th style="border: 0.5px solid #000000; padding: 3px; text-align: center; color: #000000; font-weight: bold; width: 5%;">Cheq.</th>
+              <th style="border: 0.5px solid #000000; padding: 3px; text-align: center; color: #000000; font-weight: bold; width: 5%;">Cred.</th>
           </tr>
         </thead>
         <tbody>
           ${existingSummary.data.map((bill) => `
             <tr>
-                <td style="border: 0.5px solid #000000; padding: 5px; text-align: left; font-size: 13px; color: #000000;">${bill.invoiceId}</td>
-                <td style="border: 0.5px solid #000000; padding: 5px; text-align: left; font-size: 13px; color: #000000;">${bill.billNo}</td>
-                <td style="border: 0.5px solid #000000; padding: 5px; text-align: left; font-size: 13px; color: #000000;">${bill.outletName}</td>
+                <td style="border: 0.5px solid #000000; padding: 3px; text-align: left; font-size: 9px; color: #000000; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${bill.billNo}</td>
+                <td style="border: 0.5px solid #000000; padding: 3px; text-align: left; font-size: 9px; color: #000000; word-wrap: break-word; word-break: break-word; white-space: normal;">${bill.outletName}</td>
               ${uniqueOptions.map((opt) => {
                 const productOption = bill.productOptions.find(po => po.optionId === opt.optionId);
                 const qty = productOption ? (productOption.qty || 0) : 0;
-                  return `<td style="border: 0.5px solid #000000; padding: 5px; text-align: right; font-size: 13px; color: #000000;">${qty}</td>`;
+                  return `<td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 9px; color: #000000;">${qty}</td>`;
               }).join("")}
-                <td style="border: 0.5px solid #000000; padding: 5px; text-align: right; background-color: #ffffe0; font-size: 13px; color: #000000; font-weight: bold;">${calculateGrossSale(bill)}</td>
-                <td style="border: 0.5px solid #000000; padding: 5px; text-align: right; font-size: 13px; color: #000000;">${bill.discount || 0}</td>
-                <td style="border: 0.5px solid #000000; padding: 5px; text-align: right; font-size: 13px; color: #000000;">${bill.expire || 0}</td>
-                <td style="border: 0.5px solid #000000; padding: 5px; text-align: right; background-color: #ffffe0; font-size: 13px; color: #000000; font-weight: bold;">${calculateNetSale(bill)}</td>
-                <td style="border: 0.5px solid #000000; padding: 5px; text-align: right; font-size: 13px; color: #000000;">${bill.cash || 0}</td>
-                <td style="border: 0.5px solid #000000; padding: 5px; text-align: right; font-size: 13px; color: #000000;">${bill.cheque || 0}</td>
-                <td style="border: 0.5px solid #000000; padding: 5px; text-align: right; font-size: 13px; color: #000000;">${bill.credit || 0}</td>
+                <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; background-color: #ffffe0; font-size: 9px; color: #000000; font-weight: bold;">${calculateGrossSale(bill)}</td>
+                <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 9px; color: #000000;">${bill.discount || 0}</td>
+                <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 9px; color: #000000;">${bill.expire || 0}</td>
+                <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; background-color: #ffffe0; font-size: 9px; color: #000000; font-weight: bold;">${calculateNetSale(bill)}</td>
+                <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 9px; color: #000000;">${bill.cash || 0}</td>
+                <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 9px; color: #000000;">${bill.cheque || 0}</td>
+                <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 9px; color: #000000;">${bill.credit || 0}</td>
             </tr>
           `).join("")}
           <tr style="background-color: #ffff99; font-weight: bold;">
-              <td style="border: 0.5px solid #000000; padding: 5px; text-align: left; font-size: 14px; color: #000000; font-weight: bold;" colspan="3">Total</td>
+              <td style="border: 0.5px solid #000000; padding: 3px; text-align: left; font-size: 12px; color: #000000; font-weight: bold;" colspan="2">Total</td>
               ${sums.productOptions.map(sum => `
-                <td style="border: 0.5px solid #000000; padding: 5px; text-align: right; font-size: 14px; color: #000000; font-weight: bold;">${sum.toFixed(2)}</td>
+                <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 12px; color: #000000; font-weight: bold;">${sum.toFixed(2)}</td>
               `).join("")}
-              <td style="border: 0.5px solid #000000; padding: 5px; text-align: right; background-color: #ffffe0; font-size: 14px; color: #000000; font-weight: bold;">${sums.grossSale.toFixed(2)}</td>
-              <td style="border: 0.5px solid #000000; padding: 5px; text-align: right; font-size: 14px; color: #000000; font-weight: bold;">${sums.discount.toFixed(2)}</td>
-              <td style="border: 0.5px solid #000000; padding: 5px; text-align: right; font-size: 14px; color: #000000; font-weight: bold;">${sums.expire.toFixed(2)}</td>
-              <td style="border: 0.5px solid #000000; padding: 5px; text-align: right; background-color: #ffffe0; font-size: 14px; color: #000000; font-weight: bold;">${sums.netSale.toFixed(2)}</td>
-              <td style="border: 0.5px solid #000000; padding: 5px; text-align: right; font-size: 14px; color: #000000; font-weight: bold;">${sums.cash.toFixed(2)}</td>
-              <td style="border: 0.5px solid #000000; padding: 5px; text-align: right; font-size: 14px; color: #000000; font-weight: bold;">${sums.cheque.toFixed(2)}</td>
-              <td style="border: 0.5px solid #000000; padding: 5px; text-align: right; font-size: 14px; color: #000000; font-weight: bold;">${sums.credit.toFixed(2)}</td>
+              <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; background-color: #ffffe0; font-size: 12px; color: #000000; font-weight: bold;">${sums.grossSale.toFixed(2)}</td>
+              <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 12px; color: #000000; font-weight: bold;">${sums.discount.toFixed(2)}</td>
+              <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 12px; color: #000000; font-weight: bold;">${sums.expire.toFixed(2)}</td>
+              <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; background-color: #ffffe0; font-size: 12px; color: #000000; font-weight: bold;">${sums.netSale.toFixed(2)}</td>
+              <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 12px; color: #000000; font-weight: bold;">${sums.cash.toFixed(2)}</td>
+              <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 12px; color: #000000; font-weight: bold;">${sums.cheque.toFixed(2)}</td>
+              <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 12px; color: #000000; font-weight: bold;">${sums.credit.toFixed(2)}</td>
           </tr>
         </tbody>
       </table>
@@ -482,10 +480,10 @@ const ManualInvoice = () => {
       const tempDiv = document.createElement("div");
       tempDiv.style.position = "absolute";
       tempDiv.style.left = "-9999px";
-      tempDiv.style.width = "297mm"; // A4 landscape width
+      tempDiv.style.width = "100%";
       tempDiv.style.backgroundColor = "#fff";
       tempDiv.style.fontFamily = "Arial, sans-serif";
-      tempDiv.style.padding = "10mm"; // Increased padding for better margins
+      tempDiv.style.padding = "8mm";
       
       // Add special styles to ensure text is rendered with high quality
       const styleElement = document.createElement("style");
@@ -496,88 +494,68 @@ const ManualInvoice = () => {
           color-adjust: exact !important;
         }
         table {
-          font-size: 14px !important;
-        }
-        table, th, td {
-          border: 0.5px solid #000000 !important;
-        }
-        th, td {
-          padding: 5px !important;
-          color: #000000 !important;
-          font-weight: normal !important;
-          font-size: 13px !important;
-        }
-        th {
-          font-weight: bold !important;
-        }
-        h2 {
-          font-size: 24px !important;
-        }
-        p {
-          font-size: 16px !important;
-        }
-        
-        /* Add a print media query to ensure consistent appearance */
-        @media print {
-          body {
-            margin: 0;
-            padding: 0;
-            background: #fff;
-          }
-          table {
-            font-size: 14px !important;
+          font-size: 11px !important; /* Increased font size */
             width: 100% !important;
+          table-layout: fixed !important;
+          margin: 0 !important;
             border-collapse: collapse !important;
           }
           table, th, td {
             border: 0.5px solid #000000 !important;
+          word-break: break-word !important;
           }
           th, td {
-            padding: 5px !important;
+          padding: 4px !important;
             color: #000000 !important;
-            font-weight: normal !important;
-            font-size: 13px !important;
+          font-size: 11px !important;
           }
           th {
             font-weight: bold !important;
+          font-size: 12px !important;
+        }
+        /* Add specific styles for outlet name column */
+        td:nth-child(2) {
+          word-wrap: break-word !important;
+          word-break: break-word !important;
+          white-space: normal !important;
           }
-          h2 {
-            font-size: 24px !important;
-            margin: 0 !important;
-            font-weight: bold !important;
-            color: #000000 !important;
-          }
-          p {
-            font-size: 16px !important;
-            margin: 3mm 0 !important;
-            color: #000000 !important;
-          }
-          strong {
-            color: #000000 !important;
-            font-weight: bold !important;
-          }
-          tr[style*="background-color: #ffff99"] td {
-            background-color: #ffff99 !important;
-            font-weight: bold !important;
-          }
-          td[style*="background-color: #ffffe0"] {
-            background-color: #ffffe0 !important;
-          }
+        h2 {
+          font-size: 20px !important; /* Increased heading size */
+          margin-bottom: 6px !important;
+        }
+        p {
+          font-size: 14px !important; /* Increased paragraph size */
+          margin: 4px 0 !important;
         }
       `;
       tempDiv.appendChild(styleElement);
       
       document.body.appendChild(tempDiv);
 
-      // Set the content
-      tempDiv.innerHTML += previewContent.html;
+      // Modify the HTML content to be more compact for PDF
+      let modifiedHtml = previewContent.html;
+      
+      // Replace inline styles in the HTML to make the table more compact
+      modifiedHtml = modifiedHtml.replace(/width: \d+%/g, 'width: 100%'); // Set width to 100%
+      modifiedHtml = modifiedHtml.replace(/font-size: 8px/g, 'font-size: 11px'); // Increase font size
+      modifiedHtml = modifiedHtml.replace(/font-size: 9px/g, 'font-size: 12px'); // Increase font size
+      modifiedHtml = modifiedHtml.replace(/font-size: 10px/g, 'font-size: 12px'); // Increase font size
+      modifiedHtml = modifiedHtml.replace(/font-size: 14px/g, 'font-size: 16px'); // Increase font size
+      modifiedHtml = modifiedHtml.replace(/font-size: 18px/g, 'font-size: 20px'); // Increase heading size
+      modifiedHtml = modifiedHtml.replace(/padding: 3px/g, 'padding: 4px'); // Increase padding
+      
+      // Fix outlet name column text wrapping
+      modifiedHtml = modifiedHtml.replace(/overflow: hidden; text-overflow: ellipsis; white-space: nowrap;/g, 'word-wrap: break-word; word-break: break-word; white-space: normal;');
+      
+      // Set the content with our modified HTML
+      tempDiv.innerHTML += modifiedHtml;
 
       // Wait for the content to be fully rendered
       await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // Improved canvas settings for higher quality
+      // Use a higher scale for better quality
       const canvas = await html2canvas(tempDiv, {
-        scale: 3, // Higher scale for better quality
+        scale: 2, // Scale for better quality
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
@@ -585,8 +563,8 @@ const ManualInvoice = () => {
         letterRendering: true,
         scrollX: 0,
         scrollY: 0,
-        windowWidth: 297 * 4, // Wider viewport for better rendering
-        windowHeight: 210 * 4,
+        width: tempDiv.scrollWidth, // Ensure full width is captured
+        height: tempDiv.scrollHeight,
         onclone: (clonedDoc) => {
           const clonedDiv = clonedDoc.querySelector('div');
           if (clonedDiv) {
@@ -596,21 +574,33 @@ const ManualInvoice = () => {
             clonedDiv.style.left = '0';
             clonedDiv.style.top = '0';
             
-            // Ensure all text is dark black and larger in the cloned document
+            // Ensure all text is dark black in the cloned document
             const allElements = clonedDiv.querySelectorAll('*');
             allElements.forEach(el => {
               if (el.tagName !== 'STYLE') {
                 el.style.color = '#000000';
                 
-                // Increase font sizes in the cloned document
-                if (el.tagName === 'H2') {
-                  el.style.fontSize = '24px';
-                } else if (el.tagName === 'P') {
-                  el.style.fontSize = '16px';
-                } else if (el.tagName === 'TH' || el.tagName === 'TD') {
-                  el.style.border = '0.5px solid #000000';
-                  el.style.padding = '5px';
-                  el.style.fontSize = el.tagName === 'TH' ? '14px' : '13px';
+                // Make the cloned document use full width
+                if (el.tagName === 'TABLE') {
+                  el.style.width = '100%';
+                  el.style.tableLayout = 'fixed';
+                  el.style.margin = '0';
+                }
+                
+                // Increase font sizes
+                if (el.tagName === 'TH' || el.tagName === 'TD') {
+                  el.style.padding = '4px';
+                  el.style.fontSize = '11px';
+                }
+                if (el.tagName === 'TH') {
+                  el.style.fontSize = '12px';
+                }
+                
+                // Special handling for outlet name cells (second column)
+                if (el.tagName === 'TD' && el === el.parentElement.children[1]) {
+                  el.style.whiteSpace = 'normal';
+                  el.style.wordWrap = 'break-word';
+                  el.style.wordBreak = 'break-word';
                 }
               }
             });
@@ -618,36 +608,39 @@ const ManualInvoice = () => {
         }
       });
 
-      // Option 1: Generate PDF file for download
+      // Generate PDF with custom scaling
       const pdf = new jsPDF({
         orientation: 'landscape',
         unit: 'mm',
-        format: 'a4',
-        compress: false, // No compression for better quality
-        precision: 16 // Higher precision
+        format: 'a3', // Use A3 for more width
+        compress: false,
+        precision: 16
       });
 
-      // Calculate dimensions
-      const pageWidth = 297; // A4 landscape width in mm
-      const pageHeight = 210; // A4 landscape height in mm
-      const margin = 10; // Increased margin
-      const imgWidth = pageWidth - 2 * margin;
+      // Calculate dimensions to maximize page width use
+      const imgData = canvas.toDataURL('image/png', 1.0);
+
+      // Use the whole page width with minimal margins
+      const pageWidth = 420; // A3 landscape width
+      const pageHeight = 297; // A3 landscape height
+      const margin = 2; // Smaller margin to use more page width
+      const imgWidth = pageWidth - (2 * margin);
+      
+      // Calculate height based on aspect ratio
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-      // Add the image to the PDF with improved quality
-      const imgData = canvas.toDataURL('image/png', 1.0); // Use PNG for better quality
       pdf.addImage(imgData, 'PNG', margin, margin, imgWidth, imgHeight, '', 'FAST');
 
-      // Handle multiple pages if needed (improved calculation)
-      if (imgHeight > pageHeight - 2 * margin) {
-        let heightLeft = imgHeight - (pageHeight - 2 * margin);
-        let position = -(pageHeight - 2 * margin);
+      // Handle multiple pages if needed
+      if (imgHeight > pageHeight - (2 * margin)) {
+        let heightLeft = imgHeight - (pageHeight - (2 * margin));
+        let position = -(pageHeight - (2 * margin));
 
       while (heightLeft > 0) {
         pdf.addPage();
           pdf.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight, '', 'FAST');
-        heightLeft -= (pageHeight - 2 * margin);
-          position -= (pageHeight - 2 * margin);
+          heightLeft -= (pageHeight - (2 * margin));
+          position -= (pageHeight - (2 * margin));
         }
       }
 
@@ -656,7 +649,6 @@ const ManualInvoice = () => {
       pdf.save(filename);
 
       // Option 2: Also provide an option to open the print dialog for browser printing
-      // This gives the user both PDF download and standard print option
       const printWindow = window.open('', '_blank');
       if (printWindow) {
         printWindow.document.write(`
@@ -673,7 +665,7 @@ const ManualInvoice = () => {
               }
               @page {
                 size: landscape;
-                margin: 10mm;
+                margin: 5mm;
               }
               * {
                 -webkit-print-color-adjust: exact !important;
@@ -681,36 +673,37 @@ const ManualInvoice = () => {
                 color-adjust: exact !important;
               }
               table {
-                font-size: 14px !important;
                 width: 100% !important;
                 border-collapse: collapse !important;
+                table-layout: fixed !important;
+                font-size: 11px !important;
               }
               table, th, td {
                 border: 0.5px solid #000000 !important;
+                word-break: break-word !important;
               }
               th, td {
-                padding: 5px !important;
+                padding: 4px !important;
                 color: #000000 !important;
-                font-weight: normal !important;
-                font-size: 13px !important;
+                font-size: 11px !important;
               }
               th {
                 font-weight: bold !important;
+                font-size: 12px !important;
+              }
+              /* Add specific styles for outlet name column */
+              td:nth-child(2) {
+                word-wrap: break-word !important;
+                word-break: break-word !important;
+                white-space: normal !important;
               }
               h2 {
-                font-size: 24px !important;
-                margin: 0 !important;
-                font-weight: bold !important;
-                color: #000000 !important;
+                font-size: 20px !important;
+                margin-bottom: 6px !important;
               }
               p {
-                font-size: 16px !important;
-                margin: 3mm 0 !important;
-                color: #000000 !important;
-              }
-              strong {
-                color: #000000 !important;
-                font-weight: bold !important;
+                font-size: 14px !important;
+                margin: 4px 0 !important;
               }
               .container {
                 width: 100%;
@@ -733,15 +726,8 @@ const ManualInvoice = () => {
               </button>
             </div>
             <div class="container">
-              ${previewContent.html}
+              ${modifiedHtml}
             </div>
-            <script>
-              // Auto-trigger print dialog after a short delay
-              setTimeout(() => {
-                // Uncomment the line below to automatically open the print dialog
-                // window.print();
-              }, 1000);
-            </script>
           </body>
           </html>
         `);
