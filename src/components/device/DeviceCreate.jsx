@@ -403,8 +403,8 @@ const ManualInvoice = () => {
             <strong style="color: #000000;">Driver:</strong> ${invoice.driver || 'N/A'} | 
             <strong style="color: #000000;">Route:</strong> ${invoice.route || 'N/A'}
           </p>
-        </div>
-        <table style="width: 100%; border-collapse: collapse; font-size: 10px; table-layout: fixed;">
+      </div>
+        <table style="width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed;">
         <thead>
           <tr style="background-color: #f2f2f2;">
               <th style="border: 0.5px solid #000000; padding: 3px; text-align: left; color: #000000; font-weight: bold; width: 5%;">Bill No</th>
@@ -444,17 +444,17 @@ const ManualInvoice = () => {
             </tr>
           `).join("")}
           <tr style="background-color: #ffff99; font-weight: bold;">
-              <td style="border: 0.5px solid #000000; padding: 3px; text-align: left; font-size: 10px; color: #000000; font-weight: bold;" colspan="2">Total</td>
+              <td style="border: 0.5px solid #000000; padding: 3px; text-align: left; font-size: 12px; color: #000000; font-weight: bold;" colspan="2">Total</td>
               ${sums.productOptions.map(sum => `
-                <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 10px; color: #000000; font-weight: bold;">${sum.toFixed(2)}</td>
+                <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 12px; color: #000000; font-weight: bold;">${sum.toFixed(2)}</td>
               `).join("")}
-              <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; background-color: #ffffe0; font-size: 10px; color: #000000; font-weight: bold;">${sums.grossSale.toFixed(2)}</td>
-              <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 10px; color: #000000; font-weight: bold;">${sums.discount.toFixed(2)}</td>
-              <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 10px; color: #000000; font-weight: bold;">${sums.expire.toFixed(2)}</td>
-              <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; background-color: #ffffe0; font-size: 10px; color: #000000; font-weight: bold;">${sums.netSale.toFixed(2)}</td>
-              <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 10px; color: #000000; font-weight: bold;">${sums.cash.toFixed(2)}</td>
-              <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 10px; color: #000000; font-weight: bold;">${sums.cheque.toFixed(2)}</td>
-              <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 10px; color: #000000; font-weight: bold;">${sums.credit.toFixed(2)}</td>
+              <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; background-color: #ffffe0; font-size: 12px; color: #000000; font-weight: bold;">${sums.grossSale.toFixed(2)}</td>
+              <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 12px; color: #000000; font-weight: bold;">${sums.discount.toFixed(2)}</td>
+              <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 12px; color: #000000; font-weight: bold;">${sums.expire.toFixed(2)}</td>
+              <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; background-color: #ffffe0; font-size: 12px; color: #000000; font-weight: bold;">${sums.netSale.toFixed(2)}</td>
+              <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 12px; color: #000000; font-weight: bold;">${sums.cash.toFixed(2)}</td>
+              <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 12px; color: #000000; font-weight: bold;">${sums.cheque.toFixed(2)}</td>
+              <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 12px; color: #000000; font-weight: bold;">${sums.credit.toFixed(2)}</td>
           </tr>
         </tbody>
       </table>
@@ -495,22 +495,22 @@ const ManualInvoice = () => {
         }
         table {
           font-size: 11px !important; /* Increased font size */
-          width: 100% !important;
+            width: 100% !important;
           table-layout: fixed !important;
           margin: 0 !important;
-          border-collapse: collapse !important;
-        }
-        table, th, td {
-          border: 0.5px solid #000000 !important;
+            border-collapse: collapse !important;
+          }
+          table, th, td {
+            border: 0.5px solid #000000 !important;
           word-break: break-word !important;
-        }
-        th, td {
+          }
+          th, td {
           padding: 4px !important;
-          color: #000000 !important;
+            color: #000000 !important;
           font-size: 11px !important;
-        }
-        th {
-          font-weight: bold !important;
+          }
+          th {
+            font-weight: bold !important;
           font-size: 12px !important;
         }
         /* Add specific styles for outlet name column */
@@ -518,7 +518,7 @@ const ManualInvoice = () => {
           word-wrap: break-word !important;
           word-break: break-word !important;
           white-space: normal !important;
-        }
+          }
         h2 {
           font-size: 20px !important; /* Increased heading size */
           margin-bottom: 6px !important;
@@ -619,7 +619,7 @@ const ManualInvoice = () => {
 
       // Calculate dimensions to maximize page width use
       const imgData = canvas.toDataURL('image/png', 1.0);
-      
+
       // Use the whole page width with minimal margins
       const pageWidth = 420; // A3 landscape width
       const pageHeight = 297; // A3 landscape height
@@ -636,8 +636,8 @@ const ManualInvoice = () => {
         let heightLeft = imgHeight - (pageHeight - (2 * margin));
         let position = -(pageHeight - (2 * margin));
 
-        while (heightLeft > 0) {
-          pdf.addPage();
+      while (heightLeft > 0) {
+        pdf.addPage();
           pdf.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight, '', 'FAST');
           heightLeft -= (pageHeight - (2 * margin));
           position -= (pageHeight - (2 * margin));
@@ -749,7 +749,7 @@ const ManualInvoice = () => {
       // Clean up in case of error
       const tempDiv = document.querySelector('div[style*="position: absolute"]');
       if (tempDiv) {
-        document.body.removeChild(tempDiv);
+      document.body.removeChild(tempDiv);
       }
     }
   };
