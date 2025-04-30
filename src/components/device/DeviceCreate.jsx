@@ -2,8 +2,6 @@ import React, { useState, useEffect } from "react";
 import { db } from "../../utilities/firebaseConfig";
 import { collection, getDocs, addDoc, updateDoc, doc, deleteDoc, query, orderBy, limit } from "firebase/firestore";
 import 'bootstrap-icons/font/bootstrap-icons.css';
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
 
 const ManualInvoice = () => {
   const [bills, setBills] = useState([]);
@@ -20,8 +18,6 @@ const ManualInvoice = () => {
   const [salesSummary, setSalesSummary] = useState(null);
   const [salesSummaries, setSalesSummaries] = useState([]);
   const [editSalesSummaryId, setEditSalesSummaryId] = useState(null);
-  const [showPrintPreview, setShowPrintPreview] = useState(false);
-  const [previewContent, setPreviewContent] = useState(null);
   const [creatorFilter, setCreatorFilter] = useState("");
   const [creators, setCreators] = useState([]);
 
@@ -351,11 +347,11 @@ const ManualInvoice = () => {
 
   const handlePrintSalesSummary = async (invoice) => {
     try {
-    const existingSummary = salesSummaries.find((summary) => summary.invoiceId === (invoice.invoiceId || invoice.id));
-    if (!existingSummary) {
-      alert("No sales summary exists for this invoice. Create one first.");
-      return;
-    }
+      const existingSummary = salesSummaries.find((summary) => summary.invoiceId === (invoice.invoiceId || invoice.id));
+      if (!existingSummary) {
+        alert("No sales summary exists for this invoice. Create one first.");
+        return;
+      }
 
       let uniqueOptions = [...new Map(existingSummary.data.flatMap((bill) => bill.productOptions).map((opt) => [opt.optionId, { optionId: opt.optionId, price: parseFloat(opt.price) || 0 }])).values()];
       
@@ -366,7 +362,7 @@ const ManualInvoice = () => {
         return numA - numB;
       });
 
-      // Calculate totals before creating the temporary div
+      // Calculate totals 
       const sums = {
         productOptions: uniqueOptions.map(() => 0),
         grossSale: 0,
@@ -394,7 +390,7 @@ const ManualInvoice = () => {
         sums.credit += parseFloat(bill.credit) || 0;
       });
 
-      // Generate the HTML content for preview - optimized for PDF printing
+      // Generate the HTML content for printing
       const previewHtml = `
         <div style="margin-bottom: 5mm; text-align: center;">
           <h2 style="font-size: 18px; margin: 0; font-weight: bold; color: #000000;">Sales Summary for Invoice ${invoice.invoiceId || invoice.id}</h2>
@@ -460,22 +456,6 @@ const ManualInvoice = () => {
       </table>
     `;
 
-      // Store the preview content and show the preview modal
-      setPreviewContent({
-        html: previewHtml,
-        invoice: invoice,
-        sums: sums
-      });
-      setShowPrintPreview(true);
-
-    } catch (error) {
-      console.error("Error preparing print preview:", error);
-      alert("Failed to prepare print preview. Please try again. Error: " + error.message);
-    }
-  };
-
-  const handleConfirmPrint = async () => {
-    try {
       // Create a temporary div for the print content with better styling
       const tempDiv = document.createElement("div");
       tempDiv.style.position = "absolute";
@@ -532,8 +512,8 @@ const ManualInvoice = () => {
       
       document.body.appendChild(tempDiv);
 
-      // Modify the HTML content to be more compact for PDF
-      let modifiedHtml = previewContent.html;
+      // Modify the HTML content to be more compact for printing
+      let modifiedHtml = previewHtml;
       
       // Replace inline styles in the HTML to make the table more compact
       modifiedHtml = modifiedHtml.replace(/width: \d+%/g, 'width: 100%'); // Set width to 100%
@@ -552,103 +532,8 @@ const ManualInvoice = () => {
 
       // Wait for the content to be fully rendered
       await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // Use a higher scale for better quality
-      const canvas = await html2canvas(tempDiv, {
-        scale: 2, // Scale for better quality
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-        allowTaint: true,
-        letterRendering: true,
-        scrollX: 0,
-        scrollY: 0,
-        width: tempDiv.scrollWidth, // Ensure full width is captured
-        height: tempDiv.scrollHeight,
-        onclone: (clonedDoc) => {
-          const clonedDiv = clonedDoc.querySelector('div');
-          if (clonedDiv) {
-            clonedDiv.style.width = '100%';
-            clonedDiv.style.height = 'auto';
-            clonedDiv.style.position = 'absolute';
-            clonedDiv.style.left = '0';
-            clonedDiv.style.top = '0';
-            
-            // Ensure all text is dark black in the cloned document
-            const allElements = clonedDiv.querySelectorAll('*');
-            allElements.forEach(el => {
-              if (el.tagName !== 'STYLE') {
-                el.style.color = '#000000';
-                
-                // Make the cloned document use full width
-                if (el.tagName === 'TABLE') {
-                  el.style.width = '100%';
-                  el.style.tableLayout = 'fixed';
-                  el.style.margin = '0';
-                }
-                
-                // Increase font sizes
-                if (el.tagName === 'TH' || el.tagName === 'TD') {
-                  el.style.padding = '4px';
-                  el.style.fontSize = '11px';
-                }
-                if (el.tagName === 'TH') {
-                  el.style.fontSize = '12px';
-                }
-                
-                // Special handling for outlet name cells (second column)
-                if (el.tagName === 'TD' && el === el.parentElement.children[1]) {
-                  el.style.whiteSpace = 'normal';
-                  el.style.wordWrap = 'break-word';
-                  el.style.wordBreak = 'break-word';
-                }
-              }
-            });
-          }
-        }
-      });
-
-      // Generate PDF with custom scaling
-      const pdf = new jsPDF({
-        orientation: 'landscape',
-        unit: 'mm',
-        format: 'a3', // Use A3 for more width
-        compress: false,
-        precision: 16
-      });
-
-      // Calculate dimensions to maximize page width use
-      const imgData = canvas.toDataURL('image/png', 1.0);
-
-      // Use the whole page width with minimal margins
-      const pageWidth = 420; // A3 landscape width
-      const pageHeight = 297; // A3 landscape height
-      const margin = 2; // Smaller margin to use more page width
-      const imgWidth = pageWidth - (2 * margin);
       
-      // Calculate height based on aspect ratio
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-      pdf.addImage(imgData, 'PNG', margin, margin, imgWidth, imgHeight, '', 'FAST');
-
-      // Handle multiple pages if needed
-      if (imgHeight > pageHeight - (2 * margin)) {
-        let heightLeft = imgHeight - (pageHeight - (2 * margin));
-        let position = -(pageHeight - (2 * margin));
-
-      while (heightLeft > 0) {
-        pdf.addPage();
-          pdf.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight, '', 'FAST');
-          heightLeft -= (pageHeight - (2 * margin));
-          position -= (pageHeight - (2 * margin));
-        }
-      }
-
-      // Save the PDF with a unique filename
-      const filename = `Sales_Summary_${previewContent.invoice.invoiceId || previewContent.invoice.id}_${new Date().getTime()}.pdf`;
-      pdf.save(filename);
-
-      // Option 2: Also provide an option to open the print dialog for browser printing
+      // Open in a new window for printing
       const printWindow = window.open('', '_blank');
       if (printWindow) {
         printWindow.document.write(`
@@ -736,20 +621,14 @@ const ManualInvoice = () => {
 
       // Clean up
       document.body.removeChild(tempDiv);
-      
-      // Close preview modal
-      setShowPrintPreview(false);
-      setPreviewContent(null);
-      
-      // Show success message
-      alert("PDF generated successfully! A print-friendly page has also been opened.");
+
     } catch (error) {
-      console.error("Error generating PDF:", error);
-      alert("Failed to generate PDF. Please try again. Error: " + error.message);
+      console.error("Error generating print preview:", error);
+      alert("Failed to generate print preview. Please try again. Error: " + error.message);
       // Clean up in case of error
       const tempDiv = document.querySelector('div[style*="position: absolute"]');
       if (tempDiv) {
-      document.body.removeChild(tempDiv);
+        document.body.removeChild(tempDiv);
       }
     }
   };
@@ -987,7 +866,7 @@ const ManualInvoice = () => {
                           <button 
                             className="btn btn-success btn-sm" 
                             onClick={() => handlePrintSalesSummary(invoice)} 
-                            title="Download PDF"
+                            title="Print"
                             style={{ cursor: 'pointer' }}
                           >
                             <i className="bi bi-printer"></i>
@@ -1372,57 +1251,6 @@ const ManualInvoice = () => {
                   {editSalesSummaryId ? "Update Sales Summary" : "Save Sales Summary"}
                 </button>
               </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Print Preview Modal */}
-      {showPrintPreview && previewContent && (
-        <div className="modal" style={{ display: "block", position: "fixed", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.7)" }}>
-          <div className="modal-content" style={{ 
-            backgroundColor: "#fff", 
-            margin: "20px", 
-            padding: "20px", 
-            width: "calc(100% - 40px)", 
-            height: "calc(100% - 40px)", 
-            borderRadius: "12px", 
-            overflowY: "auto",
-            boxShadow: "0 10px 30px rgba(0,0,0,0.3)"
-          }}>
-            <div style={{ 
-              display: "flex", 
-              justifyContent: "space-between", 
-              alignItems: "center", 
-              marginBottom: "20px",
-              paddingBottom: "10px",
-              borderBottom: "2px solid #eee"
-            }}>
-              <h4 style={{ margin: "0" }}>
-                <i className="bi bi-printer me-2"></i>
-                Print Preview
-              </h4>
-              <button className="btn btn-outline-secondary" onClick={() => setShowPrintPreview(false)}>
-                <i className="bi bi-x-lg"></i>
-              </button>
-            </div>
-            
-            <div style={{ 
-              backgroundColor: "#fff", 
-              padding: "20px", 
-              borderRadius: "8px",
-              boxShadow: "0 2px 10px rgba(0,0,0,0.1)"
-            }}>
-              <div dangerouslySetInnerHTML={{ __html: previewContent.html }} />
-            </div>
-
-            <div className="d-flex justify-content-end gap-2 mt-4">
-              <button className="btn btn-secondary" onClick={() => setShowPrintPreview(false)}>
-                <i className="bi bi-x-circle me-2"></i>Cancel
-              </button>
-              <button className="btn btn-primary" onClick={handleConfirmPrint}>
-                <i className="bi bi-download me-2"></i>Download PDF
-              </button>
             </div>
           </div>
         </div>
