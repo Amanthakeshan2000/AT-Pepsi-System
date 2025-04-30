@@ -1823,15 +1823,15 @@ const BillManagement = () => {
                   <p><strong>Total Margin:</strong> <span style={{ fontWeight: "bold", color: "#ff9800" }}>Rs. {calculateUnitMargin(selectedBill).toFixed(2)}</span></p>
                   
                   <h5>Consolidated Products</h5>
-                  <table className="table table-bordered">
+                  <table className="table table-bordered" style={{ color: "#000000", borderColor: "#000000" }}>
                     <thead>
                       <tr>
-                        <th>Option</th>
-                        <th>Product Name</th>
-                        <th>Qty (BT)</th>
-                        <th>Bottles/Case</th>
-                        <th>Case</th>
-                        <th>Extra Bottles</th>
+                        <th style={{ color: "#000000", borderColor: "#000000" }}>Option</th>
+                        <th style={{ color: "#000000", borderColor: "#000000" }}>Product Name</th>
+                        <th style={{ color: "#000000", borderColor: "#000000" }}>Qty (BT)</th>
+                        <th style={{ color: "#000000", borderColor: "#000000" }}>Bottles/Case</th>
+                        <th style={{ color: "#000000", borderColor: "#000000" }}>Case</th>
+                        <th style={{ color: "#000000", borderColor: "#000000" }}>Extra Bottles</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1842,20 +1842,20 @@ const BillManagement = () => {
                           // Add the current product to the result
                           result.push(
                             <tr key={`product-${index}`}>
-                              <td>{product.optionId}</td>
-                              <td>{product.productName || products.find(p => p.id === product.productId)?.name}</td>
-                              <td>{product.totalQty}</td>
-                              <td>{product.bottlesPerCase || '-'}</td>
-                              <td>{product.caseCount || '-'}</td>
-                              <td>{product.extraBottles || '-'}</td>
+                              <td style={{ color: "#000000", borderColor: "#000000" }}>{product.optionId}</td>
+                              <td style={{ color: "#000000", borderColor: "#000000" }}>{product.productName || products.find(p => p.id === product.productId)?.name}</td>
+                              <td style={{ color: "#000000", borderColor: "#000000" }}>{product.totalQty}</td>
+                              <td style={{ color: "#000000", borderColor: "#000000" }}>{product.bottlesPerCase || '-'}</td>
+                              <td style={{ color: "#000000", borderColor: "#000000" }}>{product.caseCount || '-'}</td>
+                              <td style={{ color: "#000000", borderColor: "#000000" }}>{product.extraBottles || '-'}</td>
                             </tr>
                           );
                           
                           // If the next product has a different optionId, add a separator row
                           if (index < array.length - 1 && product.optionId !== array[index + 1].optionId) {
                             result.push(
-                              <tr key={`separator-${index}`} style={{ height: "20px", backgroundColor: "#f8f9fa" }}>
-                                <td colSpan="6"></td>
+                              <tr key={`separator-${index}`} style={{ height: "20px", backgroundColor: "#f8f9fa", borderColor: "#000000" }}>
+                                <td colSpan="6" style={{ borderColor: "#000000" }}></td>
                               </tr>
                             );
                           }
@@ -2250,6 +2250,17 @@ const BillManagement = () => {
                     }, [])
                   }
                 </tbody>
+                <tfoot>
+                  <tr>
+                    <td colSpan="4" style={{ textAlign: "right" }}>Total Cases:</td>
+                    <td>
+                      {(selectedBill.consolidatedProducts || []).reduce((sum, product) => {
+                        return sum + (parseInt(product.caseCount) || 0);
+                      }, 0)}
+                    </td>
+                    <td></td>
+                  </tr>
+                </tfoot>
               </table>
               <br /> <br /> <br />
               <div style={{ marginTop: "8px", display: "flex", justifyContent: "space-between" }}>
@@ -2287,23 +2298,29 @@ const BillManagement = () => {
               width: 100%;
               padding: 5px;
               font-size: 8px;
+              color: #000000 !important;
             }
             .print-content h2 {
               font-size: 14px;
               margin: 0;
+              color: #000000 !important;
             }
             .print-content h3 {
               font-size: 12px;
               margin: 5px 0;
+              color: #000000 !important;
             }
             .print-content h5 {
               font-size: 10px;
               margin: 5px 0 2px;
               padding-bottom: 3px !important;
+              color: #000000 !important;
+              border-bottom: 1.5px solid #000 !important;
             }
             .print-content p {
               margin: 1px 0;
               font-size: 8px;
+              color: #000000 !important;
             }
             @page {
               size: A4;
@@ -2313,34 +2330,49 @@ const BillManagement = () => {
               border-collapse: collapse;
               width: 100%;
               margin-bottom: 5px;
+              border: 1.5px solid #000 !important;
             }
             table, th, td {
-              border: 0.5px solid black;
+              border: 1.5px solid #000 !important;
+              color: #000000 !important;
             }
             th, td {
               padding: 1px 2px;
               text-align: left;
               font-size: 7px;
               white-space: nowrap;
+              color: #000000 !important;
             }
             tr {
               height: auto;
               line-height: 1.1;
+              color: #000000 !important;
             }
             .print-content .table-bordered {
               margin-bottom: 5px;
+              border: 1.5px solid #000 !important;
             }
             .separator-row {
               height: 2px !important;
+            }
+            tfoot {
+              border-top: 1.5px solid #000 !important;
+            }
+            tfoot tr td {
+              border-top: 1.5px solid #000 !important;
+              font-size: 8px;
+              color: #000000 !important;
             }
             .print-content > div:last-child {
               margin-top: 10px !important;
             }
             .print-content > div:last-child > div {
               padding-top: 2px !important;
+              border-top: 1.5px solid #000 !important;
             }
             .print-content > div:last-child p {
               margin: 0;
+              color: #000000 !important;
             }
           }
         `}

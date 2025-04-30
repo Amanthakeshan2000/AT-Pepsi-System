@@ -13,6 +13,7 @@ const PaymentTable = () => {
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split("T")[0]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [myBillsSearchTerm, setMyBillsSearchTerm] = useState("");
   const [printMode, setPrintMode] = useState(false);
   const [printMyBills, setPrintMyBills] = useState(false);
   const [selectedOutlet, setSelectedOutlet] = useState("");
@@ -48,6 +49,11 @@ const PaymentTable = () => {
   useEffect(() => {
     fetchOutlets();
   }, []);
+
+  // Reset my bills pagination when search term changes
+  useEffect(() => {
+    setMyBillsCurrentPage(1);
+  }, [creatorFilter, myBillsSearchTerm]);
 
   const fetchOutlets = async () => {
     try {
@@ -724,9 +730,22 @@ const PaymentTable = () => {
   // Add filtered bills function
   const getFilteredMyBills = () => {
     const filtered = myBills.filter(bill => {
+      // Apply creator filter
       if (creatorFilter && bill.createdBy !== creatorFilter) {
         return false;
       }
+      
+      // Apply search term filter
+      if (myBillsSearchTerm) {
+        const searchTermLower = myBillsSearchTerm.toLowerCase();
+        const billNoMatch = bill.billNo?.toLowerCase().includes(searchTermLower);
+        const outletNameMatch = bill.outletName?.toLowerCase().includes(searchTermLower);
+        
+        if (!billNoMatch && !outletNameMatch) {
+          return false;
+        }
+      }
+      
       return true;
     });
     return filtered;
@@ -773,6 +792,18 @@ const PaymentTable = () => {
             My Bills
           </h4>
           <div className="d-flex gap-2 align-items-center">
+            <div className="input-group" style={{ width: "300px" }}>
+              <span className="input-group-text">
+                <i className="bi bi-search"></i>
+              </span>
+              <input 
+                type="text" 
+                className="form-control" 
+                placeholder="Search my bills..." 
+                value={myBillsSearchTerm} 
+                onChange={(e) => setMyBillsSearchTerm(e.target.value)} 
+              />
+            </div>
             <div className="input-group" style={{ width: "400px" }}>
               <span className="input-group-text">
                 <i className="bi bi-person"></i>
