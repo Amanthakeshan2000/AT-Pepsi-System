@@ -2186,27 +2186,27 @@ const BillManagement = () => {
             
             <div className="print-content" style={{ marginTop: "20px" }}>
               <div style={{ textAlign: "center", marginBottom: "10px" }}>
-                <h2 style={{ margin: "0" }}>Advance Trading</h2>
-                <p style={{ margin: "3px 0" }}>Reg Office: No: 170/A, Nuwaraeliya Rd, Delpitiya, Gampola</p>
-                <p style={{ margin: "2px 0" }}>Tel: 072-7070701</p>
+                {/* <h2 style={{ margin: "0" }}>Advance Trading</h2> */}
+                {/* <p style={{ margin: "3px 0" }}>Reg Office: No: 170/A, Nuwaraeliya Rd, Delpitiya, Gampola</p>
+                <p style={{ margin: "2px 0" }}>Tel: 072-7070701</p> */}
                 <h3 style={{ margin: "8px 0" }}>Loading Sheet</h3>
               </div>
               
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
                 <div>
-                  <p><strong>Unit ID:</strong> {selectedBill.unitId}</p>
-                  <p><strong>Driver:</strong> {selectedBill.driverName || 'N/A'}</p>
+                  <p><strong  style={{ color: 'black' }}>Unit ID:</strong> <span style={{ color: 'black' }}>{selectedBill.unitId}</span></p>
+                  <p><strong  style={{ color: 'black' }}>Driver:</strong> <span style={{ color: 'black' }}>{selectedBill.driverName || 'N/A'}</span></p>
                 </div>
                 <div>
-                  <p><strong>Date:</strong> {selectedBill.date}</p>
-                  <p><strong>Route:</strong> {selectedBill.route || 'N/A'}</p>
+                  <p><strong  style={{ color: 'black' }}>Date:</strong> <span style={{ color: 'black' }}>{selectedBill.date}</span></p>
+                  <p><strong  style={{ color: 'black' }}>Route:</strong> <span style={{ color: 'black' }}>{selectedBill.route || 'N/A'}</span></p>
                 </div>
               </div>
               
               <h5 style={{ borderBottom: "1px solid #000", paddingBottom: "3px", marginBottom: "3px" }}>Consolidated Products</h5>
               <table className="table table-bordered" style={{ marginBottom: "5px" }}>
                 <thead>
-                  <tr style={{ backgroundColor: "#f2f2f2" }}>
+                  <tr style={{ backgroundColor: "#f2f2f2",color: 'black',borderColor: 'black' }}>
                     <th>Option</th>
                     <th>Product Name</th>
                     <th>Qty</th>
@@ -2215,7 +2215,7 @@ const BillManagement = () => {
                     <th>Extra</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody  style={{ color: 'black',borderColor: 'black' }}>
                   {/* Group consolidated products by optionId */}
                   {(selectedBill.consolidatedProducts || [])
                     .sort((a, b) => {
@@ -2251,9 +2251,9 @@ const BillManagement = () => {
                   }
                 </tbody>
                 <tfoot>
-                  <tr>
-                    <td colSpan="4" style={{ textAlign: "right" }}>Total Cases:</td>
-                    <td>
+                  <tr style={{ color: 'black',borderColor: 'black' }}>
+                    <td colSpan="4" style={{ textAlign: "right",color: 'black' }}>Total Cases:</td>
+                    <td style={{ color: 'black' }}>
                       {(selectedBill.consolidatedProducts || []).reduce((sum, product) => {
                         return sum + (parseInt(product.caseCount) || 0);
                       }, 0)}
@@ -2263,7 +2263,7 @@ const BillManagement = () => {
                 </tfoot>
               </table>
               <br /> <br /> <br />
-              <div style={{ marginTop: "8px", display: "flex", justifyContent: "space-between" }}>
+              <div style={{ marginTop: "8px", display: "flex", justifyContent: "space-between",color: 'black',borderColor: 'black' }}>
                 <div style={{ width: "30%", borderTop: "0.5px solid #000", textAlign: "center", paddingTop: "2px" }}>
                   <p style={{ margin: 0 }}>Prepared By</p>
                 </div>
