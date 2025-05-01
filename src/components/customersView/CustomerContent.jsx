@@ -104,7 +104,7 @@ const BillAdd = () => {
   const generateBillNo = async () => {
     const querySnapshot = await getDocs(billsCollectionRef);
     const count = querySnapshot.size + 1;
-    setBillNo(`INV${count.toString().padStart(6, "0")}`);
+    setBillNo(`${count.toString().padStart(6, "0")}`);
   };
 
   const handleDeleteBill = async (id) => {
