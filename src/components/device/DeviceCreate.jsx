@@ -362,6 +362,12 @@ const ManualInvoice = () => {
         return numA - numB;
       });
 
+      // Helper function to format values - display "-" for 0 values
+      const formatValue = (value) => {
+        const numValue = parseFloat(value) || 0;
+        return numValue === 0 ? "-" : numValue.toFixed(2);
+      };
+
       // Calculate totals 
       const sums = {
         productOptions: uniqueOptions.map(() => 0),
@@ -428,29 +434,29 @@ const ManualInvoice = () => {
               ${uniqueOptions.map((opt) => {
                 const productOption = bill.productOptions.find(po => po.optionId === opt.optionId);
                 const qty = productOption ? (productOption.qty || 0) : 0;
-                  return `<td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 9px; color: #000000;">${qty}</td>`;
+                  return `<td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 9px; color: #000000;">${qty === 0 ? "-" : qty}</td>`;
               }).join("")}
-                <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; background-color: #ffffe0; font-size: 9px; color: #000000; font-weight: bold;">${calculateGrossSale(bill)}</td>
-                <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 9px; color: #000000;">${bill.discount || 0}</td>
-                <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 9px; color: #000000;">${bill.expire || 0}</td>
-                <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; background-color: #ffffe0; font-size: 9px; color: #000000; font-weight: bold;">${calculateNetSale(bill)}</td>
-                <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 9px; color: #000000;">${bill.cash || 0}</td>
-                <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 9px; color: #000000;">${bill.cheque || 0}</td>
-                <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 9px; color: #000000;">${bill.credit || 0}</td>
+                <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; background-color: #ffffe0; font-size: 9px; color: #000000; font-weight: bold;">${formatValue(calculateGrossSale(bill))}</td>
+                <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 9px; color: #000000;">${formatValue(bill.discount)}</td>
+                <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 9px; color: #000000;">${formatValue(bill.expire)}</td>
+                <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; background-color: #ffffe0; font-size: 9px; color: #000000; font-weight: bold;">${formatValue(calculateNetSale(bill))}</td>
+                <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 9px; color: #000000;">${formatValue(bill.cash)}</td>
+                <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 9px; color: #000000;">${formatValue(bill.cheque)}</td>
+                <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 9px; color: #000000;">${formatValue(bill.credit)}</td>
             </tr>
           `).join("")}
           <tr style="background-color: #ffff99; font-weight: bold;">
               <td style="border: 0.5px solid #000000; padding: 3px; text-align: left; font-size: 12px; color: #000000; font-weight: bold;" colspan="2">Total</td>
               ${sums.productOptions.map(sum => `
-                <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 12px; color: #000000; font-weight: bold;">${sum.toFixed(2)}</td>
+                <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 12px; color: #000000; font-weight: bold;">${sum === 0 ? "-" : sum.toFixed(2)}</td>
               `).join("")}
-              <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; background-color: #ffffe0; font-size: 12px; color: #000000; font-weight: bold;">${sums.grossSale.toFixed(2)}</td>
-              <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 12px; color: #000000; font-weight: bold;">${sums.discount.toFixed(2)}</td>
-              <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 12px; color: #000000; font-weight: bold;">${sums.expire.toFixed(2)}</td>
-              <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; background-color: #ffffe0; font-size: 12px; color: #000000; font-weight: bold;">${sums.netSale.toFixed(2)}</td>
-              <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 12px; color: #000000; font-weight: bold;">${sums.cash.toFixed(2)}</td>
-              <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 12px; color: #000000; font-weight: bold;">${sums.cheque.toFixed(2)}</td>
-              <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 12px; color: #000000; font-weight: bold;">${sums.credit.toFixed(2)}</td>
+              <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; background-color: #ffffe0; font-size: 12px; color: #000000; font-weight: bold;">${sums.grossSale === 0 ? "-" : sums.grossSale.toFixed(2)}</td>
+              <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 12px; color: #000000; font-weight: bold;">${sums.discount === 0 ? "-" : sums.discount.toFixed(2)}</td>
+              <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 12px; color: #000000; font-weight: bold;">${sums.expire === 0 ? "-" : sums.expire.toFixed(2)}</td>
+              <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; background-color: #ffffe0; font-size: 12px; color: #000000; font-weight: bold;">${sums.netSale === 0 ? "-" : sums.netSale.toFixed(2)}</td>
+              <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 12px; color: #000000; font-weight: bold;">${sums.cash === 0 ? "-" : sums.cash.toFixed(2)}</td>
+              <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 12px; color: #000000; font-weight: bold;">${sums.cheque === 0 ? "-" : sums.cheque.toFixed(2)}</td>
+              <td style="border: 0.5px solid #000000; padding: 3px; text-align: center; font-size: 12px; color: #000000; font-weight: bold;">${sums.credit === 0 ? "-" : sums.credit.toFixed(2)}</td>
           </tr>
         </tbody>
       </table>
