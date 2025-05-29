@@ -22,15 +22,36 @@ const BillManagement = () => {
   const [route, setRoute] = useState("");
   const [creatorFilter, setCreatorFilter] = useState("");
   const [creators, setCreators] = useState([]);
+  const [billStoreStatus, setBillStoreStatus] = useState({});
 
   const billsCollectionRef = collection(db, "Bill");
   const productsCollectionRef = collection(db, "Product");
   const processedBillsCollectionRef = collection(db, "ProcessedBills");
+  const billStoreStatusCollectionRef = collection(db, "BillStoreStatus");
 
   useEffect(() => {
     fetchBills();
     fetchProcessedUnits();
+    fetchBillStoreStatus();
   }, []);
+
+  const fetchBillStoreStatus = async () => {
+    try {
+      const querySnapshot = await getDocs(billStoreStatusCollectionRef);
+      const statusData = {};
+      querySnapshot.docs.forEach(doc => {
+        const data = doc.data();
+        statusData[data.billId] = {
+          id: doc.id,
+          isStoredOut: data.isStoredOut || false,
+          isStoredIn: data.isStoredIn || false
+        };
+      });
+      setBillStoreStatus(statusData);
+    } catch (error) {
+      console.error("Error fetching bill store status:", error.message);
+    }
+  };
 
   const fetchProducts = async () => {
     try {
@@ -518,6 +539,197 @@ const BillManagement = () => {
   const currentBills = filteredBills.slice(indexOfFirstBill, indexOfLastBill);
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
+  const handleReStoreOut = async (bill) => {
+    try {
+      setLoading(true);
+      
+      // Check if this bill already has a status document
+      let statusDocId;
+      let isNewStatus = false;
+      
+      if (billStoreStatus[bill.id]) {
+        statusDocId = billStoreStatus[bill.id].id;
+      } else {
+        isNewStatus = true;
+      }
+      
+      // Update product stock quantities (decrease)
+      const productUpdates = [];
+      
+      for (const option of bill.productOptions) {
+        // Find the product in our products array
+        const product = products.find(p => p.id === option.productId);
+        if (!product) continue;
+        
+        // Find the matching option in the product
+        const productOption = product.options?.find(po => 
+          (po.name && option.optionId && po.name.toString() === option.optionId.toString()) || 
+          (po.name && po.name.toString() === option.optionName)
+        );
+        
+        if (!productOption) continue;
+        
+        // Calculate new stock value
+        const currentStock = Number(productOption.stock || 0);
+        const qtyToRemove = Number(option.qty || 0);
+        const newStock = Math.max(0, currentStock - qtyToRemove);
+        
+        // Update the product option's stock in Firestore
+        const productDoc = doc(db, "Product", option.productId);
+        const productSnapshot = await getDoc(productDoc);
+        
+        if (productSnapshot.exists()) {
+          const productData = productSnapshot.data();
+          const updatedOptions = productData.productOptions.map(po => {
+            if ((po.name && option.optionId && po.name.toString() === option.optionId.toString()) || 
+                (po.name && po.name.toString() === option.optionName)) {
+              return { ...po, stock: newStock };
+            }
+            return po;
+          });
+          
+          productUpdates.push(updateDoc(productDoc, { productOptions: updatedOptions }));
+        }
+      }
+      
+      // Execute all product updates
+      await Promise.all(productUpdates);
+      
+      // Update or create the status document
+      if (isNewStatus) {
+        // Create a new status document
+        const statusRef = await addDoc(billStoreStatusCollectionRef, {
+          billId: bill.id,
+          isStoredOut: true,
+          isStoredIn: false,
+          storedOutAt: serverTimestamp(),
+          storedInAt: null
+        });
+        
+        // Update local state
+        setBillStoreStatus(prev => ({
+          ...prev,
+          [bill.id]: {
+            id: statusRef.id,
+            isStoredOut: true,
+            isStoredIn: false
+          }
+        }));
+      } else {
+        // Update existing status document
+        const statusRef = doc(db, "BillStoreStatus", statusDocId);
+        await updateDoc(statusRef, {
+          isStoredOut: true,
+          isStoredIn: false,
+          storedOutAt: serverTimestamp(),
+          storedInAt: null
+        });
+        
+        // Update local state
+        setBillStoreStatus(prev => ({
+          ...prev,
+          [bill.id]: {
+            ...prev[bill.id],
+            isStoredOut: true,
+            isStoredIn: false
+          }
+        }));
+      }
+      
+      alert("Re Store-Out completed successfully!");
+      
+      // Refresh products to get updated stock values
+      await fetchProducts();
+    } catch (error) {
+      console.error("Error during Re Store-Out:", error.message);
+      alert("Error during Re Store-Out. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReStoreIn = async (bill) => {
+    try {
+      setLoading(true);
+      
+      // Get the status document
+      const statusDocId = billStoreStatus[bill.id]?.id;
+      if (!statusDocId) {
+        throw new Error("Status document not found");
+      }
+      
+      // Update product stock quantities (increase)
+      const productUpdates = [];
+      
+      for (const option of bill.productOptions) {
+        // Find the product in our products array
+        const product = products.find(p => p.id === option.productId);
+        if (!product) continue;
+        
+        // Find the matching option in the product
+        const productOption = product.options?.find(po => 
+          (po.name && option.optionId && po.name.toString() === option.optionId.toString()) || 
+          (po.name && po.name.toString() === option.optionName)
+        );
+        
+        if (!productOption) continue;
+        
+        // Calculate new stock value
+        const currentStock = Number(productOption.stock || 0);
+        const qtyToAdd = Number(option.qty || 0);
+        const newStock = currentStock + qtyToAdd;
+        
+        // Update the product option's stock in Firestore
+        const productDoc = doc(db, "Product", option.productId);
+        const productSnapshot = await getDoc(productDoc);
+        
+        if (productSnapshot.exists()) {
+          const productData = productSnapshot.data();
+          const updatedOptions = productData.productOptions.map(po => {
+            if ((po.name && option.optionId && po.name.toString() === option.optionId.toString()) || 
+                (po.name && po.name.toString() === option.optionName)) {
+              return { ...po, stock: newStock };
+            }
+            return po;
+          });
+          
+          productUpdates.push(updateDoc(productDoc, { productOptions: updatedOptions }));
+        }
+      }
+      
+      // Execute all product updates
+      await Promise.all(productUpdates);
+      
+      // Update the status document
+      const statusRef = doc(db, "BillStoreStatus", statusDocId);
+      await updateDoc(statusRef, {
+        isStoredOut: true,
+        isStoredIn: true,
+        storedInAt: serverTimestamp()
+      });
+      
+      // Update local state
+      setBillStoreStatus(prev => ({
+        ...prev,
+        [bill.id]: {
+          ...prev[bill.id],
+          isStoredOut: true,
+          isStoredIn: true
+        }
+      }));
+      
+      alert("Re Store-In completed successfully!");
+      
+      // Refresh products to get updated stock values
+      await fetchProducts();
+    } catch (error) {
+      console.error("Error during Re Store-In:", error.message);
+      alert("Error during Re Store-In. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const triggerPrint = () => {
     setIsPrinting(true);
@@ -1373,6 +1585,21 @@ const BillManagement = () => {
                   <div className="d-flex gap-2">
                     <button className="btn btn-info btn-sm" onClick={() => handleViewBill(bill)}>View</button>
                     <button className="btn btn-success btn-sm" onClick={() => handleAddToNewBill(bill)}>Add</button>
+                    <button 
+                      className="btn btn-danger btn-sm" 
+                      onClick={() => handleReStoreOut(bill)}
+                      disabled={loading || (billStoreStatus[bill.id]?.isStoredOut && !billStoreStatus[bill.id]?.isStoredIn)}
+                    >
+                      Out
+                    </button>
+                    <button 
+                      className="btn btn-sm" 
+                      style={{ backgroundColor: "darkgreen", color: "white" }}
+                      onClick={() => handleReStoreIn(bill)}
+                      disabled={loading || !billStoreStatus[bill.id]?.isStoredOut || billStoreStatus[bill.id]?.isStoredIn}
+                    >
+                     In
+                    </button>
                   </div>
                 </td>
               </tr>
