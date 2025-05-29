@@ -23,6 +23,7 @@ const BillManagement = () => {
   const [creatorFilter, setCreatorFilter] = useState("");
   const [creators, setCreators] = useState([]);
   const [billStoreStatus, setBillStoreStatus] = useState({});
+  const [processingBillId, setProcessingBillId] = useState(null);
 
   const billsCollectionRef = collection(db, "Bill");
   const productsCollectionRef = collection(db, "Product");
@@ -542,7 +543,14 @@ const BillManagement = () => {
 
   const handleReStoreOut = async (bill) => {
     try {
+      // First, show a confirmation dialog with bill details
+      if (!window.confirm(`Are you sure you want to store out Bill #${bill.billNo} for ${bill.outletName}?`)) {
+        return; // User cancelled
+      }
+      
+      // Set loading state and processing bill ID
       setLoading(true);
+      setProcessingBillId(bill.id);
       
       // Check if this bill already has a status document
       let statusDocId;
@@ -637,21 +645,29 @@ const BillManagement = () => {
         }));
       }
       
-      alert("Re Store-Out completed successfully!");
+      alert(`Successfully stored out Bill #${bill.billNo} for ${bill.outletName}`);
       
       // Refresh products to get updated stock values
       await fetchProducts();
     } catch (error) {
       console.error("Error during Re Store-Out:", error.message);
-      alert("Error during Re Store-Out. Please try again.");
+      alert(`Error during store out for Bill #${bill.billNo}: ${error.message}`);
     } finally {
       setLoading(false);
+      setProcessingBillId(null);
     }
   };
 
   const handleReStoreIn = async (bill) => {
     try {
+      // First, show a confirmation dialog with bill details
+      if (!window.confirm(`Are you sure you want to store in Bill #${bill.billNo} for ${bill.outletName}?`)) {
+        return; // User cancelled
+      }
+      
+      // Set loading state and processing bill ID
       setLoading(true);
+      setProcessingBillId(bill.id);
       
       // Get the status document
       const statusDocId = billStoreStatus[bill.id]?.id;
@@ -719,15 +735,16 @@ const BillManagement = () => {
         }
       }));
       
-      alert("Re Store-In completed successfully!");
+      alert(`Successfully stored in Bill #${bill.billNo} for ${bill.outletName}`);
       
       // Refresh products to get updated stock values
       await fetchProducts();
     } catch (error) {
       console.error("Error during Re Store-In:", error.message);
-      alert("Error during Re Store-In. Please try again.");
+      alert(`Error during store in for Bill #${bill.billNo}: ${error.message}`);
     } finally {
       setLoading(false);
+      setProcessingBillId(null);
     }
   };
 
@@ -1549,61 +1566,114 @@ const BillManagement = () => {
             </tr>
           </thead>
           <tbody>
-            {currentBills.map((bill) => (
-              <tr key={bill.id}>
-                <td>{bill.billNo}</td>
-                <td>{bill.outletName}</td>
-                <td>{bill.salesRef}</td>
-                <td>{bill.refContact}</td>
-                <td>{bill.createDate}</td>
-                <td style={{ fontWeight: "bold", color: "#ff9800" }}>
-                  Rs. {(() => {
-                    // Make sure we have a valid number for the total margin
-                    if (!bill.productOptions || bill.productOptions.length === 0) return "0.00";
-                    
-                    const totalMargin = bill.productOptions.reduce((sum, option) => {
-                      // Get margin from the option, or calculate it
-                      const price = parseFloat(option.price) || 0;
-                      const dbPrice = parseFloat(option.dbPrice) || 0;
-                      const qty = parseFloat(option.qty) || 0;
+            {currentBills.map((bill) => {
+              // Determine row styling based on processing status
+              const isProcessing = processingBillId === bill.id;
+              const isStoredOut = billStoreStatus[bill.id]?.isStoredOut;
+              const isStoredIn = billStoreStatus[bill.id]?.isStoredIn;
+              
+              let rowStyle = {};
+              if (isProcessing) {
+                rowStyle = { backgroundColor: "#f8f9fa", transition: "background-color 0.3s ease" };
+              } else if (isStoredOut && !isStoredIn) {
+                rowStyle = { backgroundColor: "#fff3cd", transition: "background-color 0.3s ease" };
+              } else if (isStoredOut && isStoredIn) {
+                rowStyle = { backgroundColor: "#d1e7dd", transition: "background-color 0.3s ease" };
+              }
+              
+              return (
+                <tr key={bill.id} id={`bill-row-${bill.id}`} style={rowStyle}>
+                  <td>{bill.billNo}</td>
+                  <td>{bill.outletName}</td>
+                  <td>{bill.salesRef}</td>
+                  <td>{bill.refContact}</td>
+                  <td>{bill.createDate}</td>
+                  <td style={{ fontWeight: "bold", color: "#ff9800" }}>
+                    Rs. {(() => {
+                      // Make sure we have a valid number for the total margin
+                      if (!bill.productOptions || bill.productOptions.length === 0) return "0.00";
                       
-                      // Skip this item if either price is missing or 0
-                      if (!price || !dbPrice) {
-                        return sum;
-                      }
+                      const totalMargin = bill.productOptions.reduce((sum, option) => {
+                        // Get margin from the option, or calculate it
+                        const price = parseFloat(option.price) || 0;
+                        const dbPrice = parseFloat(option.dbPrice) || 0;
+                        const qty = parseFloat(option.qty) || 0;
+                        
+                        // Skip this item if either price is missing or 0
+                        if (!price || !dbPrice) {
+                          return sum;
+                        }
+                        
+                        // Use existing margin or calculate from prices
+                        const margin = parseFloat(option.margin) || (price - dbPrice) || 0;
+                        
+                        return sum + (margin * qty);
+                      }, 0);
                       
-                      // Use existing margin or calculate from prices
-                      const margin = parseFloat(option.margin) || (price - dbPrice) || 0;
-                      
-                      return sum + (margin * qty);
-                    }, 0);
-                    
-                    return totalMargin.toFixed(2);
-                  })()}
-                </td>
-                <td>
-                  <div className="d-flex gap-2">
-                    <button className="btn btn-info btn-sm" onClick={() => handleViewBill(bill)}>View</button>
-                    <button className="btn btn-success btn-sm" onClick={() => handleAddToNewBill(bill)}>Add</button>
-                    <button 
-                      className="btn btn-danger btn-sm" 
-                      onClick={() => handleReStoreOut(bill)}
-                      disabled={loading || (billStoreStatus[bill.id]?.isStoredOut && !billStoreStatus[bill.id]?.isStoredIn)}
-                    >
-                      Out
-                    </button>
-                    <button 
-                      className="btn btn-sm" 
-                      style={{ backgroundColor: "darkgreen", color: "white" }}
-                      onClick={() => handleReStoreIn(bill)}
-                      disabled={loading || !billStoreStatus[bill.id]?.isStoredOut || billStoreStatus[bill.id]?.isStoredIn}
-                    >
-                     In
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+                      return totalMargin.toFixed(2);
+                    })()}
+                  </td>
+                  <td>
+                    <div className="d-flex gap-2">
+                      <button className="btn btn-info btn-sm" onClick={() => handleViewBill(bill)}>View</button>
+                      <button className="btn btn-success btn-sm" onClick={() => handleAddToNewBill(bill)}>Add</button>
+                      <button 
+                        className="btn btn-danger btn-sm" 
+                        onClick={() => handleReStoreOut(bill)}
+                        disabled={loading || (isStoredOut && !isStoredIn)}
+                        style={{ 
+                          position: 'relative',
+                          minWidth: '60px',
+                          opacity: loading || (isStoredOut && !isStoredIn) ? 0.65 : 1
+                        }}
+                      >
+                        {processingBillId === bill.id && loading ? (
+                          <>
+                            <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                            Out
+                          </>
+                        ) : "Out"}
+                        {isStoredOut && !isStoredIn && (
+                          <span 
+                            className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning"
+                            style={{ fontSize: '0.5rem' }}
+                          >
+                            ✓
+                          </span>
+                        )}
+                      </button>
+                      <button 
+                        className="btn btn-sm" 
+                        style={{ 
+                          backgroundColor: "darkgreen", 
+                          color: "white",
+                          position: 'relative',
+                          minWidth: '60px',
+                          opacity: loading || !isStoredOut || isStoredIn ? 0.65 : 1
+                        }}
+                        onClick={() => handleReStoreIn(bill)}
+                        disabled={loading || !isStoredOut || isStoredIn}
+                      >
+                        {processingBillId === bill.id && loading ? (
+                          <>
+                            <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                            In
+                          </>
+                        ) : ". In ."}
+                        {isStoredIn && (
+                          <span 
+                            className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success"
+                            style={{ fontSize: '0.5rem' }}
+                          >
+                            ✓
+                          </span>
+                        )}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
         <div className="d-flex justify-content-center">
